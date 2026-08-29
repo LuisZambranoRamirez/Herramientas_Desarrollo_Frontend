@@ -1,2 +1,4 @@
 # Herramientas_Desarrollo_Frontend
 Clínica Frontend es una aplicación web desarrollada con Vue.js que permite gestionar de forma ágil y moderna los procesos de una clínica, incluyendo la programación de citas, la administración de pacientes y el seguimiento de historiales médicos. Construida con un enfoque en la usabilidad y el rendimiento, la interfaz ofrece una experiencia intuitiva tanto para el personal administrativo como para los profesionales de la salud, facilitando la digitalización de los procesos clínicos y mejorando la atención al paciente.
+
+link mockup del fronted:https://www.figma.com/proto/TbSSIxh8cYjkqocEnFiXMa/PROTOTIPO?node-id=1-2&t=lNHukFY7YZi1TaSp-1
