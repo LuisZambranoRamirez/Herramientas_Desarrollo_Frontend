@@ -5,7 +5,7 @@ import ServiceSelectionStep from '../components/ServiceSelectionStep.vue'
 import SpecialistSelectionStep from '../components/SpecialistSelectionStep.vue'
 import CalendarSelector from '../components/CalendarSelector.vue'
 import PatientForm, { type PatientData } from '../components/PatientForm.vue'
-import BookingConfirmationModal from '../components/BookingConfirmationModal.vue'
+import ConfirmationStep from '../components/ConfirmationStep.vue'
 
 // Paso actual del flujo (1: Servicio, 2: Especialista, 3: Fecha y Hora, 4: Confirmación)
 const currentStep = ref<number>(1)
@@ -18,17 +18,17 @@ const serviceNamesMap: Record<string, string> = {
   'implantes-dentales': 'Implantes Dentales',
 }
 const selectedServiceName = computed(
-  () => serviceNamesMap[selectedServiceId.value] || 'Tratamiento Odontológico',
+  () => serviceNamesMap[selectedServiceId.value] || 'Limpieza Dental',
 )
 
 // --- Paso 2: Selección de Especialista ---
 const selectedSpecialistId = ref<string>('dra-marta-gonzalez')
 const specialistNamesMap: Record<string, string> = {
-  'dra-marta-gonzalez': 'Dra. Marta González (Odontología General & Estética)',
-  'dra-carmen-rodriguez': 'Dra. Carmen Rodríguez (Implantología & Cirugía Oral)',
+  'dra-marta-gonzalez': 'Dra. Marta González',
+  'dra-carmen-rodriguez': 'Dra. Carmen Rodríguez',
 }
 const selectedSpecialistName = computed(
-  () => specialistNamesMap[selectedSpecialistId.value] || 'Especialista SoliDent',
+  () => specialistNamesMap[selectedSpecialistId.value] || 'Dra. Marta González',
 )
 
 // --- Paso 3: Fecha, Horario y Datos ---
@@ -45,25 +45,23 @@ const patientData = reactive<PatientData>({
 // Texto de fecha formateada
 const formattedDateText = computed(() => {
   const daysMap: Record<number, string> = {
-    24: 'Lunes 24',
-    25: 'Martes 25',
-    26: 'Miércoles 26',
-    27: 'Jueves 27',
-    28: 'Viernes 28',
+    24: 'Lunes, 24 de Agosto',
+    25: 'Martes, 25 de Agosto',
+    26: 'Miércoles, 26 de Agosto',
+    27: 'Jueves, 27 de Agosto',
+    28: 'Viernes, 28 de Agosto',
   }
-  const dayName = daysMap[selectedDayNumber.value] || `Día ${selectedDayNumber.value}`
-  return `${dayName} de Agosto, 2026`
+  return daysMap[selectedDayNumber.value] || `${selectedDayNumber.value} de Agosto`
 })
 
-// --- Paso 4: Modal y Confirmación ---
-const isConfirmationModalOpen = ref<boolean>(false)
-const generatedBookingCode = ref<string>('#SLD-2684')
 const formErrorMessage = ref<string>('')
 
 // Navegación entre pasos
 function goToStep(stepNumber: number) {
-  currentStep.value = stepNumber
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  if (stepNumber <= 3) {
+    currentStep.value = stepNumber
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 }
 
 function nextStep() {
@@ -80,7 +78,7 @@ function prevStep() {
   }
 }
 
-// Confirmar cita desde el Paso 3
+// Confirmar cita desde el Paso 3 ➔ Pasa al Paso 4
 function handleConfirmAppointment() {
   if (!patientData.fullName.trim()) {
     formErrorMessage.value = 'Por favor ingresa el nombre del paciente.'
@@ -96,14 +94,12 @@ function handleConfirmAppointment() {
   }
 
   formErrorMessage.value = ''
-  generatedBookingCode.value = `#SLD-${Math.floor(1000 + Math.random() * 9000)}`
   currentStep.value = 4
-  isConfirmationModalOpen.value = true
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 // Reiniciar flujo para agendar otra cita
 function handleNewBooking() {
-  isConfirmationModalOpen.value = false
   patientData.fullName = ''
   patientData.email = ''
   patientData.phone = ''
@@ -112,6 +108,7 @@ function handleNewBooking() {
   selectedDayNumber.value = 26
   selectedTime.value = '10:00 AM'
   currentStep.value = 1
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 </script>
 
@@ -141,7 +138,7 @@ function handleNewBooking() {
         </div>
 
         <!-- ================= PASO 3: SELECCIONA FECHA Y HORA ================= -->
-        <div v-else-if="currentStep >= 3" key="step-3" class="step-wrapper">
+        <div v-else-if="currentStep === 3" key="step-3" class="step-wrapper">
           <!-- Encabezado -->
           <div class="header-section">
             <h1 class="main-title">Selecciona Fecha y Hora</h1>
@@ -214,23 +211,21 @@ function handleNewBooking() {
             </button>
           </div>
         </div>
+
+        <!-- ================= PASO 4: ¡CITA CONFIRMADA! ================= -->
+        <div v-else-if="currentStep === 4" key="step-4" class="step-wrapper">
+          <ConfirmationStep
+            :service-name="selectedServiceName"
+            :specialist-name="selectedSpecialistName"
+            :date-text="formattedDateText"
+            :time="selectedTime"
+            :patient="patientData"
+            @go-home="handleNewBooking"
+            @new-booking="handleNewBooking"
+          />
+        </div>
       </Transition>
     </div>
-
-    <!-- ================= PASO 4: MODAL DE CONFIRMACIÓN ================= -->
-    <BookingConfirmationModal
-      :is-open="isConfirmationModalOpen"
-      :appointment-data="{
-        serviceName: selectedServiceName,
-        specialistName: selectedSpecialistName,
-        dateText: formattedDateText,
-        time: selectedTime,
-        patient: patientData,
-        bookingCode: generatedBookingCode,
-      }"
-      @close="isConfirmationModalOpen = false"
-      @new-booking="handleNewBooking"
-    />
   </main>
 </template>
 
