@@ -1,32 +1,46 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import BookingStepper from '../components/BookingStepper.vue'
+import ServiceSelectionStep from '../components/ServiceSelectionStep.vue'
+import SpecialistSelectionStep from '../components/SpecialistSelectionStep.vue'
 import CalendarSelector from '../components/CalendarSelector.vue'
 import PatientForm, { type PatientData } from '../components/PatientForm.vue'
 import BookingConfirmationModal from '../components/BookingConfirmationModal.vue'
 
-// Paso actual del Stepper (por defecto 3: Fecha y Hora)
-const currentStep = ref<number>(3)
+// Paso actual del flujo (1: Servicio, 2: Especialista, 3: Fecha y Hora, 4: Confirmación)
+const currentStep = ref<number>(1)
 
-// Estados de la reserva
+// --- Paso 1: Selección de Servicio ---
+const selectedServiceId = ref<string>('limpieza-dental')
+const serviceNamesMap: Record<string, string> = {
+  'limpieza-dental': 'Limpieza Dental',
+  'ortodoncia': 'Ortodoncia',
+  'implantes-dentales': 'Implantes Dentales',
+}
+const selectedServiceName = computed(
+  () => serviceNamesMap[selectedServiceId.value] || 'Tratamiento Odontológico',
+)
+
+// --- Paso 2: Selección de Especialista ---
+const selectedSpecialistId = ref<string>('dra-marta-gonzalez')
+const specialistNamesMap: Record<string, string> = {
+  'dra-marta-gonzalez': 'Dra. Marta González (Odontología General & Estética)',
+  'dra-carmen-rodriguez': 'Dra. Carmen Rodríguez (Implantología & Cirugía Oral)',
+}
+const selectedSpecialistName = computed(
+  () => specialistNamesMap[selectedSpecialistId.value] || 'Especialista SoliDent',
+)
+
+// --- Paso 3: Fecha, Horario y Datos ---
 const selectedDayNumber = ref<number>(26)
 const selectedTime = ref<string>('10:00 AM')
 const selectedMonth = ref<string>('Agosto 2026')
 
-// Datos simulados de pasos anteriores
-const selectedService = ref<string>('Consulta Odontológica General')
-const selectedSpecialist = ref<string>('Dra. Camila Morales (Odontología Integral)')
-
-// Datos del formulario del paciente
 const patientData = reactive<PatientData>({
   fullName: '',
   email: '',
   phone: '',
 })
-
-// Estado del modal de confirmación
-const isConfirmationModalOpen = ref<boolean>(false)
-const generatedBookingCode = ref<string>('#SLD-2684')
 
 // Texto de fecha formateada
 const formattedDateText = computed(() => {
@@ -41,10 +55,32 @@ const formattedDateText = computed(() => {
   return `${dayName} de Agosto, 2026`
 })
 
-// Mensaje de validación
+// --- Paso 4: Modal y Confirmación ---
+const isConfirmationModalOpen = ref<boolean>(false)
+const generatedBookingCode = ref<string>('#SLD-2684')
 const formErrorMessage = ref<string>('')
 
-// Confirmar cita
+// Navegación entre pasos
+function goToStep(stepNumber: number) {
+  currentStep.value = stepNumber
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function nextStep() {
+  if (currentStep.value < 3) {
+    currentStep.value++
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
+function prevStep() {
+  if (currentStep.value > 1) {
+    currentStep.value--
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
+// Confirmar cita desde el Paso 3
 function handleConfirmAppointment() {
   if (!patientData.fullName.trim()) {
     formErrorMessage.value = 'Por favor ingresa el nombre del paciente.'
@@ -61,122 +97,132 @@ function handleConfirmAppointment() {
 
   formErrorMessage.value = ''
   generatedBookingCode.value = `#SLD-${Math.floor(1000 + Math.random() * 9000)}`
+  currentStep.value = 4
   isConfirmationModalOpen.value = true
 }
 
-// Botón Anterior
-function handlePrevious() {
-  if (currentStep.value > 1) {
-    currentStep.value--
-  } else {
-    currentStep.value = 1
-  }
-}
-
-// Cambiar paso desde el stepper
-function handleChangeStep(stepId: number) {
-  currentStep.value = stepId
-}
-
-// Reiniciar reserva para agendar otra cita
+// Reiniciar flujo para agendar otra cita
 function handleNewBooking() {
   isConfirmationModalOpen.value = false
   patientData.fullName = ''
   patientData.email = ''
   patientData.phone = ''
+  selectedServiceId.value = 'limpieza-dental'
+  selectedSpecialistId.value = 'dra-marta-gonzalez'
   selectedDayNumber.value = 26
   selectedTime.value = '10:00 AM'
-  currentStep.value = 3
+  currentStep.value = 1
 }
 </script>
 
 <template>
   <main class="booking-page">
     <div class="booking-container">
-      <!-- 1. Barra de Progreso (Stepper) -->
-      <BookingStepper :current-step="currentStep" @change-step="handleChangeStep" />
+      <!-- Indicador de Pasos Global (Stepper) -->
+      <BookingStepper :current-step="currentStep" @change-step="goToStep" />
 
-      <!-- 2. Encabezado y Subtítulo -->
-      <div class="header-section">
-        <h1 class="main-title">Selecciona Fecha y Hora</h1>
-        <p class="subtitle">Elige tu momento ideal y completa tus datos de contacto</p>
-      </div>
-
-      <!-- Alerta de validación si faltan campos -->
-      <div v-if="formErrorMessage" class="alert-error" role="alert">
-        <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor">
-          <path
-            fill-rule="evenodd"
-            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-            clip-rule="evenodd"
+      <!-- Contenido del Paso con animación de transición suave -->
+      <Transition name="fade-slide" mode="out-in">
+        <!-- ================= PASO 1: ELIGE TU SERVICIO ================= -->
+        <div v-if="currentStep === 1" key="step-1" class="step-wrapper">
+          <ServiceSelectionStep
+            v-model="selectedServiceId"
+            @next="nextStep"
           />
-        </svg>
-        <span>{{ formErrorMessage }}</span>
-      </div>
+        </div>
 
-      <!-- 3. Tarjetas en paralelo (Calendario y Formulario) -->
-      <div class="cards-grid">
-        <!-- Tarjeta Izquierda: Calendario y Horas -->
-        <section class="card-column" aria-label="Selección de fecha y hora">
-          <CalendarSelector
-            :month-name="selectedMonth"
-            :model-value-date="selectedDayNumber"
-            :model-value-time="selectedTime"
-            @update:selected-date="selectedDayNumber = $event"
-            @update:selected-time="selectedTime = $event"
+        <!-- ================= PASO 2: ELIGE TU ESPECIALISTA ================= -->
+        <div v-else-if="currentStep === 2" key="step-2" class="step-wrapper">
+          <SpecialistSelectionStep
+            v-model="selectedSpecialistId"
+            @next="nextStep"
+            @prev="prevStep"
           />
-        </section>
+        </div>
 
-        <!-- Tarjeta Derecha: Datos del Paciente -->
-        <section class="card-column" aria-label="Información del paciente">
-          <PatientForm v-model="patientData" />
-        </section>
-      </div>
+        <!-- ================= PASO 3: SELECCIONA FECHA Y HORA ================= -->
+        <div v-else-if="currentStep >= 3" key="step-3" class="step-wrapper">
+          <!-- Encabezado -->
+          <div class="header-section">
+            <h1 class="main-title">Selecciona Fecha y Hora</h1>
+            <p class="subtitle">Elige tu momento ideal y completa tus datos de contacto</p>
+          </div>
 
-      <!-- 4. Botones de Acción Inferiores -->
-      <div class="actions-row">
-        <!-- Botón Anterior -->
-        <button
-          type="button"
-          class="btn-anterior"
-          @click="handlePrevious"
-          aria-label="Regresar al paso anterior"
-        >
-          <svg class="btn-arrow-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path
-              fill-rule="evenodd"
-              d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L4.414 9H17a1 1 0 110 2H4.414l5.293 5.293a1 1 0 010 1.414z"
-              clip-rule="evenodd"
-            />
-          </svg>
-          <span>Anterior</span>
-        </button>
+          <!-- Alerta de validación si faltan campos -->
+          <div v-if="formErrorMessage" class="alert-error" role="alert">
+            <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <span>{{ formErrorMessage }}</span>
+          </div>
 
-        <!-- Botón Confirmar Cita -->
-        <button
-          type="button"
-          class="btn-confirmar"
-          @click="handleConfirmAppointment"
-          aria-label="Confirmar y agendar cita"
-        >
-          <svg class="btn-check-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path
-              fill-rule="evenodd"
-              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-              clip-rule="evenodd"
-            />
-          </svg>
-          <span>Confirmar Cita</span>
-        </button>
-      </div>
+          <!-- Tarjetas en paralelo (Calendario y Formulario) -->
+          <div class="cards-grid">
+            <!-- Tarjeta Izquierda: Calendario y Horas -->
+            <section class="card-column" aria-label="Selección de fecha y hora">
+              <CalendarSelector
+                :month-name="selectedMonth"
+                :model-value-date="selectedDayNumber"
+                :model-value-time="selectedTime"
+                @update:selected-date="selectedDayNumber = $event"
+                @update:selected-time="selectedTime = $event"
+              />
+            </section>
+
+            <!-- Tarjeta Derecha: Datos del Paciente -->
+            <section class="card-column" aria-label="Información del paciente">
+              <PatientForm v-model="patientData" />
+            </section>
+          </div>
+
+          <!-- Botones de Acción Inferiores -->
+          <div class="actions-row">
+            <button
+              type="button"
+              class="btn-anterior"
+              @click="prevStep"
+              aria-label="Regresar al paso anterior"
+            >
+              <svg class="btn-arrow-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fill-rule="evenodd"
+                  d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L4.414 9H17a1 1 0 110 2H4.414l5.293 5.293a1 1 0 010 1.414z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              <span>Anterior</span>
+            </button>
+
+            <button
+              type="button"
+              class="btn-confirmar"
+              @click="handleConfirmAppointment"
+              aria-label="Confirmar y agendar cita"
+            >
+              <svg class="btn-check-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fill-rule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              <span>Confirmar Cita</span>
+            </button>
+          </div>
+        </div>
+      </Transition>
     </div>
 
-    <!-- 5. Modal de Confirmación -->
+    <!-- ================= PASO 4: MODAL DE CONFIRMACIÓN ================= -->
     <BookingConfirmationModal
       :is-open="isConfirmationModalOpen"
       :appointment-data="{
-        serviceName: selectedService,
-        specialistName: selectedSpecialist,
+        serviceName: selectedServiceName,
+        specialistName: selectedSpecialistName,
         dateText: formattedDateText,
         time: selectedTime,
         patient: patientData,
@@ -206,7 +252,11 @@ function handleNewBooking() {
   flex-direction: column;
 }
 
-/* Encabezado */
+.step-wrapper {
+  width: 100%;
+}
+
+/* Encabezado Paso 3 */
 .header-section {
   text-align: center;
   margin-bottom: 2.25rem;
@@ -249,7 +299,7 @@ function handleNewBooking() {
   flex-shrink: 0;
 }
 
-/* Grilla de Tarjetas */
+/* Grilla de Tarjetas Paso 3 */
 .cards-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -270,7 +320,6 @@ function handleNewBooking() {
   margin-top: 0.5rem;
 }
 
-/* Botón Anterior */
 .btn-anterior {
   display: inline-flex;
   align-items: center;
@@ -298,7 +347,6 @@ function handleNewBooking() {
   height: 18px;
 }
 
-/* Botón Confirmar Cita */
 .btn-confirmar {
   display: inline-flex;
   align-items: center;
@@ -328,6 +376,22 @@ function handleNewBooking() {
 .btn-check-icon {
   width: 20px;
   height: 20px;
+}
+
+/* Transiciones entre pasos */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.25s ease;
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 @keyframes shake {
