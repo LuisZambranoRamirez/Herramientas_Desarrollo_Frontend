@@ -21,3 +21,13 @@ export interface ActualizarUsuarioDto {
 export interface CambiarPasswordDto {
   password: string
 }
+
+export interface LoginDto {
+  username: string
+  password: string
+}
+
+export interface LoginResponse {
+  accessToken: string
+  user: Usuario
+}
