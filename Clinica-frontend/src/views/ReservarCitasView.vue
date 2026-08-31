@@ -9,6 +9,7 @@ import ConfirmationStep from '../components/ConfirmationStep.vue'
 
 // Paso actual del flujo (1: Servicio, 2: Especialista, 3: Fecha y Hora, 4: Confirmación)
 const currentStep = ref<number>(1)
+const patientFormRef = ref<InstanceType<typeof PatientForm> | null>(null)
 
 // --- Paso 1: Selección de Servicio ---
 const selectedServiceId = ref<string>('limpieza-dental')
@@ -78,22 +79,36 @@ function prevStep() {
   }
 }
 
-// Confirmar cita desde el Paso 3 ➔ Pasa al Paso 4
+// Confirmar cita desde el Paso 3 ➔ Valida estrictamente y pasa al Paso 4
 function handleConfirmAppointment() {
-  if (!patientData.fullName.trim()) {
-    formErrorMessage.value = 'Por favor ingresa el nombre del paciente.'
-    return
-  }
-  if (!patientData.email.trim() || !patientData.email.includes('@')) {
-    formErrorMessage.value = 'Por favor ingresa un correo electrónico válido.'
-    return
-  }
-  if (!patientData.phone.trim()) {
-    formErrorMessage.value = 'Por favor ingresa un número de teléfono celular.'
+  // Ejecuta la validación interna del componente PatientForm
+  const isValid = patientFormRef.value ? patientFormRef.value.validateAll() : false
+
+  if (!isValid) {
+    formErrorMessage.value = 'Por favor completa y corrige los campos obligatorios del paciente.'
     return
   }
 
   formErrorMessage.value = ''
+
+  // Guardar en localStorage para persistencia
+  try {
+    const bookingRecord = {
+      id: `SLD-${Math.floor(1000 + Math.random() * 9000)}`,
+      service: selectedServiceName.value,
+      specialist: selectedSpecialistName.value,
+      date: formattedDateText.value,
+      time: selectedTime.value,
+      patient: { ...patientData },
+      createdAt: new Date().toISOString(),
+    }
+    const existing = JSON.parse(localStorage.getItem('solident_bookings') || '[]')
+    existing.push(bookingRecord)
+    localStorage.setItem('solident_bookings', JSON.stringify(existing))
+  } catch (e) {
+    console.warn('No se pudo guardar en localStorage', e)
+  }
+
   currentStep.value = 4
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
@@ -107,6 +122,7 @@ function handleNewBooking() {
   selectedSpecialistId.value = 'dra-marta-gonzalez'
   selectedDayNumber.value = 26
   selectedTime.value = '10:00 AM'
+  formErrorMessage.value = ''
   currentStep.value = 1
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
@@ -172,7 +188,7 @@ function handleNewBooking() {
 
             <!-- Tarjeta Derecha: Datos del Paciente -->
             <section class="card-column" aria-label="Información del paciente">
-              <PatientForm v-model="patientData" />
+              <PatientForm ref="patientFormRef" v-model="patientData" />
             </section>
           </div>
 
