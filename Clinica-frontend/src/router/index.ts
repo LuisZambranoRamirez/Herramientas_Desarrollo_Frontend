@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import HomeView from '../views/HomeView.vue'
 import ReservarCitasView from '../views/ReservarCitasView.vue'
 
 const router = createRouter({
@@ -6,8 +7,8 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'reservar-citas',
-      component: ReservarCitasView,
+      name: 'home',
+      component: HomeView,
     },
     {
       path: '/reservar',
@@ -20,6 +21,18 @@ const router = createRouter({
       component: () => import('../views/AboutView.vue'),
     },
   ],
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    }
+    if (to.hash) {
+      return {
+        el: to.hash,
+        behavior: 'smooth',
+      }
+    }
+    return { top: 0 }
+  },
 })
 
 export default router
