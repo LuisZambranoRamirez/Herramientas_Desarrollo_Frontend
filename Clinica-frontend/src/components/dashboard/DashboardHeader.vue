@@ -5,15 +5,22 @@
     </div>
     <div class="header-right">
       <span class="header-user">👨‍⚕️ Dr. Fabrizio</span>
-      <button class="logout-btn">Cerrar Sesión</button>
+      <button @click="cerrarSesion" class="logout-btn">Cerrar Sesión</button>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-// No necesita lógica adicional
-</script>
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
+
+const cerrarSesion = () => {
+  // Aquí puedes agregar lógica de logout (limpiar tokens, etc.)
+  // Por ahora solo redirige al login
+  router.push('/login')
+}
+</script>
 <style scoped>
 .dashboard-header {
   background: white;

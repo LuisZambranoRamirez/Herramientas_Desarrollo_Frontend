@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <!-- Mostrar Navbar solo si NO estamos en el Dashboard -->
-    <NavbarHeader v-if="!isDashboardRoute" />
+     <NavbarHeader v-if="!isDashboardRoute && !isLoginRoute" />
     
     <!-- Contenido principal -->
     <router-view />
@@ -15,9 +15,12 @@ import NavbarHeader from '@/components/NavbarHeader.vue'
 
 const route = useRoute()
 
-// ✅ Detectar si estamos en la ruta del Dashboard
 const isDashboardRoute = computed(() => {
   return route.path.startsWith('/dashboard')
+})
+
+const isLoginRoute = computed(() => {
+  return route.path === '/login'
 })
 </script>
 
