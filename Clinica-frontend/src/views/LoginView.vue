@@ -1,3 +1,21 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const email = ref('')
+const password = ref('')
+
+function iniciarSesion() {
+    if(!email.value || !password.value) {
+        alert('Completa todos los campos')
+        return
+    }
+    router.push('/dashboard')
+}
+</script>
+
 <template>
   <main class="login-page">
     <section class="login-container">
@@ -15,11 +33,12 @@
         <h2>Iniciar Sesión</h2>
         <p>Ingresa tus credenciales para acceder a la plataforma.</p>
 
-        <form>
+        <form @submit.prevent="iniciarSesion">
           <div class="form-group">
             <label for="email">Correo electrónico</label>
             <input
               id="email"
+              v-model="email"
               type="email"
               placeholder="doctor@solident.com"
             />
@@ -29,6 +48,7 @@
             <label for="password">Contraseña</label>
             <input
               id="password"
+              v-model="password"
               type="password"
               placeholder="••••••••"
             />
