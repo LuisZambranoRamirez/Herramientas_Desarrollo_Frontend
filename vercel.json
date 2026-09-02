@@ -1,0 +1,11 @@
+{
+  "buildCommand": "npm --prefix Clinica-frontend run build",
+  "outputDirectory": "Clinica-frontend/dist",
+  "installCommand": "npm --prefix Clinica-frontend install",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
