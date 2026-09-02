@@ -20,6 +20,11 @@ const router = createRouter({
       name: 'about',
       component: () => import('../views/AboutView.vue'),
     },
+    {
+      path: '/test-citas',
+      name: 'test-citas',
+      component: () => import('../views/intranet/CitasView.vue'),
+    },
   ],
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
