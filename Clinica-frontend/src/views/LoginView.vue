@@ -1,18 +1,31 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth.store'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 const email = ref('')
 const password = ref('')
 
-function iniciarSesion() {
+async function iniciarSesion() {
     if(!email.value || !password.value) {
         alert('Completa todos los campos')
         return
     }
-    router.push('/dashboard')
+
+    //ahora valida con el store
+    const exito = await authStore.login({
+        username: email.value,
+        password: password.value
+    })
+
+    if (exito) {
+        router.push('/dashboard')
+    } else {
+        alert('Credenciales incorrectas (simuladas)')
+    }
 }
 </script>
 
@@ -43,7 +56,7 @@ function iniciarSesion() {
               id="email"
               v-model="email"
               type="email"
-              placeholder="doctor@solident.com"
+              placeholder="admin@solident.com"
             />
           </div>
 
@@ -97,7 +110,7 @@ function iniciarSesion() {
         color: #ffffff;
         background: linear-gradient(135deg, #4f46e5, #7c3aed);
     }
-        
+
     .brand-logo {
         width: 80px;
         height: 80px;
@@ -107,7 +120,7 @@ function iniciarSesion() {
         justify-content: center;
         border-radius: 20px;
         background-color: rgba(255, 255, 255, 0.2);
-    }     
+    }
     .brand-logo span {
         font-size: 2.5rem;
         font-weight: 800;
