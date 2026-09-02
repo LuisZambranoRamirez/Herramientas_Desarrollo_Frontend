@@ -65,6 +65,8 @@
               </td>
               <td>{{ insumo.fecha_vencimiento ?? '—' }}</td>
               <td>
+            <button class="btn-secundario btn-accion" @click="abrirModalEditar(insumo)">
+             Editar
             </button>
               <button class="btn-eliminar" @click="eliminarInsumo(insumo.insumo_id)">
                Eliminar
@@ -107,7 +109,7 @@
 
     <div v-if="mostrarModal" class="modal-overlay" @click.self="cerrarModal">
       <div class="modal-box">
-        <h3>Nuevo insumo</h3>
+      <h3>{{ insumoEditandoId ? 'Editar insumo' : 'Nuevo insumo' }}</h3>
 
         <form @submit.prevent="guardarInsumo">
           <div class="campo">
@@ -134,8 +136,8 @@
 
           <div class="modal-acciones">
             <button type="button" class="btn-secundario" @click="cerrarModal">Cancelar</button>
-            <button type="submit" class="btn-primario" :disabled="guardando">
-              {{ guardando ? 'Guardando...' : 'Guardar' }}
+          <button type="submit" class="btn-primario" :disabled="guardando">
+           {{ guardando ? 'Guardando...' : (insumoEditandoId ? 'Actualizar' : 'Guardar') }}
             </button>
           </div>
         </form>
@@ -191,8 +193,22 @@ const insumoVacio = (): CrearInsumoDto => ({
 
 const nuevoInsumo = ref<CrearInsumoDto>(insumoVacio())
 
+const insumoEditandoId = ref<string | null>(null)
+
 const abrirModalCrear = () => {
+  insumoEditandoId.value = null
   nuevoInsumo.value = insumoVacio()
+  errorFormulario.value = ''
+  mostrarModal.value = true
+}
+const abrirModalEditar = (insumo: Insumo) => {
+  insumoEditandoId.value = insumo.insumo_id
+  nuevoInsumo.value = {
+    nombre: insumo.nombre,
+    stock: insumo.stock,
+    stock_minimo: insumo.stock_minimo,
+    fecha_vencimiento: insumo.fecha_vencimiento ?? '',
+  }
   errorFormulario.value = ''
   mostrarModal.value = true
 }
@@ -206,8 +222,17 @@ const guardarInsumo = async () => {
   errorFormulario.value = ''
 
   try {
-    const creado = await insumoApi.create(nuevoInsumo.value)
-    insumos.value.push(creado)
+    if (insumoEditandoId.value) {
+      const actualizado = await insumoApi.update(insumoEditandoId.value, nuevoInsumo.value)
+      const index = insumos.value.findIndex(insumo => insumo.insumo_id === insumoEditandoId.value)
+      if (index !== -1) {
+        insumos.value[index] = actualizado
+      }
+    } else {
+      const creado = await insumoApi.create(nuevoInsumo.value)
+      insumos.value.push(creado)
+    }
+
     mostrarModal.value = false
   } catch (e) {
     errorFormulario.value = 'No se pudo guardar el insumo.'
@@ -391,6 +416,12 @@ const eliminarInsumo = async (id: string) => {
 
 .btn-eliminar:hover {
   background: #f8d7d5;
+}
+
+.btn-accion {
+  margin-right: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
 }
 .modal-overlay {
   position: fixed;
