@@ -43,6 +43,7 @@
               <th>Stock mínimo</th>
               <th>Estado</th>
               <th>Vencimiento</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -63,6 +64,12 @@
                 </span>
               </td>
               <td>{{ insumo.fecha_vencimiento ?? '—' }}</td>
+              <td>
+            </button>
+              <button class="btn-eliminar" @click="eliminarInsumo(insumo.insumo_id)">
+               Eliminar
+             </button>
+            </td>
             </tr>
           </tbody>
         </table>
@@ -206,6 +213,20 @@ const guardarInsumo = async () => {
     errorFormulario.value = 'No se pudo guardar el insumo.'
   } finally {
     guardando.value = false
+  }
+}
+const eliminarInsumo = async (id: string) => {
+  const confirmar = confirm('¿Seguro que quieres eliminar este insumo?')
+
+  if (!confirmar) {
+    return
+  }
+
+  try {
+    await insumoApi.delete(id)
+    insumos.value = insumos.value.filter(insumo => insumo.insumo_id !== id)
+  } catch (e) {
+    alert('No se pudo eliminar el insumo.')
   }
 }
 </script>
@@ -357,6 +378,20 @@ const guardarInsumo = async () => {
   background: #dfe4e6;
 }
 
+.btn-eliminar {
+  background: #fdecea;
+  color: #e74c3c;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-eliminar:hover {
+  background: #f8d7d5;
+}
 .modal-overlay {
   position: fixed;
   inset: 0;
