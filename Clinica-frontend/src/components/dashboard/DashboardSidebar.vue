@@ -11,8 +11,8 @@
       </router-link>
 
       <router-link to="/usuarios" class="nav-item" active-class="active">
-        <span class="nav-icon">👥</span>
-        <span class="nav-text">Usuarios y Personal</span>
+        <span class="nav-icon">🧑‍⚕️</span>
+        <span class="nav-text">Pacientes</span>
       </router-link>
 
       <router-link to="/agenda" class="nav-item" active-class="active">
