@@ -1,0 +1,10 @@
+{
+  "name": "herramientas-desarrollo-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix Clinica-frontend run dev",
+    "build": "npm --prefix Clinica-frontend run build",
+    "type-check": "npm --prefix Clinica-frontend run type-check"
+  }
+}

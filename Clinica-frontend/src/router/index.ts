@@ -7,6 +7,9 @@ import DashboardView from '@/views/DashboardView.vue'
 import InventarioView from '@/views/InventarioView.vue'
 import AgendaView from '@/views/intranet/AgendaView.vue'
 import PacientesView from '@/views/intranet/PacientesView.vue'
+import TratamientosView from '@/views/intranet/TratamientosView.vue'
+import PagosView from '@/views/intranet/PagosView.vue'
+import ConfiguracionView from '@/views/intranet/ConfiguracionView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -30,6 +33,7 @@ const router = createRouter({
       path: '/test-citas',
       name: 'test-citas',
       component: () => import('../views/intranet/CitasView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/login',
@@ -40,25 +44,43 @@ const router = createRouter({
       path: '/dashboard',
       name: 'dashboard',
       component: DashboardView,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
       path: '/inventario',
       name: 'inventario',
       component: InventarioView,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
       path: '/agenda',
       name: 'agenda',
       component: AgendaView,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
     },
     {
       path: '/usuarios',
       name: 'usuarios',
       component: PacientesView,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/tratamientos',
+      name: 'tratamientos',
+      component: TratamientosView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/pagos',
+      name: 'pagos',
+      component: PagosView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/configuracion',
+      name: 'configuracion',
+      component: ConfiguracionView,
+      meta: { requiresAuth: true },
     },
   ],
   scrollBehavior(to, from, savedPosition) {
