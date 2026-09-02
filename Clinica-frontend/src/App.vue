@@ -15,8 +15,10 @@ import NavbarHeader from '@/components/NavbarHeader.vue'
 
 const route = useRoute()
 
+const rutasInternas = ['/dashboard', '/inventario', '/usuarios', '/agenda', '/tratamientos', '/pagos', '/configuracion']
+
 const isDashboardRoute = computed(() => {
-  return route.path.startsWith('/dashboard')
+return rutasInternas.some(ruta => route.path.startsWith(ruta))
 })
 
 const isLoginRoute = computed(() => {
