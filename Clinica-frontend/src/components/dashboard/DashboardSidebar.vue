@@ -2,7 +2,7 @@
   <aside class="sidebar">
     <div class="sidebar-brand">
       <span class="brand-icon">☰</span>
-      <span class="brand-text">SoitDent</span>
+      <span class="brand-text">SoliDent</span>
     </div>
 
     <nav class="sidebar-nav">
@@ -42,7 +42,7 @@
     </nav>
 
     <div class="sidebar-footer">
-      <p class="sidebar-copy">© 2026 SoitDent</p>
+      <p class="sidebar-copy">© 2026 SoliDent</p>
     </div>
   </aside>
 </template>
