@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth.store'
 import HomeView from '../views/HomeView.vue'
 import ReservarCitasView from '../views/ReservarCitasView.vue'
 import LoginView from '../views/LoginView.vue'
@@ -37,11 +38,13 @@ const router = createRouter({
       path: '/dashboard',
       name: 'dashboard',
       component: DashboardView,
+      meta: { requiresAuth: true }
     },
     {
       path: '/inventario',
       name: 'inventario',
       component: InventarioView,
+      meta: { requiresAuth: true }
     },
   ],
   scrollBehavior(to, from, savedPosition) {
@@ -56,6 +59,19 @@ const router = createRouter({
     }
     return { top: 0 }
   },
+})
+
+// revisa auth antes de cada navegación
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore()
+
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    next({ name: 'login' })     // sin sesión → al login
+  } else if (to.name === 'login' && authStore.isAuthenticated) {
+    next({ name: 'dashboard' }) // ya logueado → al dashboard
+  } else {
+    next()
+  }
 })
 
 export default router
