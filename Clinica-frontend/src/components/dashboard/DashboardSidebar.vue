@@ -6,37 +6,36 @@
     </div>
 
     <nav class="sidebar-nav">
-      <router-link to="/dashboard" class="nav-item active">
-        <span class="nav-icon">📊</span>
+<router-link to="/dashboard" class="nav-item" active-class="active">        <span class="nav-icon">📊</span>
         <span class="nav-text">Dashboard</span>
       </router-link>
 
-      <router-link to="/usuarios" class="nav-item">
+      <router-link to="/usuarios" class="nav-item" active-class="active">
         <span class="nav-icon">👥</span>
         <span class="nav-text">Usuarios y Personal</span>
       </router-link>
 
-      <router-link to="/agenda" class="nav-item">
+      <router-link to="/agenda" class="nav-item" active-class="active">
         <span class="nav-icon">📅</span>
         <span class="nav-text">Agenda y Citas</span>
       </router-link>
 
-      <router-link to="/tratamientos" class="nav-item">
+      <router-link to="/tratamientos" class="nav-item" active-class="active">
         <span class="nav-icon">💊</span>
         <span class="nav-text">Tratamientos</span>
       </router-link>
 
-      <router-link to="/pagos" class="nav-item">
+      <router-link to="/pagos" class="nav-item" active-class="active">
         <span class="nav-icon">💰</span>
         <span class="nav-text">Pagos</span>
       </router-link>
 
-      <router-link to="/inventario" class="nav-item">
+      <router-link to="/inventario" class="nav-item" active-class="active">
         <span class="nav-icon">📦</span>
         <span class="nav-text">Inventario y Proveedores</span>
       </router-link>
 
-      <router-link to="/configuracion" class="nav-item">
+      <router-link to="/configuracion" class="nav-item" active-class="active">
         <span class="nav-icon">⚙️</span>
         <span class="nav-text">Configuración</span>
       </router-link>
