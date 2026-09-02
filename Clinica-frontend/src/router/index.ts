@@ -5,6 +5,8 @@ import ReservarCitasView from '../views/ReservarCitasView.vue'
 import LoginView from '../views/LoginView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import InventarioView from '@/views/InventarioView.vue'
+import AgendaView from '@/views/intranet/AgendaView.vue'
+import PacientesView from '@/views/intranet/PacientesView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -44,6 +46,18 @@ const router = createRouter({
       path: '/inventario',
       name: 'inventario',
       component: InventarioView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/agenda',
+      name: 'agenda',
+      component: AgendaView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/usuarios',
+      name: 'usuarios',
+      component: PacientesView,
       meta: { requiresAuth: true }
     },
   ],
