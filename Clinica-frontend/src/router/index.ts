@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import ReservarCitasView from '../views/ReservarCitasView.vue'
 import LoginView from '../views/LoginView.vue'
 import DashboardView from '@/views/DashboardView.vue'
+import InventarioView from '@/views/InventarioView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -32,6 +33,11 @@ const router = createRouter({
       name: 'dashboard',
       component: DashboardView
     },
+    { path: '/inventario',
+       name: 'inventario',
+       component: InventarioView 
+      },
+
   ],
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
