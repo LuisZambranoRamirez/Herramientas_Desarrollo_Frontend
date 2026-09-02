@@ -1,15 +1,12 @@
 <template>
   <DashboardLayout>
-    <!-- Bienvenida -->
     <div class="welcome-section">
       <h2>Bienvenido, Dr. Fabrizio</h2>
       <p class="date">Hoy es {{ today }}, tienes <strong>12 citas</strong> agendadas para hoy.</p>
     </div>
 
-    <!-- Stats -->
     <DashboardStats :stats="statsData" />
 
-    <!-- Grid: Citas + Actividad -->
     <div class="dashboard-grid">
       <DashboardAppointments :citas="citasData" />
       <DashboardActivity :actividades="actividadData" />
@@ -57,7 +54,7 @@ interface InsumoStock {
   porcentaje: number
 }
 
-// Fecha actual
+
 const today = computed(() => {
   const date = new Date()
   const options: Intl.DateTimeFormatOptions = { 
@@ -69,7 +66,7 @@ const today = computed(() => {
   return date.toLocaleDateString('es-ES', options)
 })
 
-// ✅ DATOS CON TIPOS EXPLÍCITOS
+
 const statsData = ref<StatItem[]>([
   { label: 'Citas Hoy', value: 12, icon: '📅', color: '#3498db' },
   { label: 'Pacientes Activos', value: 348, icon: '👤', color: '#2ecc71' },
