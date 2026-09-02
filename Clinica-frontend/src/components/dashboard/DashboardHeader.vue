@@ -4,18 +4,20 @@
       <h1>{{ titulo }}</h1>
     </div>
     <div class="header-right">
-      <span class="header-user">👨‍⚕️ Dr. Fabrizio</span>
+      <span class="header-user">👤 {{ usuarioNombre }}</span>
       <button @click="cerrarSesion" class="logout-btn">Cerrar Sesión</button>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth.store'
 
 const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
 
 const titulosPorRuta: Record<string, string> = {
   '/dashboard': 'Dashboard',
@@ -27,16 +29,16 @@ const titulosPorRuta: Record<string, string> = {
   '/configuracion': 'Configuración',
 }
 
-const titulo = computed(() => {
-  return titulosPorRuta[route.path] ?? 'Dashboard'
-})
-import { useRouter } from 'vue-router'
+const titulo = computed(() => titulosPorRuta[route.path] ?? 'Dashboard')
 
-const router = useRouter()
+// Muestra el username del store, sin texto hardcodeado
+const usuarioNombre = computed(() => {
+  const username = authStore.currentUser?.username ?? 'Usuario'
+  return username.split('@')[0]
+})
 
 const cerrarSesion = () => {
-  // Aquí puedes agregar lógica de logout (limpiar tokens, etc.)
-  // Por ahora solo redirige al login
+  authStore.logout()
   router.push('/login')
 }
 </script>
