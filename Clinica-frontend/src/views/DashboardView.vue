@@ -1,7 +1,7 @@
 <template>
   <DashboardLayout>
     <div class="welcome-section">
-      <h2>Bienvenido, Dr. Fabrizio</h2>
+      <h2>Bienvenido, {{ usuarioNombre }}</h2>
       <p class="date">Hoy es {{ today }}, tienes <strong>12 citas</strong> agendadas para hoy.</p>
     </div>
 
@@ -19,6 +19,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useAuthStore } from '@/stores/auth.store'
 import DashboardLayout from '@/components/dashboard/DashboardLayout.vue'
 import DashboardStats from '@/components/dashboard/DashboardStats.vue'
 import DashboardAppointments from '@/components/dashboard/DashboardAppointments.vue'
@@ -55,13 +56,19 @@ interface InsumoStock {
 }
 
 
+const authStore = useAuthStore()
+const usuarioNombre = computed(() => {
+  const username = authStore.currentUser?.username ?? 'Usuario'
+  return username.split('@')[0]
+})
+
 const today = computed(() => {
   const date = new Date()
-  const options: Intl.DateTimeFormatOptions = { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   }
   return date.toLocaleDateString('es-ES', options)
 })
