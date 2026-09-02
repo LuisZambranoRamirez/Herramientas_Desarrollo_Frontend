@@ -31,6 +31,117 @@
   --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 6px 16px -2px rgba(15, 23, 42, 0.03);
 }
 
+/* ================= MODO OSCURO (DARK THEME) ================= */
+html.dark {
+  --bg-page: #0b0f19;
+  --bg-card: #131b2e;
+  --bg-input: #1e293b;
+  --bg-disabled: #1e293b;
+
+  --border-light: #1e293b;
+  --border-focus: #818cf8;
+  --border-active: #818cf8;
+
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-light: #64748b;
+  --text-disabled: #475569;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+/* Soporte de Modo Oscuro en Intranet y Dashboards */
+html.dark .dashboard-layout {
+  background-color: #0b0f19 !important;
+}
+
+html.dark .dashboard-header {
+  background-color: #111827 !important;
+  border-bottom-color: #1f2937 !important;
+}
+
+html.dark .dashboard-header .header-title,
+html.dark .dashboard-header .user-name {
+  color: #f8fafc !important;
+}
+
+html.dark .dashboard-header .theme-toggle-btn {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+html.dark .stat-card,
+html.dark .appointments-card,
+html.dark .activity-card,
+html.dark .low-stock-card,
+html.dark .table-card,
+html.dark .config-card,
+html.dark .stat-mini-card {
+  background-color: #111827 !important;
+  border-color: #1f2937 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
+}
+
+html.dark .stat-content h3,
+html.dark .appointments-card h2,
+html.dark .activity-card h2,
+html.dark .low-stock-card h2,
+html.dark .view-title,
+html.dark .card-title,
+html.dark .stat-val,
+html.dark .welcome-section h2 {
+  color: #f8fafc !important;
+}
+
+html.dark .welcome-section .date strong {
+  color: #e2e8f0 !important;
+}
+
+html.dark .welcome-section .date,
+html.dark .view-desc,
+html.dark .toggle-desc {
+  color: #94a3b8 !important;
+}
+
+html.dark .data-table th {
+  background-color: #0f172a !important;
+  color: #94a3b8 !important;
+  border-bottom-color: #1f2937 !important;
+}
+
+html.dark .data-table td {
+  border-bottom-color: #1f2937 !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark .data-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+html.dark .filter-bar {
+  border-bottom-color: #1f2937 !important;
+}
+
+html.dark .search-input,
+html.dark .form-input {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #f8fafc !important;
+}
+
+html.dark .search-input:focus,
+html.dark .form-input:focus {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
+}
+
+html.dark .toggle-title {
+  color: #f8fafc !important;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -44,6 +155,7 @@ body {
   font-family: 'Plus Jakarta Sans', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 #app {
