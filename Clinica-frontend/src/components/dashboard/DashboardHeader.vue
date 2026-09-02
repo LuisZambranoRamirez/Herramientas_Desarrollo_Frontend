@@ -1,7 +1,7 @@
 <template>
   <header class="dashboard-header">
     <div class="header-left">
-      <h1>Dashboard</h1>
+      <h1>{{ titulo }}</h1>
     </div>
     <div class="header-right">
       <span class="header-user">👨‍⚕️ Dr. Fabrizio</span>
@@ -11,6 +11,25 @@
 </template>
 
 <script setup lang="ts">
+
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+
+const titulosPorRuta: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/usuarios': 'Usuarios y Personal',
+  '/agenda': 'Agenda y Citas',
+  '/tratamientos': 'Tratamientos',
+  '/pagos': 'Pagos',
+  '/inventario': 'Inventario y Proveedores',
+  '/configuracion': 'Configuración',
+}
+
+const titulo = computed(() => {
+  return titulosPorRuta[route.path] ?? 'Dashboard'
+})
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
