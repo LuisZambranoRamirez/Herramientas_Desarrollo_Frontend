@@ -21,7 +21,7 @@ const authStore = useAuthStore()
 
 const titulosPorRuta: Record<string, string> = {
   '/dashboard': 'Dashboard',
-  '/usuarios': 'Usuarios y Personal',
+  '/usuarios': 'Pacientes',
   '/agenda': 'Agenda y Citas',
   '/tratamientos': 'Tratamientos',
   '/pagos': 'Pagos',
