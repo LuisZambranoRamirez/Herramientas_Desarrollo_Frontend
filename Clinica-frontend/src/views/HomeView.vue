@@ -9,22 +9,11 @@ import FooterSection from '../components/FooterSection.vue'
 
 <template>
   <main class="home-page">
-    <!-- 1. Hero Section -->
     <HeroSection />
-
-    <!-- 2. Sobre Nosotros -->
-    <AboutSection />
-
-    <!-- 3. Servicios Especializados -->
-    <ServicesSection />
-
-    <!-- 4. Nuestros Especialistas -->
-    <SpecialistsSection />
-
-    <!-- 5. Formulario de Reserva Rápida -->
+    <section id="nosotros"><AboutSection /></section>
+    <section id="servicios"><ServicesSection /></section>
+    <section id="especialistas"><SpecialistsSection /></section>
     <QuickBookingSection />
-
-    <!-- 6. Footer Corporativo -->
     <FooterSection />
   </main>
 </template>
