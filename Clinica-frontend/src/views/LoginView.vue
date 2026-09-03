@@ -9,10 +9,13 @@ const authStore = useAuthStore()
 const email = ref('')
 const password = ref('')
 const mostrarPassword = ref(false)
+const mensajeError = ref('')
 
 async function iniciarSesion() {
+    mensajeError.value = ''
+
   if (!email.value || !password.value) {
-    alert('Completa todos los campos')
+    mensajeError.value = 'Completa todos los campos'
     return
   }
 
@@ -26,7 +29,7 @@ async function iniciarSesion() {
   if (exito) {
     router.push('/dashboard')
   } else {
-    alert('Credenciales incorrectas (simuladas)')
+    mensajeError.value = 'Credenciales incorrectas. Verifica tu correo y contraseña.'
   }
 }
 </script>
@@ -52,6 +55,10 @@ async function iniciarSesion() {
 
         <h2>Iniciar Sesión</h2>
         <p>Ingresa tus credenciales para acceder a la plataforma.</p>
+
+        <div v-if="mensajeError" class="error-message">
+        ⚠️  {{ mensajeError }}
+        </div> 
 
         <form @submit.prevent="iniciarSesion">
 
@@ -282,6 +289,16 @@ async function iniciarSesion() {
   color: #4f46e5 !important;
   transform: translateY(-50%) !important;
   box-shadow: none !important;
+}
+.error-message {
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  color: #b91c1c;
+  background-color: #fef2f2;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 @media (max-width: 768px) {
   .login-page {
