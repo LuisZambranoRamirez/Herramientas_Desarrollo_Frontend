@@ -16,8 +16,10 @@ async function iniciarSesion() {
     return
   }
 
+  const emailNormalizado = email.value.trim().toLowerCase()
+
   const exito = await authStore.login({
-    username: email.value,
+    username: emailNormalizado,
     password: password.value
   })
 
