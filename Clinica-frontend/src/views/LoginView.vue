@@ -10,12 +10,24 @@ const email = ref('')
 const password = ref('')
 const mostrarPassword = ref(false)
 const mensajeError = ref('')
+const errorEmail = ref('')
+const errorPassword = ref('')
 
 async function iniciarSesion() {
     mensajeError.value = ''
+    errorEmail.value = ''
+    errorPassword.value = ''
 
-  if (!email.value || !password.value) {
-    mensajeError.value = 'Completa todos los campos'
+  if (!email.value.trim()) {
+    errorEmail.value = 'El correo es obligatorio.'
+  }
+
+  if (!password.value) {
+    errorPassword.value = 'La contraseña es obligatoria.'
+  }
+
+  if (errorEmail.value || errorPassword.value) {
+    mensajeError.value = 'Completa los campos obligatorios.'
     return
   }
 
@@ -70,7 +82,11 @@ async function iniciarSesion() {
               v-model="email"
               type="email"
               placeholder="admin@solident.com"
+              :class="{ 'input-error': errorEmail }"
             />
+            <span v-if="errorEmail" class="field-error">
+            ⚠ {{ errorEmail }}
+            </span>
           </div>
 
           <div class="form-group">
@@ -82,6 +98,7 @@ async function iniciarSesion() {
                 v-model="password"
                 :type="mostrarPassword ? 'text' : 'password'"
                 placeholder="••••••••"
+                :class="{ 'input-error': errorPassword }"
               />
 
               <button
@@ -93,6 +110,9 @@ async function iniciarSesion() {
                 {{ mostrarPassword ? '👁' : '👁' }}
               </button>
             </div>
+                <span v-if="errorPassword" class="field-error">
+                 ⚠ {{ errorPassword }}
+                </span>
           </div>
 
           <button type="submit">
@@ -298,6 +318,16 @@ async function iniciarSesion() {
   color: #b91c1c;
   background-color: #fef2f2;
   font-size: 0.9rem;
+  font-weight: 600;
+}
+.input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.field-error {
+  color: #dc2626;
+  font-size: 0.8rem;
   font-weight: 600;
 }
 @media (max-width: 768px) {
