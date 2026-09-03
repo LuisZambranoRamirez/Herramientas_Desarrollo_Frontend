@@ -18,8 +18,12 @@ async function iniciarSesion() {
     errorEmail.value = ''
     errorPassword.value = ''
 
+    const emailNormalizado = email.value.trim().toLowerCase()
+
   if (!email.value.trim()) {
     errorEmail.value = 'El correo es obligatorio.'
+    } else if (!emailNormalizado.includes('@')) {
+    errorEmail.value = 'Ingresa un correo electrónico válido.'
   }
 
   if (!password.value) {
@@ -27,11 +31,9 @@ async function iniciarSesion() {
   }
 
   if (errorEmail.value || errorPassword.value) {
-    mensajeError.value = 'Completa los campos obligatorios.'
+    mensajeError.value = 'Revisa los datos ingresados.'
     return
   }
-
-  const emailNormalizado = email.value.trim().toLowerCase()
 
   const exito = await authStore.login({
     username: emailNormalizado,
@@ -89,7 +91,7 @@ async function iniciarSesion() {
         ⚠️ {{ mensajeError }}
       </div>
 
-      <form @submit.prevent="iniciarSesion">
+      <form @submit.prevent="iniciarSesion" novalidate>
 
         <div class="form-group">
           <label for="email">Correo electrónico</label>
@@ -97,13 +99,17 @@ async function iniciarSesion() {
           <div class="input-wrapper">
             <span class="input-icon">✉</span>
 
-            <input
-              id="email"
-              v-model="email"
-              type="email"
-              placeholder="admin@solident.com"
-              :class="{ 'input-error': errorEmail }"
-            />
+          
+              <input
+                id="email"
+                v-model="email"
+                @input="errorEmail = ''"
+                type="text"
+                inputmode="email"
+                autocomplete="username"
+                placeholder="admin@solident.com"
+                :class="{ 'input-error': errorEmail }"
+              />
           </div>
 
           <span v-if="errorEmail" class="field-error">
@@ -121,6 +127,7 @@ async function iniciarSesion() {
             <input
               id="password"
               v-model="password"
+              @input="errorPassword = ''"
               :type="mostrarPassword ? 'text' : 'password'"
               placeholder="••••••••"
               :class="{ 'input-error': errorPassword }"
