@@ -8,6 +8,7 @@ const authStore = useAuthStore()
 
 const email = ref('')
 const password = ref('')
+const mostrarPassword = ref(false)
 
 async function iniciarSesion() {
   if (!email.value || !password.value) {
@@ -51,6 +52,7 @@ async function iniciarSesion() {
         <p>Ingresa tus credenciales para acceder a la plataforma.</p>
 
         <form @submit.prevent="iniciarSesion">
+
           <div class="form-group">
             <label for="email">Correo electrónico</label>
 
@@ -65,17 +67,29 @@ async function iniciarSesion() {
           <div class="form-group">
             <label for="password">Contraseña</label>
 
-            <input
-              id="password"
-              v-model="password"
-              type="password"
-              placeholder="••••••••"
-            />
+            <div class="password-container">
+              <input
+                id="password"
+                v-model="password"
+                :type="mostrarPassword ? 'text' : 'password'"
+                placeholder="••••••••"
+              />
+
+              <button
+                type="button"
+                class="toggle-password"
+                @click="mostrarPassword = !mostrarPassword"
+                :aria-label="mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              >
+                {{ mostrarPassword ? '👁' : '👁' }}
+              </button>
+            </div>
           </div>
 
           <button type="submit">
             Iniciar Sesión
           </button>
+
         </form>
 
       </div>
@@ -219,7 +233,7 @@ async function iniciarSesion() {
   color: #94a3b8;
 }
 
-.login-form button {
+.login-form > form > button {
   width: 100%;
   margin-top: 0.5rem;
   padding: 0.95rem 1.5rem;
@@ -237,7 +251,36 @@ async function iniciarSesion() {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(6, 182, 212, 0.25);
 }
+.password-container {
+  position: relative;
+  width: 100%;
+}
 
+.password-container input {
+  padding-right: 3rem;
+}
+
+.toggle-password {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0.25rem !important;
+  border: none !important;
+  color: #64748b !important;
+  background: transparent !important;
+  font-size: 1.1rem !important;
+  cursor: pointer;
+  transform: translateY(-50%);
+  box-shadow: none !important;
+}
+
+.toggle-password:hover {
+  color: #4f46e5 !important;
+  transform: translateY(-50%) !important;
+  box-shadow: none !important;
+}
 @media (max-width: 768px) {
   .login-page {
     padding: 2rem 1rem;
