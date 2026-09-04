@@ -1,51 +1,83 @@
-// src/services/odontologos.service.ts
-
-import { api } from './api/client'
-
 import type {
-  Odontologo,
-  HorarioPersonal,
-  Especialidad,
-  DiaSemana,
+Odontologo,
+HorarioPersonal,
+Especialidad,
+DiaSemana,
 } from '@/types'
 
+// ============================================================
+// MOCKS
+// ============================================================
+
+import {
+odontologoApi,
+horarioApi,
+} from '@/services/mock-api'
+
+// ============================================================
+// SERVICIO DE ODONTÓLOGOS
+// ============================================================
+
 export const odontologosService = {
-  getAll(): Promise<Odontologo[]> {
-    return api.get<Odontologo[]>(
-      '/odontologos',
-    )
-  },
+getAll(): Promise<Odontologo[]> {
+// Backend:
+// return api.get<Odontologo[]>(
+// '/odontologos',
+// )
 
-  getByDni(
+    return odontologoApi.getAll()
+},
+
+getByDni(
     dni: string,
-  ): Promise<Odontologo> {
-    return api.get<Odontologo>(
-      `/odontologos/${dni}`,
-    )
-  },
+): Promise<Odontologo | undefined> {
+    // Backend:
+    // return api.get<Odontologo>(
+    //     `/odontologos/${dni}`,
+    // )
 
-  getByEspecialidad(
+    return odontologoApi.getByDni(dni)
+},
+
+getByEspecialidad(
     especialidad: Especialidad,
-  ): Promise<Odontologo[]> {
-    return api.get<Odontologo[]>(
-      `/odontologos/especialidad/${especialidad}`,
-    )
-  },
+): Promise<Odontologo[]> {
+    // Backend:
+    // return api.get<Odontologo[]>(
+    //     `/odontologos/especialidad/${especialidad}`,
+    // )
 
-  getHorarios(
+    return odontologoApi.getByEspecialidad(especialidad)
+},
+
+getHorarios(
     dni: string,
-  ): Promise<HorarioPersonal[]> {
-    return api.get<HorarioPersonal[]>(
-      `/odontologos/${dni}/horarios`,
-    )
-  },
+): Promise<HorarioPersonal[]> {
+    // Backend:
+    // return api.get<HorarioPersonal[]>(
+    //     `/odontologos/${dni}/horarios`,
+    // )
 
-  getHorariosByDia(
+    return horarioApi.getByOdontologo(dni)
+},
+
+getHorariosByDia(
     dni: string,
     dia: DiaSemana,
-  ): Promise<HorarioPersonal[]> {
-    return api.get<HorarioPersonal[]>(
-      `/odontologos/${dni}/horarios/${dia}`,
+): Promise<HorarioPersonal[]> {
+    // Backend:
+    // return api.get<HorarioPersonal[]>(
+    //     `/odontologos/${dni}/horarios/${dia}`,
+    // )
+
+    return horarioApi.getByOdontologo(dni).then(
+        horarios =>
+            horarios.filter(
+                horario =>
+                    horario.dia_semana === dia,
+            ),
     )
-  },
+},
+
+
 }
