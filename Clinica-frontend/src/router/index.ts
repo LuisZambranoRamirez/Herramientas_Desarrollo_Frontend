@@ -25,11 +25,6 @@ const router = createRouter({
       component: ReservarCitasView,
     },
     {
-      path: '/about',
-      name: 'about',
-      component: () => import('../views/AboutView.vue'),
-    },
-    {
       path: '/test-citas',
       name: 'test-citas',
       component: () => import('../views/intranet/CitasView.vue'),
