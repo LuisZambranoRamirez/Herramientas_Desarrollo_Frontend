@@ -1,41 +1,70 @@
-// src/services/pagos.service.ts
-
-import { api } from './api/client'
-
 import type {
-  Pago,
-  CrearPagoDto,
+Pago,
+CrearPagoDto,
 } from '@/types'
 
+// ============================================================
+// MOCKS
+// ============================================================
+
+import { pagoApi } from '@/services/mock-api'
+
+// ============================================================
+// SERVICIO DE PAGOS
+// ============================================================
+
 export const pagosService = {
-  getAll(): Promise<Pago[]> {
-    return api.get<Pago[]>(
-      '/pagos',
-    )
-  },
+getAll(): Promise<Pago[]> {
+// Backend:
+// return api.get<Pago[]>(
+// '/pagos',
+// )
 
-  getById(
+    return pagoApi.getAll()
+},
+
+getById(
     id: string,
-  ): Promise<Pago> {
-    return api.get<Pago>(
-      `/pagos/${id}`,
-    )
-  },
+): Promise<Pago | undefined> {
+    // Backend:
+    // return api.get<Pago>(
+    //     `/pagos/${id}`,
+    // )
 
-  getByTratamiento(
+    const pagos = pagoApi.getAll()
+
+    return pagos.then(
+        pagos =>
+            pagos.find(
+                pago => pago.pago_id === id,
+            ),
+    )
+},
+
+getByTratamiento(
     tratamientoId: string,
-  ): Promise<Pago[]> {
-    return api.get<Pago[]>(
-      `/pagos/tratamiento/${tratamientoId}`,
-    )
-  },
+): Promise<Pago[]> {
+    // Backend:
+    // return api.get<Pago[]>(
+    //     `/pagos/tratamiento/${tratamientoId}`,
+    // )
 
-  create(
-    data: CrearPagoDto,
-  ): Promise<Pago> {
-    return api.post<Pago>(
-      '/pagos',
-      data,
+    return pagoApi.getByTratamiento(
+        tratamientoId,
     )
-  },
+},
+
+create(
+    data: CrearPagoDto,
+): Promise<Pago> {
+    // Backend:
+    // return api.post<Pago>(
+    //     '/pagos',
+    //     data,
+    // )
+
+    return pagoApi.create(data)
+},
+
+
 }
