@@ -102,9 +102,9 @@ router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next({ name: 'login' })     // sin sesión → al login
+    next({ name: 'login' })
   } else if (to.name === 'login' && authStore.isAuthenticated) {
-    next({ name: 'dashboard' }) // ya logueado → al dashboard
+    next({ name: 'dashboard' })
   } else {
     next()
   }
