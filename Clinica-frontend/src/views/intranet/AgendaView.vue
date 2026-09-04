@@ -1,33 +1,76 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
-import { useCitasStore } from '@/stores/citas.store'
 import DashboardLayout from '@/components/dashboard/DashboardLayout.vue'
-import type { EstadoCita } from '@/types'
+import { citasService } from '@/services/citas.service'
 
-const citasStore = useCitasStore()
+import type {
+  Cita,
+  EstadoCita,
+} from '@/types'
+
+const citas = ref<Cita[]>([])
+const isLoading = ref(false)
+const error = ref<string | null>(null)
 
 const filtroEstado = ref<EstadoCita | 'TODOS'>('TODOS')
 
 const citasFiltradas = computed(() => {
-  if (filtroEstado.value === 'TODOS') return citasStore.citas
-  return citasStore.citas.filter(c => c.estado === filtroEstado.value)
+  if (filtroEstado.value === 'TODOS') {
+    return citas.value
+  }
+
+  return citas.value.filter(
+    c => c.estado === filtroEstado.value,
+  )
 })
 
 const totalPorEstado = computed(() => ({
-  PROGRAMADA: citasStore.citas.filter(c => c.estado === 'PROGRAMADA').length,
-  CONFIRMADA: citasStore.citas.filter(c => c.estado === 'CONFIRMADA').length,
-  ATENDIDA:   citasStore.citas.filter(c => c.estado === 'ATENDIDA').length,
-  CANCELADA:  citasStore.citas.filter(c => c.estado === 'CANCELADA').length,
+  PROGRAMADA: citas.value.filter(
+    c => c.estado === 'PROGRAMADA',
+  ).length,
+  CONFIRMADA: citas.value.filter(
+    c => c.estado === 'CONFIRMADA',
+  ).length,
+  ATENDIDA: citas.value.filter(
+    c => c.estado === 'ATENDIDA',
+  ).length,
+  CANCELADA: citas.value.filter(
+    c => c.estado === 'CANCELADA',
+  ).length,
 }))
 
-const estadoConfig: Record<string, { label: string; clase: string }> = {
-  PROGRAMADA:  { label: 'Programada',  clase: 'estado-programada' },
-  CONFIRMADA:  { label: 'Confirmada',  clase: 'estado-confirmada' },
-  ATENDIDA:    { label: 'Atendida',    clase: 'estado-atendida'   },
-  CANCELADA:   { label: 'Cancelada',   clase: 'estado-cancelada'  },
-  NO_ASISTIO:  { label: 'No asistió',  clase: 'estado-no-asistio' },
-  REPROGRAMADA:{ label: 'Reprogramada',clase: 'estado-reprogramada'},
-  EN_PROCESO:  { label: 'En proceso',  clase: 'estado-en-proceso' },
+const estadoConfig: Record<
+  string,
+  { label: string; clase: string }
+> = {
+  PROGRAMADA: {
+    label: 'Programada',
+    clase: 'estado-programada',
+  },
+  CONFIRMADA: {
+    label: 'Confirmada',
+    clase: 'estado-confirmada',
+  },
+  ATENDIDA: {
+    label: 'Atendida',
+    clase: 'estado-atendida',
+  },
+  CANCELADA: {
+    label: 'Cancelada',
+    clase: 'estado-cancelada',
+  },
+  NO_ASISTIO: {
+    label: 'No asistió',
+    clase: 'estado-no-asistio',
+  },
+  REPROGRAMADA: {
+    label: 'Reprogramada',
+    clase: 'estado-reprogramada',
+  },
+  EN_PROCESO: {
+    label: 'En proceso',
+    clase: 'estado-en-proceso',
+  },
 }
 
 const formatFecha = (fecha: string) => {
@@ -35,9 +78,57 @@ const formatFecha = (fecha: string) => {
   return `${d}/${m}/${y}`
 }
 
-const formatHora = (hora: string) => hora.slice(0, 5)
+const formatHora = (hora: string) => {
+  return hora.slice(0, 5)
+}
 
-onMounted(() => citasStore.fetchCitas())
+const fetchCitas = async () => {
+  isLoading.value = true
+  error.value = null
+
+  try {
+    citas.value = await citasService.getAll()
+  } catch (err) {
+    error.value =
+      err instanceof Error
+        ? err.message
+        : 'Error al cargar las citas'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const updateEstadoCita = async (
+  citaId: string,
+  estado: EstadoCita,
+) => {
+  isLoading.value = true
+  error.value = null
+
+  try {
+    const cita = await citasService.update(
+      citaId,
+      { estado },
+    )
+
+    const index = citas.value.findIndex(
+      c => c.cita_id === citaId,
+    )
+
+    if (index !== -1) {
+      citas.value[index] = cita
+    }
+  } catch (err) {
+    error.value =
+      err instanceof Error
+        ? err.message
+        : 'Error al actualizar el estado de la cita'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(fetchCitas)
 </script>
 
 <template>
@@ -84,14 +175,14 @@ onMounted(() => citasStore.fetchCitas())
     </div>
 
     <!-- Cargando -->
-    <div v-if="citasStore.isLoading" class="estado-carga">
+    <div v-if="isLoading" class="estado-carga">
       <div class="spinner"></div>
       <p>Cargando citas...</p>
     </div>
 
     <!-- Error -->
-    <div v-else-if="citasStore.error" class="estado-error">
-      ⚠️ {{ citasStore.error }}
+    <div v-else-if="error" class="estado-error">
+      ⚠️ {{ error }}
     </div>
 
     <!-- Tabla -->
@@ -124,21 +215,21 @@ onMounted(() => citasStore.fetchCitas())
               <button
                 v-if="cita.estado === 'PROGRAMADA'"
                 class="btn-accion btn-confirmar"
-                @click="citasStore.updateEstadoCita(cita.cita_id, 'CONFIRMADA')"
+                @click="updateEstadoCita(cita.cita_id, 'CONFIRMADA')"
               >
                 ✓ Confirmar
               </button>
               <button
                 v-if="cita.estado === 'CONFIRMADA'"
                 class="btn-accion btn-atender"
-                @click="citasStore.updateEstadoCita(cita.cita_id, 'ATENDIDA')"
+                @click="updateEstadoCita(cita.cita_id, 'ATENDIDA')"
               >
                 🏁 Atendida
               </button>
               <button
                 v-if="cita.estado === 'PROGRAMADA' || cita.estado === 'CONFIRMADA'"
                 class="btn-accion btn-cancelar"
-                @click="citasStore.updateEstadoCita(cita.cita_id, 'CANCELADA')"
+                @click="updateEstadoCita(cita.cita_id, 'CANCELADA')"
               >
                 ✕ Cancelar
               </button>
