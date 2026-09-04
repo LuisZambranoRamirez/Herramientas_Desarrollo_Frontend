@@ -1,92 +1,136 @@
-// src/services/insumos.service.ts
-
-import { api } from './api/client'
-
 import type {
-  Insumo,
-  CrearInsumoDto,
-  ActualizarInsumoDto,
-  InsumoComprado,
-  CrearInsumoCompradoDto,
-  ConsumoInsumo,
-  CrearConsumoInsumoDto,
+Insumo,
+CrearInsumoDto,
+ActualizarInsumoDto,
+InsumoComprado,
+CrearInsumoCompradoDto,
+ConsumoInsumo,
+CrearConsumoInsumoDto,
 } from '@/types'
 
+// ============================================================
+// MOCKS
+// ============================================================
+
+import {
+insumoApi,
+insumoCompradoApi,
+consumoInsumoApi,
+} from '@/services/mock-api'
+
+// ============================================================
+// SERVICIO DE INSUMOS
+// ============================================================
+
 export const insumosService = {
-  getAll(): Promise<Insumo[]> {
-    return api.get<Insumo[]>(
-      '/insumos',
-    )
-  },
+getAll(): Promise<Insumo[]> {
+// Backend:
+// return api.get<Insumo[]>(
+// '/insumos',
+// )
 
-  getById(
+    return insumoApi.getAll()
+},
+
+getById(
     id: string,
-  ): Promise<Insumo> {
-    return api.get<Insumo>(
-      `/insumos/${id}`,
-    )
-  },
+): Promise<Insumo | undefined> {
+    // Backend:
+    // return api.get<Insumo>(
+    //     `/insumos/${id}`,
+    // )
 
-  getStockBajo(): Promise<Insumo[]> {
-    return api.get<Insumo[]>(
-      '/insumos/stock-bajo',
-    )
-  },
+    return insumoApi.getById(id)
+},
 
-  create(
+getStockBajo(): Promise<Insumo[]> {
+    // Backend:
+    // return api.get<Insumo[]>(
+    //     '/insumos/stock-bajo',
+    // )
+
+    return insumoApi.getStockBajo()
+},
+
+create(
     data: CrearInsumoDto,
-  ): Promise<Insumo> {
-    return api.post<Insumo>(
-      '/insumos',
-      data,
-    )
-  },
+): Promise<Insumo> {
+    // Backend:
+    // return api.post<Insumo>(
+    //     '/insumos',
+    //     data,
+    // )
 
-  update(
+    return insumoApi.create(data)
+},
+
+update(
     id: string,
     data: ActualizarInsumoDto,
-  ): Promise<Insumo> {
-    return api.patch<Insumo>(
-      `/insumos/${id}`,
-      data,
-    )
-  },
+): Promise<Insumo> {
+    // Backend:
+    // return api.patch<Insumo>(
+    //     `/insumos/${id}`,
+    //     data,
+    // )
 
-  delete(id: string): Promise<void> {
-    return api.delete<void>(
-      `/insumos/${id}`,
-    )
-  },
+    return insumoApi.update(id, data)
+},
 
-  getCompras(
+delete(
     id: string,
-  ): Promise<InsumoComprado[]> {
-    return api.get<InsumoComprado[]>(
-      `/insumos/${id}/compras`,
-    )
-  },
+): Promise<void> {
+    // Backend:
+    // return api.delete<void>(
+    //     `/insumos/${id}`,
+    // )
 
-  createCompra(
+    return insumoApi.delete(id)
+},
+
+getCompras(
+    id: string,
+): Promise<InsumoComprado[]> {
+    // Backend:
+    // return api.get<InsumoComprado[]>(
+    //     `/insumos/${id}/compras`,
+    // )
+
+    return insumoCompradoApi.getByInsumo(id)
+},
+
+createCompra(
     data: CrearInsumoCompradoDto,
-  ): Promise<InsumoComprado> {
-    return api.post<InsumoComprado>(
-      '/insumos/compras',
-      data,
-    )
-  },
+): Promise<InsumoComprado> {
+    // Backend:
+    // return api.post<InsumoComprado>(
+    //     '/insumos/compras',
+    //     data,
+    // )
 
-  getConsumos(): Promise<ConsumoInsumo[]> {
-    return api.get<ConsumoInsumo[]>(
-      '/insumos/consumos',
-    )
-  },
+    return insumoCompradoApi.create(data)
+},
 
-  createConsumo(
+getConsumos(): Promise<ConsumoInsumo[]> {
+    // Backend:
+    // return api.get<ConsumoInsumo[]>(
+    //     '/insumos/consumos',
+    // )
+
+    return consumoInsumoApi.getAll()
+},
+
+createConsumo(
     data: CrearConsumoInsumoDto,
-  ): Promise<ConsumoInsumo> {
-    return api.post<ConsumoInsumo>(
-      '/insumos/consumos',
-      data,
-    )
-  },
+): Promise<ConsumoInsumo> {
+    // Backend:
+    // return api.post<ConsumoInsumo>(
+    //     '/insumos/consumos',
+    //     data,
+    // )
+
+    return consumoInsumoApi.create(data)
+},
+
+
 }
