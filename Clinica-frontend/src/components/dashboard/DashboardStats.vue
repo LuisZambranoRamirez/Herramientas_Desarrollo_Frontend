@@ -2,7 +2,7 @@
   <div class="stats-grid">
     <div v-for="stat in stats" :key="stat.label" class="stat-card">
       <div class="stat-icon" :style="{ background: stat.color }">
-        <i :class="stat.icon"></i>
+        <span>{{ stat.icon }}</span>
       </div>
       <div class="stat-content">
         <h3>{{ stat.label }}</h3>
@@ -30,18 +30,19 @@ defineProps<{
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 20px;
-  margin-bottom: 40px;
+  margin-bottom: 30px;
 }
 
 .stat-card {
-  background: white;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
   display: flex;
   align-items: center;
-  gap: 15px;
-  transition: transform 0.2s;
+  gap: 16px;
+  transition: transform 0.2s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .stat-card:hover {
@@ -51,24 +52,28 @@ defineProps<{
 .stat-icon {
   width: 50px;
   height: 50px;
-  border-radius: 12px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-size: 22px;
+  flex-shrink: 0;
 }
 
 .stat-content h3 {
-  color: #7f8c8d;
-  font-size: 14px;
-  margin: 0 0 5px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  margin: 0 0 4px 0;
+  transition: color 0.3s ease;
 }
 
 .stat-number {
-  font-size: 28px;
-  font-weight: bold;
-  color: #2c3e50;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-main);
   margin: 0;
+  transition: color 0.3s ease;
 }
 </style>

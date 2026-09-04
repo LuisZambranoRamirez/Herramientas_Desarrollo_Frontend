@@ -75,20 +75,26 @@ html.dark .dashboard-header .theme-toggle-btn {
 
 html.dark .stat-card,
 html.dark .appointments-card,
+html.dark .appointments-container,
 html.dark .activity-card,
+html.dark .activity-container,
 html.dark .low-stock-card,
+html.dark .stock-container,
 html.dark .table-card,
 html.dark .config-card,
 html.dark .stat-mini-card {
-  background-color: #111827 !important;
-  border-color: #1f2937 !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-light) !important;
+  box-shadow: var(--shadow-card) !important;
 }
 
 html.dark .stat-content h3,
 html.dark .appointments-card h2,
+html.dark .appointments-container h2,
 html.dark .activity-card h2,
+html.dark .activity-container h2,
 html.dark .low-stock-card h2,
+html.dark .stock-container h2,
 html.dark .view-title,
 html.dark .card-title,
 html.dark .stat-val,
