@@ -1,43 +1,76 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import DashboardLayout from '@/components/dashboard/DashboardLayout.vue'
-import { usePacientesStore } from '@/stores/pacientes.store'
-import type { CrearPacienteDto, ActualizarPacienteDto } from '@/types'
+import { pacientesService } from '@/services/pacientes.service'
 
-const store = usePacientesStore()
+import type {
+  Paciente,
+  CrearPacienteDto,
+  ActualizarPacienteDto,
+} from '@/types'
+
+// Estado
+const pacientes = ref<Paciente[]>([])
+const isLoading = ref(false)
+const error = ref<string | null>(null)
 
 // Búsqueda
 const busqueda = ref('')
+
 const pacientesFiltrados = computed(() => {
   const q = busqueda.value.toLowerCase()
-  if (!q) return store.pacientes
-  return store.pacientes.filter((p: typeof store.pacientes[0]) =>
-    p.nombres.toLowerCase().includes(q) ||
-    p.apellidos.toLowerCase().includes(q) ||
-    p.dni.includes(q) ||
-    (p.correo ?? '').toLowerCase().includes(q)
+
+  if (!q) {
+    return pacientes.value
+  }
+
+  return pacientes.value.filter(
+    (p: Paciente) =>
+      p.nombres.toLowerCase().includes(q) ||
+      p.apellidos.toLowerCase().includes(q) ||
+      p.dni.includes(q) ||
+      (p.correo ?? '').toLowerCase().includes(q),
   )
 })
 
 // Modal
 type ModoModal = 'crear' | 'editar' | 'ver' | null
+
 const modoModal = ref<ModoModal>(null)
 const dniSeleccionado = ref<string | null>(null)
 
 const pacienteSeleccionado = computed(() =>
-  store.pacientes.find((p: typeof store.pacientes[0]) => p.dni === dniSeleccionado.value) ?? null
+  pacientes.value.find(
+    (p: Paciente) =>
+      p.dni === dniSeleccionado.value,
+  ) ?? null,
 )
 
 // Formulario
 const form = ref<CrearPacienteDto>({
-  dni: '', username: '', nombres: '', apellidos: '',
-  direccion: '', telefono: '', correo: '',
-  observaciones: '', fecha_nacimiento: ''
+  dni: '',
+  username: '',
+  nombres: '',
+  apellidos: '',
+  direccion: '',
+  telefono: '',
+  correo: '',
+  observaciones: '',
+  fecha_nacimiento: '',
 })
 
 const resetForm = () => {
-  form.value = { dni: '', username: '', nombres: '', apellidos: '',
-    direccion: '', telefono: '', correo: '', observaciones: '', fecha_nacimiento: '' }
+  form.value = {
+    dni: '',
+    username: '',
+    nombres: '',
+    apellidos: '',
+    direccion: '',
+    telefono: '',
+    correo: '',
+    observaciones: '',
+    fecha_nacimiento: '',
+  }
 }
 
 const abrirCrear = () => {
@@ -46,16 +79,29 @@ const abrirCrear = () => {
 }
 
 const abrirEditar = (dni: string) => {
-  const p = store.pacientes.find(x => x.dni === dni)
-  if (!p) return
-  dniSeleccionado.value = dni
-  form.value = {
-    dni: p.dni, username: p.username,
-    nombres: p.nombres, apellidos: p.apellidos,
-    direccion: p.direccion ?? '', telefono: p.telefono ?? '',
-    correo: p.correo ?? '', observaciones: p.observaciones,
-    fecha_nacimiento: p.fecha_nacimiento
+  const paciente = pacientes.value.find(
+    x => x.dni === dni,
+  )
+
+  if (!paciente) {
+    return
   }
+
+  dniSeleccionado.value = dni
+
+  form.value = {
+    dni: paciente.dni,
+    username: paciente.username,
+    nombres: paciente.nombres,
+    apellidos: paciente.apellidos,
+    direccion: paciente.direccion ?? '',
+    telefono: paciente.telefono ?? '',
+    correo: paciente.correo ?? '',
+    observaciones: paciente.observaciones,
+    fecha_nacimiento:
+      paciente.fecha_nacimiento,
+  }
+
   modoModal.value = 'editar'
 }
 
@@ -70,34 +116,121 @@ const cerrarModal = () => {
   resetForm()
 }
 
-const guardar = async () => {
+const fetchPacientes = async () => {
+  isLoading.value = true
+  error.value = null
+
   try {
-    if (modoModal.value === 'crear') {
-      await store.crearPaciente(form.value)
-    } else if (modoModal.value === 'editar' && dniSeleccionado.value) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { dni: _dni, username: _username, ...resto } = form.value
-      const dto: ActualizarPacienteDto = resto
-      await store.actualizarPaciente(dniSeleccionado.value, dto)
-    }
-    cerrarModal()
-  } catch {
-    // El error queda en store.error
+    pacientes.value =
+      await pacientesService.getAll()
+  } catch (err) {
+    error.value =
+      err instanceof Error
+        ? err.message
+        : 'Error al cargar pacientes'
+  } finally {
+    isLoading.value = false
   }
 }
 
-const confirmarEliminar = async (dni: string) => {
-  if (!confirm(`¿Eliminar paciente con DNI ${dni}? Esta acción no se puede deshacer.`)) return
-  await store.eliminarPaciente(dni)
+const guardar = async () => {
+  isLoading.value = true
+  error.value = null
+
+  try {
+    if (modoModal.value === 'crear') {
+      const paciente =
+        await pacientesService.create(
+          form.value,
+        )
+
+      pacientes.value.push(paciente)
+    } else if (
+      modoModal.value === 'editar' &&
+      dniSeleccionado.value
+    ) {
+      const dto: ActualizarPacienteDto = {
+				nombres: form.value.nombres,
+				apellidos: form.value.apellidos,
+				direccion: form.value.direccion,
+				telefono: form.value.telefono,
+				correo: form.value.correo,
+				observaciones: form.value.observaciones,
+				fecha_nacimiento: form.value.fecha_nacimiento,
+			}
+
+
+      const paciente =
+        await pacientesService.update(
+          dniSeleccionado.value,
+          dto,
+        )
+
+      const index =
+        pacientes.value.findIndex(
+          p =>
+            p.dni ===
+            dniSeleccionado.value,
+        )
+
+      if (index !== -1) {
+        pacientes.value[index] = paciente
+      }
+    }
+
+    cerrarModal()
+  } catch (err) {
+    error.value =
+      err instanceof Error
+        ? err.message
+        : 'Error al guardar paciente'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const confirmarEliminar = async (
+  dni: string,
+) => {
+  if (
+    !confirm(
+      `¿Eliminar paciente con DNI ${dni}? Esta acción no se puede deshacer.`,
+    )
+  ) {
+    return
+  }
+
+  isLoading.value = true
+  error.value = null
+
+  try {
+    await pacientesService.delete(dni)
+
+    pacientes.value =
+      pacientes.value.filter(
+        paciente => paciente.dni !== dni,
+      )
+  } catch (err) {
+    error.value =
+      err instanceof Error
+        ? err.message
+        : 'Error al eliminar paciente'
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const formatFecha = (f: string) => {
-  if (!f) return '—'
+  if (!f) {
+    return '—'
+  }
+
   const [y, m, d] = f.split('-')
+
   return `${d}/${m}/${y}`
 }
 
-onMounted(() => store.fetchPacientes())
+onMounted(fetchPacientes)
 </script>
 
 <template>
@@ -121,10 +254,10 @@ onMounted(() => store.fetchPacientes())
     </div>
 
     <!-- Error -->
-    <div v-if="store.error" class="estado-error">⚠️ {{ store.error }}</div>
+    <div v-if="error" class="estado-error">⚠️ {{ error }}</div>
 
     <!-- Loading -->
-    <div v-if="store.isLoading && !store.pacientes.length" class="estado-carga">
+    <div v-if="isLoading && !pacientes.length" class="estado-carga">
       <div class="spinner"></div> <p>Cargando pacientes...</p>
     </div>
 
@@ -234,8 +367,8 @@ onMounted(() => store.fetchPacientes())
             </div>
             <div class="modal-footer form-full">
               <button type="button" class="btn-secundario" @click="cerrarModal">Cancelar</button>
-              <button type="submit" class="btn-primario" :disabled="store.isLoading">
-                {{ store.isLoading ? 'Guardando...' : 'Guardar' }}
+              <button type="submit" class="btn-primario" :disabled="isLoading">
+                {{ isLoading ? 'Guardando...' : 'Guardar' }}
               </button>
             </div>
           </form>

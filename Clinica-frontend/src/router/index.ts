@@ -25,11 +25,6 @@ const router = createRouter({
       component: ReservarCitasView,
     },
     {
-      path: '/about',
-      name: 'about',
-      component: () => import('../views/AboutView.vue'),
-    },
-    {
       path: '/test-citas',
       name: 'test-citas',
       component: () => import('../views/intranet/CitasView.vue'),
@@ -97,17 +92,18 @@ const router = createRouter({
   },
 })
 
-// revisa auth antes de cada navegación
-router.beforeEach((to, from, next) => {
+// Revisa auth antes de cada navegación
+router.beforeEach((to) => {
   const authStore = useAuthStore()
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next({ name: 'login' })
-  } else if (to.name === 'login' && authStore.isAuthenticated) {
-    next({ name: 'dashboard' })
-  } else {
-    next()
+    return { name: 'login' }
   }
+  if (to.name === 'login' && authStore.isAuthenticated) {
+    return { name: 'dashboard' }
+  }
+
+  return true
 })
 
 export default router

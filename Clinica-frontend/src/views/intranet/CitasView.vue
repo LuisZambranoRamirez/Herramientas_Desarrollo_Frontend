@@ -1,37 +1,99 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
-import { useCitasStore } from '@/stores/citas.store'
-import type { EstadoCita } from '@/types'
+import { citasService } from '@/services/citas.service'
 
-const citasStore = useCitasStore()
+import type {
+  Cita,
+  EstadoCita,
+} from '@/types'
 
-// Estado local para filtros
+// Estado
+const citas = ref<Cita[]>([])
+const isLoading = ref(false)
+const error = ref<string | null>(null)
+
+// Filtros
 const filtroEstado = ref<EstadoCita | 'TODOS'>('TODOS')
 
 // Computed para filtrar las citas localmente
 const citasFiltradas = computed(() => {
   if (filtroEstado.value === 'TODOS') {
-    return citasStore.citas
+    return citas.value
   }
-  return citasStore.citas.filter(cita => cita.estado === filtroEstado.value)
+
+  return citas.value.filter(
+    cita => cita.estado === filtroEstado.value,
+  )
 })
 
-// Función para cambiar el estado visualmente (con colores)
+// Obtener clase según estado
 const getEstadoClass = (estado: string) => {
   switch (estado) {
-    case 'PROGRAMADA': return 'bg-blue-100 text-blue-800'
-    case 'CONFIRMADA': return 'bg-green-100 text-green-800'
-    case 'ATENDIDA': return 'bg-gray-100 text-gray-800'
-    case 'CANCELADA': return 'bg-red-100 text-red-800'
-    default: return 'bg-gray-100 text-gray-800'
+    case 'PROGRAMADA':
+      return 'bg-blue-100 text-blue-800'
+    case 'CONFIRMADA':
+      return 'bg-green-100 text-green-800'
+    case 'ATENDIDA':
+      return 'bg-gray-100 text-gray-800'
+    case 'CANCELADA':
+      return 'bg-red-100 text-red-800'
+    default:
+      return 'bg-gray-100 text-gray-800'
+  }
+}
+
+// Cargar citas
+const fetchCitas = async () => {
+  isLoading.value = true
+  error.value = null
+
+  try {
+    citas.value = await citasService.getAll()
+  } catch (err) {
+    error.value =
+      err instanceof Error
+        ? err.message
+        : 'Error al cargar las citas'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Actualizar estado de una cita
+const updateEstadoCita = async (
+  citaId: string,
+  estado: EstadoCita,
+) => {
+  isLoading.value = true
+  error.value = null
+
+  try {
+    const cita = await citasService.update(
+      citaId,
+      { estado },
+    )
+
+    const index = citas.value.findIndex(
+      c => c.cita_id === citaId,
+    )
+
+    if (index !== -1) {
+      citas.value[index] = cita
+    }
+  } catch (err) {
+    error.value =
+      err instanceof Error
+        ? err.message
+        : 'Error al actualizar el estado de la cita'
+  } finally {
+    isLoading.value = false
   }
 }
 
 // Cargar datos al montar el componente
-onMounted(() => {
-  citasStore.fetchCitas()
-})
+onMounted(fetchCitas)
 </script>
+
 
 <template>
   <div class="citas-container">
@@ -53,7 +115,7 @@ onMounted(() => {
     </div>
 
     <!-- Estado de Carga -->
-    <div v-if="citasStore.isLoading" class="loading">
+    <div v-if="isLoading" class="loading">
       Cargando citas...
     </div>
 
@@ -87,14 +149,18 @@ onMounted(() => {
               <!-- Acciones de ejemplo, llamando a updateEstadoCita del store -->
               <button
                 v-if="cita.estado === 'PROGRAMADA'"
-                @click="citasStore.updateEstadoCita(cita.cita_id, 'CONFIRMADA')"
+                @click="updateEstadoCita(cita.cita_id, 'CONFIRMADA')"
                 class="btn btn-sm btn-success"
               >
                 Confirmar
               </button>
+
               <button
-                v-if="cita.estado === 'PROGRAMADA' || cita.estado === 'CONFIRMADA'"
-                @click="citasStore.updateEstadoCita(cita.cita_id, 'CANCELADA')"
+                v-if="
+                  cita.estado === 'PROGRAMADA' ||
+                  cita.estado === 'CONFIRMADA'
+                "
+                @click="updateEstadoCita(cita.cita_id, 'CANCELADA')"
                 class="btn btn-sm btn-danger"
               >
                 Cancelar
