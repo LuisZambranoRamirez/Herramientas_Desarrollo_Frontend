@@ -5,7 +5,7 @@
       <div v-for="(actividad, index) in actividades" :key="index" class="activity-item">
         <div class="activity-dot" :style="{ background: actividad.color }"></div>
         <div class="activity-content">
-          <p class="activity-text">{{ actividad.texto }}</p>
+          <p class="activity-text" v-html="actividad.texto"></p>
           <span class="activity-time">{{ actividad.tiempo }}</span>
         </div>
       </div>
@@ -27,16 +27,21 @@ defineProps<{
 
 <style scoped>
 .activity-container {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
   height: fit-content;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .activity-container h2 {
-  color: #2c3e50;
+  color: var(--text-main);
+  font-size: 1.15rem;
+  font-weight: 700;
   margin: 0 0 20px 0;
+  transition: color 0.3s ease;
 }
 
 .activity-list {
@@ -65,16 +70,22 @@ defineProps<{
 
 .activity-text {
   margin: 0;
-  color: #2c3e50;
+  color: var(--text-main);
   font-size: 14px;
+  line-height: 1.45;
+  transition: color 0.3s ease;
 }
 
-.activity-text strong {
-  color: #1a2b3c;
+.activity-text :deep(strong) {
+  color: var(--text-main);
+  font-weight: 600;
 }
 
 .activity-time {
   font-size: 12px;
-  color: #95a5a6;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 2px;
+  transition: color 0.3s ease;
 }
 </style>

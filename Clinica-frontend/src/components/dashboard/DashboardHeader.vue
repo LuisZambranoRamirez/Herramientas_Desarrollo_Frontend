@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { useTheme } from '@/composables/useTheme'
 
 const emit = defineEmits<{
   (e: 'toggleMobile'): void
@@ -10,6 +11,7 @@ const emit = defineEmits<{
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const { isDark, toggleTheme } = useTheme()
 
 const titulosPorRuta: Record<string, string> = {
   '/dashboard': 'Dashboard Principal',
@@ -53,6 +55,17 @@ const cerrarSesion = () => {
     </div>
 
     <div class="header-right">
+      <!-- Botón de Modo Oscuro / Claro -->
+      <button
+        type="button"
+        class="theme-toggle-btn"
+        :title="isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+        @click="toggleTheme"
+      >
+        <span v-if="isDark" class="theme-icon" aria-label="Modo claro">☀️</span>
+        <span v-else class="theme-icon" aria-label="Modo oscuro">🌙</span>
+      </button>
+
       <div class="user-badge">
         <div class="user-avatar">
           <span>{{ inicial }}</span>
@@ -85,6 +98,7 @@ const cerrarSesion = () => {
   position: sticky;
   top: 0;
   z-index: 40;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .header-left {
@@ -114,12 +128,33 @@ const cerrarSesion = () => {
   color: #1e293b;
   margin: 0;
   font-family: 'Plus Jakarta Sans', Inter, sans-serif;
+  transition: color 0.3s ease;
 }
 
 .header-right {
   display: flex;
   align-items: center;
   gap: 1.25rem;
+}
+
+/* Botón Modo Oscuro */
+.theme-toggle-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.15rem;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle-btn:hover {
+  background: #e2e8f0;
+  transform: scale(1.05);
 }
 
 .user-badge {
@@ -151,6 +186,7 @@ const cerrarSesion = () => {
   font-weight: 700;
   color: #1e293b;
   line-height: 1.2;
+  transition: color 0.3s ease;
 }
 
 .user-role {

@@ -110,18 +110,21 @@ const stockData = ref<InsumoStock[]>([
 
 .welcome-section h2 {
   font-size: 24px;
-  color: #1a2b3c;
+  font-weight: 700;
+  color: var(--text-main);
   margin: 0 0 6px 0;
+  transition: color 0.3s ease;
 }
 
 .welcome-section .date {
-  color: #7f8c8d;
+  color: var(--text-muted);
   margin: 0;
   font-size: 15px;
+  transition: color 0.3s ease;
 }
 
 .welcome-section .date strong {
-  color: #2c3e50;
+  color: var(--text-main);
 }
 
 .dashboard-grid {

@@ -1,80 +1,119 @@
-// src/services/tratamientos.service.ts
-
-import { api } from './api/client'
-
 import type {
-  TratamientoPaciente,
-  CrearTratamientoPacienteDto,
-  ActualizarTratamientoPacienteDto,
-  AgendaTratamiento,
-  CrearAgendaTratamientoDto,
-  EstadoTratamiento,
+TratamientoPaciente,
+CrearTratamientoPacienteDto,
+ActualizarTratamientoPacienteDto,
+AgendaTratamiento,
+CrearAgendaTratamientoDto,
+EstadoTratamiento,
 } from '@/types'
 
+// ============================================================
+// MOCKS
+// ============================================================
+
+import {
+tratamientoApi,
+agendaTratamientoApi,
+} from '@/services/mock-api'
+
+// ============================================================
+// SERVICIO DE TRATAMIENTOS
+// ============================================================
+
 export const tratamientosService = {
-  getAll(): Promise<TratamientoPaciente[]> {
-    return api.get<TratamientoPaciente[]>(
-      '/tratamientos',
-    )
-  },
+getAll(): Promise<TratamientoPaciente[]> {
+// Backend:
+// return api.get<TratamientoPaciente[]>(
+// '/tratamientos',
+// )
 
-  getById(
+    return tratamientoApi.getAll()
+},
+
+getById(
     id: string,
-  ): Promise<TratamientoPaciente> {
-    return api.get<TratamientoPaciente>(
-      `/tratamientos/${id}`,
-    )
-  },
+): Promise<TratamientoPaciente | undefined> {
+    // Backend:
+    // return api.get<TratamientoPaciente>(
+    //     `/tratamientos/${id}`,
+    // )
 
-  getByPaciente(
+    return tratamientoApi.getById(id)
+},
+
+getByPaciente(
     dni: string,
-  ): Promise<TratamientoPaciente[]> {
-    return api.get<TratamientoPaciente[]>(
-      `/tratamientos/paciente/${dni}`,
-    )
-  },
+): Promise<TratamientoPaciente[]> {
+    // Backend:
+    // return api.get<TratamientoPaciente[]>(
+    //     `/tratamientos/paciente/${dni}`,
+    // )
 
-  getByEstado(
+    return tratamientoApi.getByPaciente(dni)
+},
+
+getByEstado(
     estado: EstadoTratamiento,
-  ): Promise<TratamientoPaciente[]> {
-    return api.get<TratamientoPaciente[]>(
-      `/tratamientos/estado/${estado}`,
-    )
-  },
+): Promise<TratamientoPaciente[]> {
+    // Backend:
+    // return api.get<TratamientoPaciente[]>(
+    //     `/tratamientos/estado/${estado}`,
+    // )
 
-  create(
+    return tratamientoApi.getByEstado(estado)
+},
+
+create(
     data: CrearTratamientoPacienteDto,
-  ): Promise<TratamientoPaciente> {
-    return api.post<TratamientoPaciente>(
-      '/tratamientos',
-      data,
-    )
-  },
+): Promise<TratamientoPaciente> {
+    // Backend:
+    // return api.post<TratamientoPaciente>(
+    //     '/tratamientos',
+    //     data,
+    // )
 
-  update(
+    return tratamientoApi.create(data)
+},
+
+update(
     id: string,
     data: ActualizarTratamientoPacienteDto,
-  ): Promise<TratamientoPaciente> {
-    return api.patch<TratamientoPaciente>(
-      `/tratamientos/${id}`,
-      data,
-    )
-  },
+): Promise<TratamientoPaciente> {
+    // Backend:
+    // return api.patch<TratamientoPaciente>(
+    //     `/tratamientos/${id}`,
+    //     data,
+    // )
 
-  getAgenda(
+    return tratamientoApi.update(id, data)
+},
+
+getAgenda(
     tratamientoId: string,
-  ): Promise<AgendaTratamiento[]> {
-    return api.get<AgendaTratamiento[]>(
-      `/tratamientos/${tratamientoId}/agenda`,
-    )
-  },
+): Promise<AgendaTratamiento[]> {
+    // Backend:
+    // return api.get<AgendaTratamiento[]>(
+    //     `/tratamientos/${tratamientoId}/agenda`,
+    // )
 
-  createAgenda(
-    data: CrearAgendaTratamientoDto,
-  ): Promise<AgendaTratamiento> {
-    return api.post<AgendaTratamiento>(
-      '/tratamientos/agenda',
-      data,
+    return agendaTratamientoApi.getByTratamiento(
+        tratamientoId,
     )
-  },
+},
+
+createAgenda(
+    data: CrearAgendaTratamientoDto,
+): Promise<AgendaTratamiento> {
+    // Backend:
+    // return api.post<AgendaTratamiento>(
+    //     '/tratamientos/agenda',
+    //     data,
+    // )
+
+    throw new Error(
+        'createAgenda aún no está implementado en el mock API',
+    )
+},
+
+
 }

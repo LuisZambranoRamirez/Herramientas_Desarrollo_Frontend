@@ -1,50 +1,75 @@
-// src/services/pacientes.service.ts
-
-import { api } from './api/client'
-
 import type {
-  Paciente,
-  CrearPacienteDto,
-  ActualizarPacienteDto,
+Paciente,
+CrearPacienteDto,
+ActualizarPacienteDto,
 } from '@/types'
 
+// ============================================================
+// MOCKS
+// ============================================================
+
+import { pacienteApi } from '@/services/mock-api'
+
+// ============================================================
+// SERVICIO DE PACIENTES
+// ============================================================
+
 export const pacientesService = {
-  getAll(): Promise<Paciente[]> {
-    return api.get<Paciente[]>(
-      '/pacientes',
-    )
-  },
+getAll(): Promise<Paciente[]> {
+// Backend:
+// return api.get<Paciente[]>(
+// '/pacientes',
+// )
 
-  getByDni(
+    return pacienteApi.getAll()
+},
+
+getByDni(
     dni: string,
-  ): Promise<Paciente> {
-    return api.get<Paciente>(
-      `/pacientes/${dni}`,
-    )
-  },
+): Promise<Paciente | undefined> {
+    // Backend:
+    // return api.get<Paciente>(
+    //     `/pacientes/${dni}`,
+    // )
 
-  create(
+    return pacienteApi.getByDni(dni)
+},
+
+create(
     data: CrearPacienteDto,
-  ): Promise<Paciente> {
-    return api.post<Paciente>(
-      '/pacientes',
-      data,
-    )
-  },
+): Promise<Paciente> {
+    // Backend:
+    // return api.post<Paciente>(
+    //     '/pacientes',
+    //     data,
+    // )
 
-  update(
+    return pacienteApi.create(data)
+},
+
+update(
     dni: string,
     data: ActualizarPacienteDto,
-  ): Promise<Paciente> {
-    return api.patch<Paciente>(
-      `/pacientes/${dni}`,
-      data,
-    )
-  },
+): Promise<Paciente> {
+    // Backend:
+    // return api.patch<Paciente>(
+    //     `/pacientes/${dni}`,
+    //     data,
+    // )
 
-  delete(dni: string): Promise<void> {
-    return api.delete<void>(
-      `/pacientes/${dni}`,
-    )
-  },
+    return pacienteApi.update(dni, data)
+},
+
+delete(
+    dni: string,
+): Promise<void> {
+    // Backend:
+    // return api.delete<void>(
+    //     `/pacientes/${dni}`,
+    // )
+
+    return pacienteApi.delete(dni)
+},
+
+
 }

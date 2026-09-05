@@ -18,7 +18,7 @@
         <div class="stock-bar-container">
           <div 
             class="stock-bar" 
-            :style="{ width: insumo.porcentaje + '%', background: insumo.porcentaje < 20 ? '#e74c3c' : '#f39c12' }"
+            :style="{ width: insumo.porcentaje + '%', background: insumo.porcentaje < 20 ? '#ef4444' : '#f59e0b' }"
           ></div>
         </div>
         <p class="stock-min">Mínimo: {{ insumo.minimo }}</p>
@@ -43,11 +43,13 @@ defineProps<{
 
 <style scoped>
 .stock-container {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
   margin-top: 30px;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .stock-header {
@@ -58,23 +60,30 @@ defineProps<{
 }
 
 .stock-header h2 {
-  color: #2c3e50;
+  color: var(--text-main);
+  font-size: 1.15rem;
+  font-weight: 700;
   margin: 0;
+  transition: color 0.3s ease;
 }
 
 .stock-warning {
-  background: #fef9e7;
-  color: #f39c12;
+  background: rgba(245, 158, 11, 0.14);
+  color: #d97706;
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
 }
 
+html.dark .stock-warning {
+  color: #fbbf24;
+}
+
 .empty-state {
   text-align: center;
   padding: 20px;
-  color: #27ae60;
+  color: #10b981;
   font-weight: 500;
 }
 
@@ -88,8 +97,9 @@ defineProps<{
   display: flex;
   align-items: center;
   gap: 20px;
-  padding: 10px 0;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-light);
+  transition: border-color 0.3s ease;
 }
 
 .stock-item:last-child {
@@ -102,26 +112,30 @@ defineProps<{
 
 .stock-name {
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--text-main);
   margin: 0;
+  font-size: 14px;
+  transition: color 0.3s ease;
 }
 
 .stock-detail {
-  margin: 2px 0 0 0;
-  font-size: 14px;
-  color: #7f8c8d;
+  margin: 3px 0 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  transition: color 0.3s ease;
 }
 
 .stock-detail strong {
-  color: #2c3e50;
+  color: var(--text-main);
 }
 
 .stock-bar-container {
   flex: 2;
   height: 8px;
-  background: #ecf0f1;
+  background: var(--bg-disabled);
   border-radius: 4px;
   overflow: hidden;
+  transition: background-color 0.3s ease;
 }
 
 .stock-bar {
@@ -132,9 +146,10 @@ defineProps<{
 
 .stock-min {
   font-size: 12px;
-  color: #95a5a6;
+  color: var(--text-muted);
   margin: 0;
   min-width: 80px;
   text-align: right;
+  transition: color 0.3s ease;
 }
 </style>
