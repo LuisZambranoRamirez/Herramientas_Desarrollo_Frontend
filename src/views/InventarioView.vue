@@ -38,6 +38,7 @@
         <table class="tabla-generica">
           <thead>
             <tr>
+              <th>Código</th>
               <th>Nombre</th>
               <th>Stock</th>
               <th>Stock mínimo</th>
@@ -52,6 +53,7 @@
               :key="insumo.insumo_id"
               :class="{ 'fila-alerta': insumo.stock < insumo.stock_minimo }"
             >
+              <td>{{ insumo.codigo_unico }}</td>
               <td>{{ insumo.nombre }}</td>
               <td>{{ insumo.stock }}</td>
               <td>{{ insumo.stock_minimo }}</td>
@@ -112,6 +114,11 @@
       <h3>{{ insumoEditandoId ? 'Editar insumo' : 'Nuevo insumo' }}</h3>
 
         <form @submit.prevent="guardarInsumo">
+          <div class="campo">
+            <label>Código único</label>
+            <input v-model="nuevoInsumo.codigo_unico" type="text" required />
+          </div>
+
           <div class="campo">
             <label>Nombre</label>
             <input v-model="nuevoInsumo.nombre" type="text" required />
@@ -185,6 +192,7 @@ const guardando = ref(false)
 const errorFormulario = ref('')
 
 const insumoVacio = (): CrearInsumoDto => ({
+  codigo_unico: '',
   nombre: '',
   stock: 0,
   stock_minimo: 0,
@@ -204,6 +212,7 @@ const abrirModalCrear = () => {
 const abrirModalEditar = (insumo: Insumo) => {
   insumoEditandoId.value = insumo.insumo_id
   nuevoInsumo.value = {
+    codigo_unico: insumo.codigo_unico,
     nombre: insumo.nombre,
     stock: insumo.stock,
     stock_minimo: insumo.stock_minimo,

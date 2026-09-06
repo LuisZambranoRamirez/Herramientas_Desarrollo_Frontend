@@ -1,5 +1,6 @@
 export interface Insumo {
   insumo_id: string
+  codigo_unico: string
   nombre: string
   stock: number
   stock_minimo: number
@@ -8,6 +9,7 @@ export interface Insumo {
 }
 
 export interface CrearInsumoDto {
+  codigo_unico: string
   nombre: string
   stock: number
   stock_minimo: number
@@ -15,6 +17,9 @@ export interface CrearInsumoDto {
 }
 
 export interface ActualizarInsumoDto {
+  codigo_unico?: string
+  nombre?: string
+  stock?: number
   stock_minimo?: number
   fecha_vencimiento?: string | null
 }
