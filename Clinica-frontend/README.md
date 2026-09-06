@@ -1,48 +1,57 @@
-# Clinica-frontend
+# Clínica Frontend
 
-This template should help get you started developing with Vue 3 in Vite.
+Clínica Frontend es una aplicación web desarrollada con Vue.js que permite gestionar de forma ágil y moderna los procesos de una clínica, incluyendo la programación de citas, la administración de pacientes y el seguimiento de historiales médicos. 
 
-## Recommended IDE Setup
+Construida con un enfoque en la usabilidad y el rendimiento, la interfaz ofrece una experiencia intuitiva tanto para el personal administrativo como para los profesionales de la salud, facilitando la digitalización de los procesos clínicos y mejorando la atención al paciente.
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+---
 
-## Recommended Browser Setup
+## 🎨 Prototipo del Proyecto
+Puedes visualizar el diseño interactivo y los mockups del proyecto en el siguiente enlace:
+👉 **[Ver Mockup en Figma](https://www.figma.com/proto/TbSSIxh8cYjkqocEnFiXMa/PROTOTIPO?node-id=1-2&t=lNHukFY7YZi1TaSp-1)**
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+---
 
-## Type Support for `.vue` Imports in TS
+## 🛠️ Herramientas de Desarrollo Frontend
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+Este proyecto fue estructurado utilizando **Vue 3** y **Vite**.
 
-## Customize configuration
+### Configuración Recomendada del IDE
+* [VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) *(asegúrate de deshabilitar Vetur)*.
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+### Extensiones del Navegador Recomendadas
+* **Navegadores basados en Chromium (Chrome, Edge, Brave, etc.):**
+  * [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
+  * [Activar Custom Object Formatter en Chrome DevTools](http://bit.ly/object-formatters)
+* **Firefox:**
+  * [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
+  * [Activar Custom Object Formatter en Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
 
-## Project Setup
+---
 
+## 💻 Comandos del Proyecto
+
+### Instalación de dependencias
 ```sh
-pnpm install
+npm install
 ```
 
-### Compile and Hot-Reload for Development
-
+### Servidor de desarrollo (Localhhost)
 ```sh
-pnpm dev
+npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
-
+### Compilar y minificar para producción
 ```sh
-pnpm build
+npm run build
 ```
 
-### Lint with [ESLint](https://eslint.org/)
-
+### Ejecutar el Linter ([ESLint](https://eslint.org/))
 ```sh
-pnpm lint
+npm run lint
 ```
+
+---
+
+## 📘 Notas de TypeScript para `.vue`
+TypeScript no puede manejar la información de tipos para las importaciones `.vue` de forma predeterminada, por lo que reemplazamos el CLI `tsc` con `vue-tsc` para la verificación de tipos. En los editores, necesitamos [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) para que el servicio de lenguaje de TypeScript detecte los tipos dentro de los archivos `.vue`.
