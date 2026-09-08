@@ -131,7 +131,7 @@ function navigateToBooking() {
 .section-title {
   font-size: 2.25rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--text-main);
   letter-spacing: -0.03em;
   margin-bottom: 0.5rem;
   font-family: 'Plus Jakarta Sans', Inter, sans-serif;
@@ -139,7 +139,7 @@ function navigateToBooking() {
 
 .section-subtitle {
   font-size: 1.05rem;
-  color: #64748b;
+  color: var(--text-muted);
   font-weight: 500;
 }
 
@@ -150,14 +150,15 @@ function navigateToBooking() {
 }
 
 .doctor-profile-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 24px;
   padding: 2.25rem 2rem;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-card);
   display: flex;
   gap: 1.5rem;
   align-items: flex-start;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .doctor-photo-wrapper {
@@ -196,7 +197,7 @@ function navigateToBooking() {
 .doctor-profile-name {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-main);
   margin-bottom: 0.2rem;
 }
 
@@ -209,7 +210,7 @@ function navigateToBooking() {
 
 .doctor-profile-bio {
   font-size: 0.9rem;
-  color: #64748b;
+  color: var(--text-muted);
   line-height: 1.6;
   margin-bottom: 1.5rem;
 }
@@ -243,7 +244,7 @@ function navigateToBooking() {
   align-items: center;
   gap: 0.4rem;
   padding: 0.65rem 1.25rem;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid #2563eb;
   color: #2563eb;
   font-weight: 700;

@@ -122,12 +122,13 @@ function scrollToSection(sectionId: string) {
 <style scoped>
 .navbar {
   width: 100%;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border-light);
   padding: 1.1rem 2rem;
   position: sticky;
   top: 0;
   z-index: 50;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .navbar-container {
@@ -167,12 +168,13 @@ function scrollToSection(sectionId: string) {
 .brand-name {
   font-size: 1.35rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--text-main);
   letter-spacing: -0.02em;
+  transition: color 0.3s ease;
 }
 
 .brand-highlight {
-  color: #1e293b;
+  color: var(--text-main);
 }
 
 .nav-menu {
@@ -184,7 +186,7 @@ function scrollToSection(sectionId: string) {
 .nav-link {
   font-size: 0.95rem;
   font-weight: 500;
-  color: #475569;
+  color: var(--text-muted);
   text-decoration: none;
   transition: all 0.2s ease;
   position: relative;
@@ -192,7 +194,7 @@ function scrollToSection(sectionId: string) {
 }
 
 .nav-link:hover {
-  color: #1e293b;
+  color: var(--text-main);
   font-weight: 600;
 }
 
@@ -232,7 +234,7 @@ function scrollToSection(sectionId: string) {
   background: none;
   border: none;
   cursor: pointer;
-  color: #1e293b;
+  color: var(--text-main);
   padding: 0.25rem;
 }
 
@@ -248,7 +250,7 @@ function scrollToSection(sectionId: string) {
 .mobile-nav-link {
   font-size: 1rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-muted);
   text-decoration: none;
   padding: 0.5rem 0;
   cursor: pointer;
@@ -287,7 +289,7 @@ function scrollToSection(sectionId: string) {
     flex-direction: column;
     gap: 0.75rem;
     padding: 1rem 0 0.5rem;
-    border-top: 1px solid #f1f5f9;
+    border-top: 1px solid var(--border-light);
     margin-top: 0.75rem;
   }
 }

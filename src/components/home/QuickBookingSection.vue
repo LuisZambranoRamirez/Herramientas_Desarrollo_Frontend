@@ -451,7 +451,7 @@ function handleQuickBooking() {
 .section-title {
   font-size: 2.25rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--text-main);
   letter-spacing: -0.03em;
   margin-bottom: 0.5rem;
   font-family: 'Plus Jakarta Sans', Inter, sans-serif;
@@ -459,7 +459,7 @@ function handleQuickBooking() {
 
 .section-subtitle {
   font-size: 1.05rem;
-  color: #64748b;
+  color: var(--text-muted);
   font-weight: 500;
 }
 
@@ -514,23 +514,24 @@ function handleQuickBooking() {
 }
 
 .contact-form-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 24px;
   padding: 2.5rem;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-card);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .contact-form-title {
   font-size: 1.35rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--text-main);
   margin-bottom: 0.35rem;
 }
 
 .contact-form-desc {
   font-size: 0.92rem;
-  color: #64748b;
+  color: var(--text-muted);
   margin-bottom: 1.75rem;
 }
 
@@ -550,7 +551,7 @@ function handleQuickBooking() {
 .quick-label {
   font-size: 0.88rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-main);
   display: flex;
   align-items: center;
 }
@@ -566,9 +567,9 @@ function handleQuickBooking() {
   width: 100%;
   padding: 0.75rem 1rem;
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  background-color: #ffffff;
-  color: #1e293b;
+  border: 1px solid var(--border-light);
+  background-color: var(--bg-input);
+  color: var(--text-main);
   font-size: 0.92rem;
   font-family: inherit;
   outline: none;

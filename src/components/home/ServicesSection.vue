@@ -94,7 +94,7 @@ function navigateToBooking(serviceName: string) {
 .section-title {
   font-size: 2.25rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--text-main);
   letter-spacing: -0.03em;
   margin-bottom: 0.5rem;
   font-family: 'Plus Jakarta Sans', Inter, sans-serif;
@@ -102,7 +102,7 @@ function navigateToBooking(serviceName: string) {
 
 .section-subtitle {
   font-size: 1.05rem;
-  color: #64748b;
+  color: var(--text-muted);
   font-weight: 500;
 }
 
@@ -113,11 +113,11 @@ function navigateToBooking(serviceName: string) {
 }
 
 .service-preview-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 24px;
   padding: 2.25rem 2rem;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
   cursor: pointer;
@@ -161,13 +161,13 @@ function navigateToBooking(serviceName: string) {
 .service-preview-title {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-main);
   margin-bottom: 0.75rem;
 }
 
 .service-preview-desc {
   font-size: 0.92rem;
-  color: #64748b;
+  color: var(--text-muted);
   line-height: 1.6;
   margin-bottom: 1.75rem;
   flex-grow: 1;
