@@ -286,7 +286,6 @@ onMounted(fetchPacientes)
             <td class="td-acciones">
               <button class="btn-accion btn-ver" @click="abrirVer(p.dni)" title="Ver detalle">👁</button>
               <button class="btn-accion btn-editar" @click="abrirEditar(p.dni)" title="Editar">✏️</button>
-              <button class="btn-accion btn-eliminar" @click="confirmarEliminar(p.dni)" title="Eliminar">🗑</button>
             </td>
           </tr>
           <tr v-if="pacientesFiltrados.length === 0">
@@ -498,7 +497,6 @@ onMounted(fetchPacientes)
 .btn-accion:hover { opacity: 0.8; transform: translateY(-1px); }
 .btn-ver     { background: #dbeafe; }
 .btn-editar  { background: #fef9c3; }
-.btn-eliminar{ background: #fee2e2; }
 
 /* Modal */
 .modal-overlay {
