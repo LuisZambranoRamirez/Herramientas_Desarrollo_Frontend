@@ -131,6 +131,15 @@ html.dark .filter-bar {
   border-bottom-color: #1f2937 !important;
 }
 
+html.dark .search-bar {
+  background-color: #0f172a !important;
+  border-color: #1f2937 !important;
+}
+
+html.dark .search-bar .search-input {
+  background-color: #0f172a !important;
+}
+
 html.dark .search-input,
 html.dark .form-input {
   background-color: #1f2937 !important;
