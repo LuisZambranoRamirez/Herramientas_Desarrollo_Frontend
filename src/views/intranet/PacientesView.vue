@@ -430,43 +430,72 @@ onMounted(fetchPacientes)
 
 /* Tabla */
 .tabla-card {
-  background: white;
+  background: var(--bg-card);
   border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-light);
   transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .tabla-responsive { width: 100%; overflow-x: auto; }
 .tabla { width: 100%; border-collapse: collapse; }
-.tabla thead tr { background: #f8fafc; transition: background-color 0.2s ease; }
+.tabla thead tr { background: var(--bg-disabled); transition: background-color 0.2s ease; }
 .tabla th {
   padding: 0.85rem 1rem;
   text-align: left;
   font-size: 0.78rem;
   font-weight: 700;
-  color: #64748b;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-light);
   transition: color 0.2s ease, border-color 0.2s ease;
 }
+
 .tabla-fila td {
   padding: 0.85rem 1rem;
   font-size: 0.875rem;
-  color: #334155;
-  border-bottom: 1px solid #f1f5f9;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-light);
   vertical-align: middle;
   transition: color 0.2s ease, border-color 0.2s ease;
 }
-.tabla-fila:last-child td { border-bottom: none; }
-.tabla-fila:hover { background: #fafbff; }
 
-.td-dni    { font-family: monospace; font-weight: 600; color: #4f46e5; }
-.td-nombre { font-weight: 600; color: #1e293b; }
-.td-correo { color: #64748b; font-size: 0.82rem; }
-.td-acciones { display: flex; gap: 0.4rem; }
-.td-vacio { text-align: center; padding: 3rem; color: #94a3b8; font-size: 0.9rem; }
+.tabla-fila:last-child td {
+  border-bottom: none;
+}
+
+.tabla-fila:hover {
+  background: var(--bg-disabled);
+}
+
+.td-dni {
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--primary-purple);
+}
+
+.td-nombre {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.td-correo {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.td-acciones {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.td-vacio {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
 
 .btn-accion {
   padding: 0.35rem 0.6rem;
@@ -480,7 +509,6 @@ onMounted(fetchPacientes)
 .btn-accion:hover { opacity: 0.8; transform: translateY(-1px); }
 .btn-ver     { background: #dbeafe; }
 .btn-editar  { background: #fef9c3; }
-.btn-eliminar{ background: #fee2e2; }
 
 /* Modal */
 .modal-overlay {
