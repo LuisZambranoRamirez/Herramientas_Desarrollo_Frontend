@@ -68,12 +68,12 @@ function closeMobile() {
 
       <!-- Menú de Navegación -->
       <nav class="sidebar-nav">
-        <!-- 1. Dashboard -->
+        <!-- 1. Panel Principal -->
         <RouterLink
           to="/dashboard"
           class="nav-item"
           active-class="active"
-          :title="collapsed ? 'Dashboard' : ''"
+          :title="collapsed ? 'Panel Principal' : ''"
           @click="closeMobile"
         >
           <div class="nav-icon">
@@ -84,7 +84,7 @@ function closeMobile() {
               <rect x="3" y="16" width="7" height="5" rx="1.5" stroke-width="2" />
             </svg>
           </div>
-          <span v-if="!collapsed" class="nav-text">Dashboard</span>
+          <span v-if="!collapsed" class="nav-text">Panel Principal</span>
         </RouterLink>
 
         <!-- 2. Pacientes -->
