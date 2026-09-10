@@ -81,6 +81,7 @@ html.dark .activity-container,
 html.dark .low-stock-card,
 html.dark .stock-container,
 html.dark .table-card,
+html.dark .tabla-card,
 html.dark .config-card,
 html.dark .stat-mini-card {
   background-color: var(--bg-card) !important;
@@ -108,27 +109,44 @@ html.dark .welcome-section .date strong {
 
 html.dark .welcome-section .date,
 html.dark .view-desc,
-html.dark .toggle-desc {
+html.dark .toggle-desc,
+html.dark .page-subtitle {
   color: #94a3b8 !important;
 }
 
-html.dark .data-table th {
+html.dark .data-table th,
+html.dark .tabla th {
   background-color: #0f172a !important;
   color: #94a3b8 !important;
   border-bottom-color: #1f2937 !important;
 }
 
-html.dark .data-table td {
+html.dark .data-table td,
+html.dark .tabla td {
   border-bottom-color: #1f2937 !important;
   color: #e2e8f0 !important;
 }
 
-html.dark .data-table tbody tr:hover {
+html.dark .data-table tbody tr:hover,
+html.dark .tabla tbody tr:hover,
+html.dark .tabla-fila:hover {
   background-color: rgba(255, 255, 255, 0.02) !important;
 }
 
 html.dark .filter-bar {
   border-bottom-color: #1f2937 !important;
+}
+
+html.dark .search-bar {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-light) !important;
+}
+
+html.dark .search-bar .search-input {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #f8fafc !important;
 }
 
 html.dark .search-input,
