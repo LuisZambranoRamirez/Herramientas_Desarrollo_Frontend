@@ -189,37 +189,6 @@ const guardar = async () => {
   }
 }
 
-const confirmarEliminar = async (
-  dni: string,
-) => {
-  if (
-    !confirm(
-      `¿Eliminar paciente con DNI ${dni}? Esta acción no se puede deshacer.`,
-    )
-  ) {
-    return
-  }
-
-  isLoading.value = true
-  error.value = null
-
-  try {
-    await pacientesService.delete(dni)
-
-    pacientes.value =
-      pacientes.value.filter(
-        paciente => paciente.dni !== dni,
-      )
-  } catch (err) {
-    error.value =
-      err instanceof Error
-        ? err.message
-        : 'Error al eliminar paciente'
-  } finally {
-    isLoading.value = false
-  }
-}
-
 const formatFecha = (f: string) => {
   if (!f) {
     return '—'
@@ -287,7 +256,6 @@ onMounted(fetchPacientes)
               <td class="td-acciones">
                 <button class="btn-accion btn-ver" @click="abrirVer(p.dni)" title="Ver detalle">👁</button>
                 <button class="btn-accion btn-editar" @click="abrirEditar(p.dni)" title="Editar">✏️</button>
-                <button class="btn-accion btn-eliminar" @click="confirmarEliminar(p.dni)" title="Eliminar">🗑</button>
               </td>
             </tr>
             <tr v-if="pacientesFiltrados.length === 0">
