@@ -92,7 +92,7 @@
 .section-title {
   font-size: 2.25rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--text-main);
   letter-spacing: -0.03em;
   margin-bottom: 0.5rem;
   font-family: 'Plus Jakarta Sans', Inter, sans-serif;
@@ -100,7 +100,7 @@
 
 .section-subtitle {
   font-size: 1.05rem;
-  color: #64748b;
+  color: var(--text-muted);
   font-weight: 500;
 }
 
@@ -117,12 +117,13 @@
 }
 
 .philosophy-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   padding: 2.5rem;
   display: flex;
   flex-direction: column;
   position: relative;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .card-accent-bar {
@@ -136,13 +137,13 @@
 .card-heading {
   font-size: 1.45rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--text-main);
   margin-bottom: 1rem;
 }
 
 .card-text {
   font-size: 0.98rem;
-  color: #64748b;
+  color: var(--text-muted);
   line-height: 1.7;
   margin-bottom: 2rem;
   flex-grow: 1;
@@ -185,12 +186,12 @@
 .badge-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-main);
 }
 
 .badge-desc {
   font-size: 0.82rem;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 .visual-card {

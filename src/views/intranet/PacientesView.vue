@@ -189,37 +189,6 @@ const guardar = async () => {
   }
 }
 
-const confirmarEliminar = async (
-  dni: string,
-) => {
-  if (
-    !confirm(
-      `¿Eliminar paciente con DNI ${dni}? Esta acción no se puede deshacer.`,
-    )
-  ) {
-    return
-  }
-
-  isLoading.value = true
-  error.value = null
-
-  try {
-    await pacientesService.delete(dni)
-
-    pacientes.value =
-      pacientes.value.filter(
-        paciente => paciente.dni !== dni,
-      )
-  } catch (err) {
-    error.value =
-      err instanceof Error
-        ? err.message
-        : 'Error al eliminar paciente'
-  } finally {
-    isLoading.value = false
-  }
-}
-
 const formatFecha = (f: string) => {
   if (!f) {
     return '—'
@@ -262,38 +231,39 @@ onMounted(fetchPacientes)
     </div>
 
     <!-- Tabla -->
-    <div v-else class="tabla-card">
-      <table class="tabla">
-        <thead>
-          <tr>
-            <th>DNI</th>
-            <th>Nombre completo</th>
-            <th>Teléfono</th>
-            <th>Correo</th>
-            <th>F. Nacimiento</th>
-            <th>Registro</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="p in pacientesFiltrados" :key="p.dni" class="tabla-fila">
-            <td class="td-dni">{{ p.dni }}</td>
-            <td class="td-nombre">{{ p.nombres }} {{ p.apellidos }}</td>
-            <td>{{ p.telefono ?? '—' }}</td>
-            <td class="td-correo">{{ p.correo ?? '—' }}</td>
-            <td>{{ formatFecha(p.fecha_nacimiento) }}</td>
-            <td>{{ formatFecha(p.fecha_registro.slice(0, 10)) }}</td>
-            <td class="td-acciones">
-              <button class="btn-accion btn-ver" @click="abrirVer(p.dni)" title="Ver detalle">👁</button>
-              <button class="btn-accion btn-editar" @click="abrirEditar(p.dni)" title="Editar">✏️</button>
-              <button class="btn-accion btn-eliminar" @click="confirmarEliminar(p.dni)" title="Eliminar">🗑</button>
-            </td>
-          </tr>
-          <tr v-if="pacientesFiltrados.length === 0">
-            <td colspan="7" class="td-vacio">No se encontraron pacientes.</td>
-          </tr>
-        </tbody>
-      </table>
+    <div v-else class="tabla-card table-card">
+      <div class="tabla-responsive">
+        <table class="tabla data-table">
+          <thead>
+            <tr>
+              <th>DNI</th>
+              <th>Nombre completo</th>
+              <th>Teléfono</th>
+              <th>Correo</th>
+              <th>F. Nacimiento</th>
+              <th>Registro</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="p in pacientesFiltrados" :key="p.dni" class="tabla-fila">
+              <td class="td-dni">{{ p.dni }}</td>
+              <td class="td-nombre">{{ p.nombres }} {{ p.apellidos }}</td>
+              <td>{{ p.telefono ?? '—' }}</td>
+              <td class="td-correo">{{ p.correo ?? '—' }}</td>
+              <td>{{ formatFecha(p.fecha_nacimiento) }}</td>
+              <td>{{ formatFecha(p.fecha_registro.slice(0, 10)) }}</td>
+              <td class="td-acciones">
+                <button class="btn-accion btn-ver" @click="abrirVer(p.dni)" title="Ver detalle">👁</button>
+                <button class="btn-accion btn-editar" @click="abrirEditar(p.dni)" title="Editar">✏️</button>
+              </td>
+            </tr>
+            <tr v-if="pacientesFiltrados.length === 0">
+              <td colspan="7" class="td-vacio">No se encontraron pacientes.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- ====== MODAL ====== -->
@@ -390,7 +360,7 @@ onMounted(fetchPacientes)
   gap: 0.75rem;
 }
 
-.page-subtitle { color: #64748b; margin: 0; font-size: 0.875rem; }
+.page-subtitle { color: #64748b; margin: 0; font-size: 0.875rem; transition: color 0.2s ease; }
 
 /* Búsqueda */
 .search-bar {
@@ -402,12 +372,14 @@ onMounted(fetchPacientes)
   border-radius: 10px;
   padding: 0.6rem 1rem;
   margin-bottom: 1.25rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .search-icon { font-size: 1rem; color: #94a3b8; }
 
 .search-input {
   flex: 1;
+  background: transparent;
   border: none;
   outline: none;
   font-size: 0.875rem;
@@ -440,7 +412,7 @@ onMounted(fetchPacientes)
   font-weight: 600;
   font-size: 0.875rem;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
 }
 .btn-secundario:hover { background: #f1f5f9; }
 
@@ -457,48 +429,86 @@ onMounted(fetchPacientes)
 .estado-error { padding: 1rem 1.5rem; background: #fee2e2; border-radius: 10px; color: #991b1b; font-size: 0.9rem; margin-bottom: 1rem; }
 
 /* Tabla */
-.tabla-card { background: white; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); overflow: hidden; }
+.tabla-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.tabla-responsive { width: 100%; overflow-x: auto; }
 .tabla { width: 100%; border-collapse: collapse; }
-.tabla thead tr { background: #f8fafc; }
+.tabla thead tr { background: var(--bg-disabled); transition: background-color 0.2s ease; }
 .tabla th {
   padding: 0.85rem 1rem;
   text-align: left;
   font-size: 0.78rem;
   font-weight: 700;
-  color: #64748b;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-light);
+  transition: color 0.2s ease, border-color 0.2s ease;
 }
+
 .tabla-fila td {
   padding: 0.85rem 1rem;
   font-size: 0.875rem;
-  color: #334155;
-  border-bottom: 1px solid #f1f5f9;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-light);
   vertical-align: middle;
+  transition: color 0.2s ease, border-color 0.2s ease;
 }
-.tabla-fila:last-child td { border-bottom: none; }
-.tabla-fila:hover { background: #fafbff; }
 
-.td-dni    { font-family: monospace; font-weight: 600; color: #4f46e5; }
-.td-nombre { font-weight: 600; color: #1e293b; }
-.td-correo { color: #64748b; font-size: 0.82rem; }
-.td-acciones { display: flex; gap: 0.4rem; }
-.td-vacio { text-align: center; padding: 3rem; color: #94a3b8; font-size: 0.9rem; }
+.tabla-fila:last-child td {
+  border-bottom: none;
+}
+
+.tabla-fila:hover {
+  background: var(--bg-disabled);
+}
+
+.td-dni {
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--primary-purple);
+}
+
+.td-nombre {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.td-correo {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.td-acciones {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.td-vacio {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
 
 .btn-accion {
   padding: 0.35rem 0.6rem;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 6px;
   font-size: 0.85rem;
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.1s;
+  transition: opacity 0.2s, transform 0.1s, background-color 0.2s, border-color 0.2s;
   background: #f1f5f9;
 }
 .btn-accion:hover { opacity: 0.8; transform: translateY(-1px); }
 .btn-ver     { background: #dbeafe; }
 .btn-editar  { background: #fef9c3; }
-.btn-eliminar{ background: #fee2e2; }
 
 /* Modal */
 .modal-overlay {
@@ -510,6 +520,7 @@ onMounted(fetchPacientes)
   justify-content: center;
   z-index: 200;
   padding: 1rem;
+  transition: background-color 0.2s ease;
 }
 
 .modal {
@@ -521,6 +532,8 @@ onMounted(fetchPacientes)
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0,0,0,0.2);
   animation: slideUp 0.2s ease;
+  border: 1px solid transparent;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 @keyframes slideUp {
@@ -534,9 +547,10 @@ onMounted(fetchPacientes)
   align-items: center;
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid #e2e8f0;
+  transition: border-color 0.2s ease;
 }
 
-.modal-header h3 { margin: 0; font-size: 1.1rem; color: #1e293b; }
+.modal-header h3 { margin: 0; font-size: 1.1rem; color: #1e293b; transition: color 0.2s ease; }
 
 .modal-close {
   background: none;
@@ -572,7 +586,7 @@ onMounted(fetchPacientes)
 .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
 .form-full  { grid-column: 1 / -1; }
 
-.form-group label { font-size: 0.8rem; font-weight: 700; color: #475569; }
+.form-group label { font-size: 0.8rem; font-weight: 700; color: #475569; transition: color 0.2s ease; }
 
 .form-group input,
 .form-group textarea {
@@ -582,7 +596,7 @@ onMounted(fetchPacientes)
   font-size: 0.875rem;
   color: #1e293b;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, background-color 0.2s, color 0.2s;
   resize: vertical;
 }
 .form-group input:focus,
@@ -594,10 +608,194 @@ onMounted(fetchPacientes)
   gap: 0.75rem;
   padding: 1rem 1.5rem;
   border-top: 1px solid #e2e8f0;
+  transition: border-color 0.2s ease;
 }
 
 /* Si es dentro del form-grid */
 .form-full.modal-footer { padding: 0; border-top: none; padding-top: 0.5rem; }
+
+/* ================= MODO OSCURO (DARK MODE) ================= */
+:global(html.dark) .page-subtitle {
+  color: #94a3b8;
+}
+
+:global(html.dark) .search-bar {
+  background: var(--bg-card, #131b2e);
+  border-color: var(--border-light, #1e293b);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+}
+
+:global(html.dark) .search-bar:focus-within {
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.15);
+}
+
+:global(html.dark) .search-icon {
+  color: #64748b;
+}
+
+:global(html.dark) .search-input {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #f8fafc !important;
+}
+
+:global(html.dark) .search-input::placeholder {
+  color: #64748b;
+}
+
+:global(html.dark) .resultado-count {
+  color: #94a3b8;
+}
+
+:global(html.dark) .tabla-card {
+  background: var(--bg-card, #131b2e);
+  border-color: var(--border-light, #1e293b);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+:global(html.dark) .tabla thead tr {
+  background: #0f172a;
+}
+
+:global(html.dark) .tabla th {
+  color: #94a3b8;
+  border-bottom-color: #1e293b;
+}
+
+:global(html.dark) .tabla-fila td {
+  color: #cbd5e1;
+  border-bottom-color: #1e293b;
+}
+
+:global(html.dark) .tabla-fila:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+:global(html.dark) .td-dni {
+  color: #818cf8;
+}
+
+:global(html.dark) .td-nombre {
+  color: #f8fafc;
+}
+
+:global(html.dark) .td-correo {
+  color: #94a3b8;
+}
+
+:global(html.dark) .td-vacio {
+  color: #64748b;
+}
+
+:global(html.dark) .btn-accion {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+:global(html.dark) .btn-ver {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+:global(html.dark) .btn-editar {
+  background: rgba(234, 179, 8, 0.2);
+  border-color: rgba(234, 179, 8, 0.35);
+}
+
+:global(html.dark) .btn-eliminar {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+:global(html.dark) .estado-carga {
+  color: #94a3b8;
+}
+
+:global(html.dark) .spinner {
+  border-color: #1e293b;
+  border-top-color: #818cf8;
+}
+
+:global(html.dark) .estado-error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+:global(html.dark) .modal-overlay {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+:global(html.dark) .modal {
+  background: #131b2e;
+  border-color: #1e293b;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+}
+
+:global(html.dark) .modal-header {
+  border-bottom-color: #1e293b;
+}
+
+:global(html.dark) .modal-header h3 {
+  color: #f8fafc;
+}
+
+:global(html.dark) .modal-close {
+  color: #94a3b8;
+}
+
+:global(html.dark) .modal-close:hover {
+  color: #f8fafc;
+}
+
+:global(html.dark) .detalle-label {
+  color: #94a3b8;
+}
+
+:global(html.dark) .detalle-item span:not(.detalle-label) {
+  color: #e2e8f0;
+}
+
+:global(html.dark) .form-group label {
+  color: #cbd5e1;
+}
+
+:global(html.dark) .form-group input,
+:global(html.dark) .form-group textarea {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+:global(html.dark) .form-group input:focus,
+:global(html.dark) .form-group textarea:focus {
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+}
+
+:global(html.dark) .form-group input::placeholder,
+:global(html.dark) .form-group textarea::placeholder {
+  color: #64748b;
+}
+
+:global(html.dark) .modal-footer {
+  border-top-color: #1e293b;
+}
+
+:global(html.dark) .btn-secundario {
+  background: #1e293b;
+  color: #cbd5e1;
+  border-color: #334155;
+}
+
+:global(html.dark) .btn-secundario:hover {
+  background: #334155;
+  color: #f8fafc;
+}
 
 @media (max-width: 600px) {
   .form-grid  { grid-template-columns: 1fr; }

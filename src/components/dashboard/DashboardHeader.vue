@@ -14,7 +14,7 @@ const authStore = useAuthStore()
 const { isDark, toggleTheme } = useTheme()
 
 const titulosPorRuta: Record<string, string> = {
-  '/dashboard': 'Dashboard Principal',
+  '/dashboard': 'Panel Principal',
   '/usuarios': 'Gestión de Pacientes',
   '/agenda': 'Agenda y Citas Médicas',
   '/tratamientos': 'Catálogo de Tratamientos',
