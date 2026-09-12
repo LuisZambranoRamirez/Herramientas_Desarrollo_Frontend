@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+// CAMBIO: Importaciones reactivas de Vue y Vue Router
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import DashboardLayout from '@/components/dashboard/DashboardLayout.vue'
 import { pacientesService } from '@/services/pacientes.service'
 
@@ -9,10 +11,30 @@ import type {
   ActualizarPacienteDto,
 } from '@/types'
 
+// CAMBIO: Inicialización de Vue Router
+const router = useRouter()
+
+// CAMBIO: Key de localStorage para persistencia de pacientes
+const STORAGE_KEY = 'pacientes'
+
 // Estado
 const pacientes = ref<Paciente[]>([])
 const isLoading = ref(false)
 const error = ref<string | null>(null)
+
+// CAMBIO: Helpers para localStorage
+const cargarDesdeStorage = (): Paciente[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? (JSON.parse(raw) as Paciente[]) : []
+  } catch {
+    return []
+  }
+}
+
+const persistirPacientes = (data: Paciente[]) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+}
 
 // Búsqueda
 const busqueda = ref('')
@@ -116,13 +138,19 @@ const cerrarModal = () => {
   resetForm()
 }
 
+// CAMBIO: Carga de pacientes priorizando localStorage; si no hay, carga del servicio y persiste
 const fetchPacientes = async () => {
   isLoading.value = true
   error.value = null
 
   try {
-    pacientes.value =
-      await pacientesService.getAll()
+    const enStorage = cargarDesdeStorage()
+    if (enStorage.length > 0) {
+      pacientes.value = enStorage
+    } else {
+      pacientes.value = await pacientesService.getAll()
+      persistirPacientes(pacientes.value)
+    }
   } catch (err) {
     error.value =
       err instanceof Error
@@ -132,6 +160,9 @@ const fetchPacientes = async () => {
     isLoading.value = false
   }
 }
+
+// CAMBIO: Auto-guardado en localStorage ante cualquier mutación
+watch(pacientes, (data) => persistirPacientes(data), { deep: true })
 
 const guardar = async () => {
   isLoading.value = true
@@ -150,15 +181,14 @@ const guardar = async () => {
       dniSeleccionado.value
     ) {
       const dto: ActualizarPacienteDto = {
-				nombres: form.value.nombres,
-				apellidos: form.value.apellidos,
-				direccion: form.value.direccion,
-				telefono: form.value.telefono,
-				correo: form.value.correo,
-				observaciones: form.value.observaciones,
-				fecha_nacimiento: form.value.fecha_nacimiento,
-			}
-
+        nombres: form.value.nombres,
+        apellidos: form.value.apellidos,
+        direccion: form.value.direccion,
+        telefono: form.value.telefono,
+        correo: form.value.correo,
+        observaciones: form.value.observaciones,
+        fecha_nacimiento: form.value.fecha_nacimiento,
+      }
 
       const paciente =
         await pacientesService.update(
@@ -187,6 +217,18 @@ const guardar = async () => {
   } finally {
     isLoading.value = false
   }
+}
+
+// CAMBIO: Redirección directa hacia el registro de pagos con DNI y nombre precargados
+const irAPagar = (paciente: Paciente) => {
+  const nombre = `${paciente.nombres} ${paciente.apellidos}`.trim()
+  router.push({
+    path: '/pagos',
+    query: {
+      dni: paciente.dni,
+      nombre,
+    },
+  })
 }
 
 const formatFecha = (f: string) => {
@@ -256,6 +298,8 @@ onMounted(fetchPacientes)
               <td class="td-acciones">
                 <button class="btn-accion btn-ver" @click="abrirVer(p.dni)" title="Ver detalle">👁</button>
                 <button class="btn-accion btn-editar" @click="abrirEditar(p.dni)" title="Editar">✏️</button>
+                <!-- CAMBIO: Acción rápida para ir directamente al módulo de pagos con el paciente precargado -->
+                <button class="btn-accion btn-cobrar" @click="irAPagar(p)" title="Registrar Pago">💳</button>
               </td>
             </tr>
             <tr v-if="pacientesFiltrados.length === 0">
@@ -509,6 +553,7 @@ onMounted(fetchPacientes)
 .btn-accion:hover { opacity: 0.8; transform: translateY(-1px); }
 .btn-ver     { background: #dbeafe; }
 .btn-editar  { background: #fef9c3; }
+.btn-cobrar  { background: #dcfce7; color: #15803d; }
 
 /* Modal */
 .modal-overlay {
@@ -705,6 +750,12 @@ onMounted(fetchPacientes)
   border-color: rgba(234, 179, 8, 0.35);
 }
 
+:global(html.dark) .btn-cobrar {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.35);
+  color: #4ade80;
+}
+
 :global(html.dark) .btn-eliminar {
   background: rgba(239, 68, 68, 0.2);
   border-color: rgba(239, 68, 68, 0.35);
@@ -798,7 +849,10 @@ onMounted(fetchPacientes)
 }
 
 @media (max-width: 600px) {
-  .form-grid  { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
   .detalle-grid { grid-template-columns: 1fr; }
+  .detalle-full { grid-column: 1; }
+  .form-full { grid-column: 1; }
+  .td-acciones { flex-wrap: wrap; }
 }
 </style>
