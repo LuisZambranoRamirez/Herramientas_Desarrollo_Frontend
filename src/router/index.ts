@@ -26,9 +26,7 @@ const router = createRouter({
     },
     {
       path: '/test-citas',
-      name: 'test-citas',
-      component: () => import('../views/intranet/CitasView.vue'),
-      meta: { requiresAuth: true },
+      redirect: '/agenda',
     },
     {
       path: '/login',
