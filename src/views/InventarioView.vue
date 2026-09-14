@@ -263,21 +263,24 @@ const eliminarInsumo = async (id: string) => {
 
 .inventario-header h2 {
   font-size: 24px;
-  color: #1a2b3c;
+  color: var(--text-main);
   margin: 0 0 6px 0;
+  transition: color 0.2s ease;
 }
 
 .subtitle {
-  color: #7f8c8d;
+  color: var(--text-muted);
   margin: 0;
   font-size: 15px;
+  transition: color 0.2s ease;
 }
 
 .tabs {
   display: flex;
   gap: 8px;
   margin-bottom: 20px;
-  border-bottom: 1px solid #e8edf3;
+  border-bottom: 1px solid var(--border-light);
+  transition: border-color 0.2s ease;
 }
 
 .tab-btn {
@@ -286,26 +289,29 @@ const eliminarInsumo = async (id: string) => {
   padding: 10px 18px;
   font-size: 14px;
   font-weight: 600;
-  color: #7f8c8d;
+  color: var(--text-muted);
   cursor: pointer;
   border-bottom: 2px solid transparent;
+  transition: color 0.2s ease;
 }
 
 .tab-btn:hover {
-  color: #2c3e50;
+  color: var(--text-main);
 }
 
 .tab-btn-active {
-  color: #3498db;
-  border-bottom-color: #3498db;
+  color: var(--primary-purple, #4f46e5);
+  border-bottom-color: var(--primary-purple, #4f46e5);
 }
 
 .estado-info,
 .estado-error {
-  background: white;
+  background: var(--bg-card);
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
+  color: var(--text-main);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .estado-error {
@@ -313,10 +319,12 @@ const eliminarInsumo = async (id: string) => {
 }
 
 .tabla-container {
-  background: white;
+  background: var(--bg-card);
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
+  border: 1px solid var(--border-light);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .tabla-generica {
@@ -327,18 +335,24 @@ const eliminarInsumo = async (id: string) => {
 .tabla-generica th {
   text-align: left;
   padding: 14px 20px;
-  background: #f5f7fa;
-  color: #2c3e50;
+  background: var(--bg-disabled);
+  color: var(--text-muted);
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .tabla-generica td {
   padding: 14px 20px;
-  border-top: 1px solid #f0f0f0;
-  color: #2c3e50;
+  border-top: 1px solid var(--border-light);
+  color: var(--text-main);
   font-size: 14px;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.tabla-generica tbody tr:hover {
+  background-color: var(--bg-disabled);
 }
 
 .fila-alerta {
@@ -369,7 +383,7 @@ const eliminarInsumo = async (id: string) => {
 }
 
 .btn-primario {
-  background: #3498db;
+  background: var(--primary-purple, #4f46e5);
   color: white;
   border: none;
   padding: 10px 18px;
@@ -377,30 +391,32 @@ const eliminarInsumo = async (id: string) => {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: filter 0.2s ease;
 }
 
 .btn-primario:hover {
-  background: #2d84c2;
+  filter: brightness(1.1);
 }
 
 .btn-primario:disabled {
-  background: #a9c6d8;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .btn-secundario {
-  background: #ecf0f1;
-  color: #2c3e50;
+  background: var(--bg-disabled);
+  color: var(--text-main);
   border: none;
   padding: 10px 18px;
   border-radius: 6px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .btn-secundario:hover {
-  background: #dfe4e6;
+  filter: brightness(0.95);
 }
 
 .btn-eliminar {
@@ -423,10 +439,11 @@ const eliminarInsumo = async (id: string) => {
   padding: 6px 12px;
   font-size: 13px;
 }
+
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -434,16 +451,20 @@ const eliminarInsumo = async (id: string) => {
 }
 
 .modal-box {
-  background: white;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 24px;
   width: 100%;
   max-width: 400px;
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-lg);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .modal-box h3 {
   margin: 0 0 16px 0;
-  color: #1a2b3c;
+  color: var(--text-main);
+  transition: color 0.2s ease;
 }
 
 .campo {
@@ -455,15 +476,25 @@ const eliminarInsumo = async (id: string) => {
 
 .campo label {
   font-size: 13px;
-  color: #7f8c8d;
+  color: var(--text-muted);
   font-weight: 600;
+  transition: color 0.2s ease;
 }
 
 .campo input {
   padding: 8px 10px;
-  border: 1px solid #dfe4e6;
+  border: 1px solid var(--border-light);
   border-radius: 6px;
   font-size: 14px;
+  background: var(--bg-input);
+  color: var(--text-main);
+  outline: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.campo input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 .modal-acciones {
@@ -471,5 +502,34 @@ const eliminarInsumo = async (id: string) => {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 20px;
+}
+
+/* ── Modo Oscuro ─────────────────────────────── */
+:global(html.dark) .fila-alerta {
+  background: rgba(231, 76, 60, 0.08);
+}
+
+:global(html.dark) .badge-ok {
+  background: rgba(39, 174, 96, 0.15);
+  color: #4ade80;
+}
+
+:global(html.dark) .badge-bajo {
+  background: rgba(231, 76, 60, 0.15);
+  color: #f87171;
+}
+
+:global(html.dark) .btn-eliminar {
+  background: rgba(231, 76, 60, 0.15);
+  color: #f87171;
+}
+
+:global(html.dark) .btn-eliminar:hover {
+  background: rgba(231, 76, 60, 0.25);
+}
+
+:global(html.dark) .tab-btn-active {
+  color: #818cf8;
+  border-bottom-color: #818cf8;
 }
 </style>
