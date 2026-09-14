@@ -385,12 +385,7 @@ const guardarPago = () => {
   cerrarModal()
 }
 
-// CAMBIO: Eliminar pago con confirmación
-const eliminarPago = (id: string | number) => {
-  if (confirm('¿Estás seguro de eliminar este registro de pago?')) {
-    pagos.value = pagos.value.filter((p) => p.id !== id)
-  }
-}
+
 
 // CAMBIO: Detección de query parameters al montar si viene desde PacientesView
 onMounted(() => {
@@ -522,13 +517,6 @@ const formatFecha = (f: string): string => {
                     @click="abrirEditarPago(pago)"
                   >
                     ✏️
-                  </button>
-                  <button
-                    class="btn-action delete"
-                    title="Eliminar pago"
-                    @click="eliminarPago(pago.id)"
-                  >
-                    🗑️
                   </button>
                 </td>
               </tr>
