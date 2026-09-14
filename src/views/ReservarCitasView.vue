@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, computed } from 'vue'
 import BookingStepper from '../components/BookingStepper.vue'
 import ServiceSelectionStep from '../components/ServiceSelectionStep.vue'
 import SpecialistSelectionStep from '../components/SpecialistSelectionStep.vue'
@@ -37,7 +37,7 @@ const selectedDayNumber = ref<number>(26)
 const selectedTime = ref<string>('10:00 AM')
 const selectedMonth = ref<string>('Agosto 2026')
 
-const patientData = reactive<PatientData>({
+const patientData = ref<PatientData>({
   fullName: '',
   email: '',
   phone: '',
@@ -99,14 +99,77 @@ function handleConfirmAppointment() {
       specialist: selectedSpecialistName.value,
       date: formattedDateText.value,
       time: selectedTime.value,
-      patient: { ...patientData },
+      patient: { ...patientData.value },
       createdAt: new Date().toISOString(),
     }
-    const existing = JSON.parse(localStorage.getItem('solident_bookings') || '[]')
-    existing.push(bookingRecord)
-    localStorage.setItem('solident_bookings', JSON.stringify(existing))
+    const existingBookings = JSON.parse(localStorage.getItem('solident_bookings') || '[]')
+    existingBookings.push(bookingRecord)
+    localStorage.setItem('solident_bookings', JSON.stringify(existingBookings))
+
+    // CAMBIO: Sincronización con la clave 'citas' de la intranet
+    const timeParts = (selectedTime.value || '10:00').split(':')
+    const rawH = timeParts[0] ? parseInt(timeParts[0], 10) : 10
+    const rawM = timeParts[1] ? timeParts[1].slice(0, 2) : '00'
+    let finalH = isNaN(rawH) ? 10 : rawH
+
+    if (selectedTime.value.includes('PM') && finalH < 12) {
+      finalH += 12
+    } else if (selectedTime.value.includes('AM') && finalH === 12) {
+      finalH = 0
+    }
+
+    const horaStr = `${finalH.toString().padStart(2, '0')}:${rawM}`
+
+    const dniPaciente = patientData.value.phone ? patientData.value.phone.replace(/\D/g, '') : `CLI-${Date.now().toString().slice(-6)}`
+    const dniOdontologo = selectedSpecialistId.value === 'dra-carmen-rodriguez' ? '47891234' : '45678912'
+
+    const nuevaCita = {
+      cita_id: `CIT-${Math.floor(1000 + Math.random() * 9000)}`,
+      dni_paciente: dniPaciente,
+      dni_odontologo: dniOdontologo,
+      fecha: '2026-08-26',
+      hora: horaStr,
+      motivo_consulta: selectedServiceName.value,
+      diagnostico: null,
+      estado: 'PROGRAMADA',
+      fecha_registro: new Date().toISOString(),
+      observaciones: `Reserva web. Email: ${patientData.value.email}, Tel: ${patientData.value.phone}`,
+    }
+
+    const citasExistentes = JSON.parse(localStorage.getItem('citas') || '[]')
+    citasExistentes.unshift(nuevaCita)
+    localStorage.setItem('citas', JSON.stringify(citasExistentes))
+
+    // CAMBIO: Alta automática del paciente en 'pacientes' si no existe
+    const pacientesExistentes = JSON.parse(localStorage.getItem('pacientes') || '[]')
+    const existePaciente = pacientesExistentes.some(
+      (p: Record<string, unknown>) =>
+        String(p.dni) === dniPaciente ||
+        String(p.nombreCompleto || `${p.nombres || ''} ${p.apellidos || ''}`).toLowerCase() === patientData.value.fullName.trim().toLowerCase()
+    )
+
+    if (!existePaciente) {
+      const partes = patientData.value.fullName.trim().split(' ')
+      const nombres = partes[0] || 'Paciente'
+      const apellidos = partes.slice(1).join(' ') || 'Web'
+
+      pacientesExistentes.push({
+        dni: dniPaciente,
+        username: patientData.value.email.split('@')[0] || `paciente.${dniPaciente}`,
+        nombres,
+        apellidos,
+        nombreCompleto: patientData.value.fullName.trim(),
+        telefono: patientData.value.phone,
+        correo: patientData.value.email,
+        direccion: 'Registrado vía Web Pública',
+        observaciones: 'Registrado automáticamente por reserva de cita web',
+        fecha_nacimiento: '1995-01-01',
+        fecha_registro: new Date().toISOString(),
+      })
+      localStorage.setItem('pacientes', JSON.stringify(pacientesExistentes))
+    }
   } catch (e) {
-    console.warn('No se pudo guardar en localStorage', e)
+    console.warn('No se pudo guardar la cita en localStorage', e)
   }
 
   currentStep.value = 4
@@ -115,9 +178,9 @@ function handleConfirmAppointment() {
 
 // Reiniciar flujo para agendar otra cita
 function handleNewBooking() {
-  patientData.fullName = ''
-  patientData.email = ''
-  patientData.phone = ''
+  patientData.value.fullName = ''
+  patientData.value.email = ''
+  patientData.value.phone = ''
   selectedServiceId.value = 'limpieza-dental'
   selectedSpecialistId.value = 'dra-marta-gonzalez'
   selectedDayNumber.value = 26
