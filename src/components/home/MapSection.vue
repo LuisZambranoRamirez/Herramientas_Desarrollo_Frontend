@@ -12,7 +12,7 @@
 
       <!-- Mapa embebido de Google Maps -->
       <div class="map-wrapper">
-        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d975.8864735837088!2d-77.04961330863401!3d-11.936658363108966!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9105d0313efa7f67%3A0x4ac8235e5f644ed2!2sAv.%20T%C3%BApac%20Amaru%203551%2C%20Comas%2015312!5e0!3m2!1ses-419!2spe!4v1789401992856!5m2!1ses-419!2spe" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d975.8864735837088!2d-77.04961330863401!3d-11.936658363108966!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9105d0313efa7f67%3A0x4ac8235e5f644ed2!2sAv.%20T%C3%BApac%20Amaru%203551%2C%20Comas%2015312!5e0!3m2!1ses-419!2spe!4v1789401992856!5m2!1ses-419!2spe" width="600" height="450" style="border:0;" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
       </div>
 
       <!-- Información adicional -->
