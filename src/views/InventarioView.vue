@@ -34,47 +34,50 @@
         {{ errorInsumos }}
       </div>
 
-      <div v-else class="tabla-container">
-        <table class="tabla-generica">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Stock</th>
-              <th>Stock mínimo</th>
-              <th>Estado</th>
-              <th>Vencimiento</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="insumo in insumos"
-              :key="insumo.insumo_id"
-              :class="{ 'fila-alerta': insumo.stock < insumo.stock_minimo }"
-            >
-              <td>{{ insumo.nombre }}</td>
-              <td>{{ insumo.stock }}</td>
-              <td>{{ insumo.stock_minimo }}</td>
-              <td>
-                <span
-                  class="badge"
-                  :class="insumo.stock < insumo.stock_minimo ? 'badge-bajo' : 'badge-ok'"
-                >
-                  {{ insumo.stock < insumo.stock_minimo ? 'Stock bajo' : 'OK' }}
-                </span>
-              </td>
-              <td>{{ insumo.fecha_vencimiento ?? '—' }}</td>
-              <td>
-            <button class="btn-secundario btn-accion" @click="abrirModalEditar(insumo)">
-             Editar
-            </button>
-              <button class="btn-eliminar" @click="eliminarInsumo(insumo.insumo_id)">
-               Eliminar
-             </button>
-            </td>
-            </tr>
-          </tbody>
-        </table>
+      <div v-else class="table-card tabla-card tabla-container">
+        <div class="table-responsive">
+          <table class="data-table tabla tabla-generica">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Stock</th>
+                <th>Stock mínimo</th>
+                <th>Estado</th>
+                <th>Vencimiento</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="insumo in insumos"
+                :key="insumo.insumo_id"
+                class="tabla-fila"
+                :class="{ 'fila-alerta': insumo.stock < insumo.stock_minimo }"
+              >
+                <td>{{ insumo.nombre }}</td>
+                <td>{{ insumo.stock }}</td>
+                <td>{{ insumo.stock_minimo }}</td>
+                <td>
+                  <span
+                    class="badge"
+                    :class="insumo.stock < insumo.stock_minimo ? 'badge-bajo' : 'badge-ok'"
+                  >
+                    {{ insumo.stock < insumo.stock_minimo ? 'Stock bajo' : 'OK' }}
+                  </span>
+                </td>
+                <td>{{ insumo.fecha_vencimiento ?? '—' }}</td>
+                <td>
+                  <button class="btn-secundario btn-accion" @click="abrirModalEditar(insumo)">
+                    Editar
+                  </button>
+                  <button class="btn-eliminar" @click="eliminarInsumo(insumo.insumo_id)">
+                    Eliminar
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -87,23 +90,25 @@
         {{ errorProveedores }}
       </div>
 
-      <div v-else class="tabla-container">
-        <table class="tabla-generica">
-          <thead>
-            <tr>
-              <th>RUC</th>
-              <th>Nombre</th>
-              <th>Teléfono</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="proveedor in proveedores" :key="proveedor.ruc">
-              <td>{{ proveedor.ruc }}</td>
-              <td>{{ proveedor.nombre }}</td>
-              <td>{{ proveedor.telefono }}</td>
-            </tr>
-          </tbody>
-        </table>
+      <div v-else class="table-card tabla-card tabla-container">
+        <div class="table-responsive">
+          <table class="data-table tabla tabla-generica">
+            <thead>
+              <tr>
+                <th>RUC</th>
+                <th>Nombre</th>
+                <th>Teléfono</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="proveedor in proveedores" :key="proveedor.ruc" class="tabla-fila">
+                <td>{{ proveedor.ruc }}</td>
+                <td>{{ proveedor.nombre }}</td>
+                <td>{{ proveedor.telefono }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -327,6 +332,11 @@ const eliminarInsumo = async (id: string) => {
   transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
 .tabla-generica {
   width: 100%;
   border-collapse: collapse;
@@ -505,31 +515,97 @@ const eliminarInsumo = async (id: string) => {
 }
 
 /* ── Modo Oscuro ─────────────────────────────── */
-:global(html.dark) .fila-alerta {
-  background: rgba(231, 76, 60, 0.08);
+:global(html.dark .tabla-container) {
+  background: var(--bg-card) !important;
+  border-color: var(--border-light) !important;
 }
 
-:global(html.dark) .badge-ok {
-  background: rgba(39, 174, 96, 0.15);
-  color: #4ade80;
+:global(html.dark .tabla-generica th) {
+  background-color: #0f172a !important;
+  color: #94a3b8 !important;
+  border-bottom-color: #1f2937 !important;
 }
 
-:global(html.dark) .badge-bajo {
-  background: rgba(231, 76, 60, 0.15);
-  color: #f87171;
+:global(html.dark .tabla-generica td) {
+  color: #e2e8f0 !important;
+  border-top-color: #1f2937 !important;
 }
 
-:global(html.dark) .btn-eliminar {
-  background: rgba(231, 76, 60, 0.15);
-  color: #f87171;
+:global(html.dark .tabla-generica tbody tr:hover),
+:global(html.dark .tabla-fila:hover) {
+  background-color: rgba(255, 255, 255, 0.02) !important;
 }
 
-:global(html.dark) .btn-eliminar:hover {
-  background: rgba(231, 76, 60, 0.25);
+:global(html.dark .fila-alerta) {
+  background: rgba(239, 68, 68, 0.12) !important;
 }
 
-:global(html.dark) .tab-btn-active {
-  color: #818cf8;
-  border-bottom-color: #818cf8;
+:global(html.dark .fila-alerta:hover) {
+  background: rgba(239, 68, 68, 0.18) !important;
+}
+
+:global(html.dark .badge-ok) {
+  background: rgba(34, 197, 94, 0.15) !important;
+  color: #4ade80 !important;
+}
+
+:global(html.dark .badge-bajo) {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+
+:global(html.dark .btn-eliminar) {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+
+:global(html.dark .btn-eliminar:hover) {
+  background: rgba(239, 68, 68, 0.25) !important;
+}
+
+:global(html.dark .btn-secundario) {
+  background: #1e293b !important;
+  color: #cbd5e1 !important;
+  border: 1px solid #334155 !important;
+}
+
+:global(html.dark .btn-secundario:hover) {
+  background: #334155 !important;
+  color: #f8fafc !important;
+}
+
+:global(html.dark .tab-btn-active) {
+  color: #818cf8 !important;
+  border-bottom-color: #818cf8 !important;
+}
+
+:global(html.dark .modal-overlay) {
+  background: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(4px);
+}
+
+:global(html.dark .modal-box) {
+  background: #131b2e !important;
+  border-color: #1e293b !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+}
+
+:global(html.dark .modal-box h3) {
+  color: #f8fafc !important;
+}
+
+:global(html.dark .campo label) {
+  color: #cbd5e1 !important;
+}
+
+:global(html.dark .campo input) {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+:global(html.dark .campo input:focus) {
+  border-color: #818cf8 !important;
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2) !important;
 }
 </style>

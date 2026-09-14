@@ -76,7 +76,7 @@ defineProps<{
   font-weight: 600;
 }
 
-html.dark .stock-warning {
+:global(html.dark .stock-warning) {
   color: #fbbf24;
 }
 
