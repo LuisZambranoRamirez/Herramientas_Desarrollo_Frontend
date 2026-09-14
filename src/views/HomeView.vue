@@ -23,7 +23,7 @@ import FooterSection from '../components/FooterSection.vue'
 <style scoped>
 .home-page {
   width: 100%;
-  background-color: #f8fafc;
+  background-color: var(--bg-page);
   display: flex;
   flex-direction: column;
 }
