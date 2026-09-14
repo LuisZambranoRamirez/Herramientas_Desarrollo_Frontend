@@ -48,7 +48,8 @@
 .map-section {
   width: 100%;
   padding: 4rem 1.5rem;
-  background-color: #f8fafc;
+  background-color: var(--bg-page);
+  transition: background-color 0.3s ease;
 }
 
 .map-container {
@@ -64,14 +65,14 @@
 .map-title {
   font-size: 2rem;
   font-weight: 800;
-  color: #1e293b;
+  color: #eeeeee;
   margin-bottom: 0.5rem;
   font-family: 'Plus Jakarta Sans', Inter, sans-serif;
 }
 
 .map-subtitle {
   font-size: 1rem;
-  color: #64748b;
+  color: #d6dbe2;
   font-weight: 500;
 }
 
