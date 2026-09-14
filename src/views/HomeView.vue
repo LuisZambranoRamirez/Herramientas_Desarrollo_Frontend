@@ -4,6 +4,7 @@ import AboutSection from '../components/home/AboutSection.vue'
 import ServicesSection from '../components/home/ServicesSection.vue'
 import SpecialistsSection from '../components/home/SpecialistsSection.vue'
 import QuickBookingSection from '../components/home/QuickBookingSection.vue'
+import MapSection from '../components/home/MapSection.vue'
 import FooterSection from '../components/FooterSection.vue'
 </script>
 
@@ -13,6 +14,7 @@ import FooterSection from '../components/FooterSection.vue'
     <section id="nosotros"><AboutSection /></section>
     <section id="servicios"><ServicesSection /></section>
     <section id="especialistas"><SpecialistsSection /></section>
+    <section id="mapa"><MapSection /></section>
     <QuickBookingSection />
     <FooterSection />
   </main>
