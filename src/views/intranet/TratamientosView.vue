@@ -434,11 +434,12 @@ const formatPrecio = (val: number): string =>
             <div class="form-group form-full">
               <label>Nombre del Tratamiento *</label>
               <input
-                v-model="form.nombre"
-                type="text"
-                required
-                placeholder="Ej. Profilaxis dental"
-              />
+              :value="form.nombre"
+              @input="form.nombre = ($event.target as HTMLInputElement).value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')"
+              type="text"
+              required
+              placeholder="Ej. Profilaxis dental"
+            />
             </div>
 
             <div class="form-group form-full">
