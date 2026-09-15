@@ -37,10 +37,7 @@ const erroresForm = ref({
 const validarCampo = (campo: string) => {
   switch (campo) {
     case 'dni':
-      // Limpia automáticamente cualquier letra o símbolo, dejando solo números
-      form.value.dni = form.value.dni.replace(/\D/g, '')
-
-      // Luego valida los mensajes de error
+      form.value.dni = (form.value.dni || '').replace(/\D/g, '')
       if (!form.value.dni) {
         erroresForm.value.dni = 'El DNI es obligatorio.'
       } else if (form.value.dni.length !== 8) {
@@ -49,7 +46,8 @@ const validarCampo = (campo: string) => {
         erroresForm.value.dni = ''
       }
       break
-      case 'telefono':
+
+    case 'telefono':
       form.value.telefono = (form.value.telefono || '').replace(/\D/g, '')
       if (form.value.telefono && form.value.telefono.length !== 9) {
         erroresForm.value.telefono = 'El teléfono debe tener 9 dígitos.'
@@ -57,15 +55,23 @@ const validarCampo = (campo: string) => {
         erroresForm.value.telefono = ''
       }
       break
-    case 'username':
+
+case 'username':
+      // Borra automáticamente cualquier número o símbolo, permitiendo solo letras
+      form.value.username = (form.value.username || '').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '')
       erroresForm.value.username = !form.value.username.trim() ? 'El usuario es obligatorio.' : ''
       break
+
     case 'nombres':
+      form.value.nombres = (form.value.nombres || '').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')
       erroresForm.value.nombres = !form.value.nombres.trim() ? 'El nombre es obligatorio.' : ''
       break
+
     case 'apellidos':
+      form.value.apellidos = (form.value.apellidos || '').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')
       erroresForm.value.apellidos = !form.value.apellidos.trim() ? 'Los apellidos son obligatorios.' : ''
       break
+
     case 'correo':
       if (form.value.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.correo)) {
         erroresForm.value.correo = 'Correo electrónico no válido.'
@@ -73,8 +79,26 @@ const validarCampo = (campo: string) => {
         erroresForm.value.correo = ''
       }
       break
+
     case 'fecha_nacimiento':
-      erroresForm.value.fecha_nacimiento = !form.value.fecha_nacimiento ? 'La fecha es obligatoria.' : ''
+      if (!form.value.fecha_nacimiento) {
+        erroresForm.value.fecha_nacimiento = 'La fecha es obligatoria.'
+      } else {
+        const fechaIngresada = new Date(form.value.fecha_nacimiento)
+        const hoy = new Date()
+        
+        // Calcular el límite de 130 años hacia atrás
+        const anioLimite = hoy.getFullYear() - 130
+        const fechaLimite = new Date(anioLimite, hoy.getMonth(), hoy.getDate())
+
+        if (fechaIngresada > hoy) {
+          erroresForm.value.fecha_nacimiento = 'La fecha no puede ser en el futuro.'
+        } else if (fechaIngresada < fechaLimite) {
+          erroresForm.value.fecha_nacimiento = 'La fecha no puede ser de hace más de 130 años.'
+        } else {
+          erroresForm.value.fecha_nacimiento = ''
+        }
+      }
       break
   }
 }
@@ -415,7 +439,7 @@ onMounted(fetchPacientes)
     <!-- Error general opcional -->
     <div v-if="error" class="estado-error form-full">⚠️ {{ error }}</div>
 
-    <!-- ⬇️ PEGA AQUÍ TODO EL BLOQUE DE INPUTS CON LOS @input Y LOS SPAN ⬇️ -->
+
     <div class="form-group" v-if="modoModal === 'crear'">
       <label>DNI *</label>
       <input v-model="form.dni" @input="validarCampo('dni')" type="text" maxlength="8" placeholder="12345678" />
@@ -424,20 +448,30 @@ onMounted(fetchPacientes)
 
     <div class="form-group" v-if="modoModal === 'crear'">
       <label>Usuario *</label>
-      <input v-model="form.username" @input="validarCampo('username')" type="text" placeholder="juan.perez" />
+      <input v-model="form.username" @input="validarCampo('username')" type="text" placeholder="JuanPerez" />
       <span v-if="erroresForm.username" class="input-error-msg">{{ erroresForm.username }}</span>
     </div>
 
     <div class="form-group">
-      <label>Nombres *</label>
-      <input v-model="form.nombres" @input="validarCampo('nombres')" type="text" placeholder="Juan" />
-      <span v-if="erroresForm.nombres" class="input-error-msg">{{ erroresForm.nombres }}</span>
+    <label>Nombres *</label>
+     <input 
+    v-model="form.nombres" 
+    @input="validarCampo('nombres')" 
+    type="text" 
+    placeholder="Juan" 
+     />
+     <span v-if="erroresForm.nombres" class="input-error-msg">{{ erroresForm.nombres }}</span>
     </div>
 
     <div class="form-group">
-      <label>Apellidos *</label>
-      <input v-model="form.apellidos" @input="validarCampo('apellidos')" type="text" placeholder="Pérez Torres" />
-      <span v-if="erroresForm.apellidos" class="input-error-msg">{{ erroresForm.apellidos }}</span>
+     <label>Apellidos *</label>
+     <input 
+    v-model="form.apellidos" 
+    @input="validarCampo('apellidos')" 
+    type="text" 
+    placeholder="Pérez Torres" 
+    />
+    <span v-if="erroresForm.apellidos" class="input-error-msg">{{ erroresForm.apellidos }}</span>
     </div>
 
     <div class="form-group">
@@ -469,9 +503,7 @@ onMounted(fetchPacientes)
       <input v-model="form.fecha_nacimiento" @change="validarCampo('fecha_nacimiento')" type="date" />
       <span v-if="erroresForm.fecha_nacimiento" class="input-error-msg">{{ erroresForm.fecha_nacimiento }}</span>
     </div>
-    <!-- ⬆️ FIN DEL BLOQUE PEGADO ⬆️ -->
 
-    <!-- Observaciones y botones que ya tenías abajo -->
     <div class="form-group form-full">
       <label>Observaciones</label>
       <textarea v-model="form.observaciones" rows="3" placeholder="Notas clínicas..."></textarea>
