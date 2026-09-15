@@ -22,6 +22,73 @@ const pacientes = ref<Paciente[]>([])
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 
+  // Errores individuales por campo
+const erroresForm = ref({
+  dni: '',
+  username: '',
+  nombres: '',
+  apellidos: '',
+  correo: '',
+  telefono: '', // 👈 Añade esto aquí
+  fecha_nacimiento: ''
+})
+
+// Función de validación en tiempo real por campo
+const validarCampo = (campo: string) => {
+  switch (campo) {
+    case 'dni':
+      // Limpia automáticamente cualquier letra o símbolo, dejando solo números
+      form.value.dni = form.value.dni.replace(/\D/g, '')
+
+      // Luego valida los mensajes de error
+      if (!form.value.dni) {
+        erroresForm.value.dni = 'El DNI es obligatorio.'
+      } else if (form.value.dni.length !== 8) {
+        erroresForm.value.dni = 'El DNI debe tener exactamente 8 dígitos.'
+      } else {
+        erroresForm.value.dni = ''
+      }
+      break
+      case 'telefono':
+      form.value.telefono = (form.value.telefono || '').replace(/\D/g, '')
+      if (form.value.telefono && form.value.telefono.length !== 9) {
+        erroresForm.value.telefono = 'El teléfono debe tener 9 dígitos.'
+      } else {
+        erroresForm.value.telefono = ''
+      }
+      break
+    case 'username':
+      erroresForm.value.username = !form.value.username.trim() ? 'El usuario es obligatorio.' : ''
+      break
+    case 'nombres':
+      erroresForm.value.nombres = !form.value.nombres.trim() ? 'El nombre es obligatorio.' : ''
+      break
+    case 'apellidos':
+      erroresForm.value.apellidos = !form.value.apellidos.trim() ? 'Los apellidos son obligatorios.' : ''
+      break
+    case 'correo':
+      if (form.value.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.correo)) {
+        erroresForm.value.correo = 'Correo electrónico no válido.'
+      } else {
+        erroresForm.value.correo = ''
+      }
+      break
+    case 'fecha_nacimiento':
+      erroresForm.value.fecha_nacimiento = !form.value.fecha_nacimiento ? 'La fecha es obligatoria.' : ''
+      break
+  }
+}
+
+const validarFormularioCompleto = () => {
+  validarCampo('dni')
+  validarCampo('username')
+  validarCampo('nombres')
+  validarCampo('apellidos')
+  validarCampo('correo')
+  validarCampo('fecha_nacimiento')
+  return !Object.values(erroresForm.value).some(err => err !== '')
+}
+
 // CAMBIO: Helpers para localStorage
 const cargarDesdeStorage = (): Paciente[] => {
   try {
@@ -337,56 +404,87 @@ onMounted(fetchPacientes)
         </template>
 
         <!-- CREAR / EDITAR -->
-        <template v-else-if="modoModal === 'crear' || modoModal === 'editar'">
-          <div class="modal-header">
-            <h3>{{ modoModal === 'crear' ? 'Nuevo paciente' : 'Editar paciente' }}</h3>
-            <button class="modal-close" @click="cerrarModal">✕</button>
-          </div>
-          <form @submit.prevent="guardar" class="form-grid">
-            <div class="form-group" v-if="modoModal === 'crear'">
-              <label>DNI *</label>
-              <input v-model="form.dni" type="text" required maxlength="8" placeholder="12345678" />
-            </div>
-            <div class="form-group" v-if="modoModal === 'crear'">
-              <label>Usuario *</label>
-              <input v-model="form.username" type="text" required placeholder="juan.perez" />
-            </div>
-            <div class="form-group">
-              <label>Nombres *</label>
-              <input v-model="form.nombres" type="text" required placeholder="Juan" />
-            </div>
-            <div class="form-group">
-              <label>Apellidos *</label>
-              <input v-model="form.apellidos" type="text" required placeholder="Pérez Torres" />
-            </div>
-            <div class="form-group">
-              <label>Teléfono</label>
-              <input v-model="form.telefono" type="text" placeholder="987654321" />
-            </div>
-            <div class="form-group">
-              <label>Correo</label>
-              <input v-model="form.correo" type="email" placeholder="juan@email.com" />
-            </div>
-            <div class="form-group">
-              <label>Dirección</label>
-              <input v-model="form.direccion" type="text" placeholder="Av. Lima 123" />
-            </div>
-            <div class="form-group">
-              <label>F. Nacimiento *</label>
-              <input v-model="form.fecha_nacimiento" type="date" required />
-            </div>
-            <div class="form-group form-full">
-              <label>Observaciones</label>
-              <textarea v-model="form.observaciones" rows="3" placeholder="Notas clínicas..."></textarea>
-            </div>
-            <div class="modal-footer form-full">
-              <button type="button" class="btn-secundario" @click="cerrarModal">Cancelar</button>
-              <button type="submit" class="btn-primario" :disabled="isLoading">
-                {{ isLoading ? 'Guardando...' : 'Guardar' }}
-              </button>
-            </div>
-          </form>
-        </template>
+<template v-else-if="modoModal === 'crear' || modoModal === 'editar'">
+  <div class="modal-header">
+    <h3>{{ modoModal === 'crear' ? 'Nuevo paciente' : 'Editar paciente' }}</h3>
+    <button class="modal-close" @click="cerrarModal">✕</button>
+  </div>
+  
+  <form @submit.prevent="guardar" class="form-grid">
+    
+    <!-- Error general opcional -->
+    <div v-if="error" class="estado-error form-full">⚠️ {{ error }}</div>
+
+    <!-- ⬇️ PEGA AQUÍ TODO EL BLOQUE DE INPUTS CON LOS @input Y LOS SPAN ⬇️ -->
+    <div class="form-group" v-if="modoModal === 'crear'">
+      <label>DNI *</label>
+      <input v-model="form.dni" @input="validarCampo('dni')" type="text" maxlength="8" placeholder="12345678" />
+      <span v-if="erroresForm.dni" class="input-error-msg">{{ erroresForm.dni }}</span>
+    </div>
+
+    <div class="form-group" v-if="modoModal === 'crear'">
+      <label>Usuario *</label>
+      <input v-model="form.username" @input="validarCampo('username')" type="text" placeholder="juan.perez" />
+      <span v-if="erroresForm.username" class="input-error-msg">{{ erroresForm.username }}</span>
+    </div>
+
+    <div class="form-group">
+      <label>Nombres *</label>
+      <input v-model="form.nombres" @input="validarCampo('nombres')" type="text" placeholder="Juan" />
+      <span v-if="erroresForm.nombres" class="input-error-msg">{{ erroresForm.nombres }}</span>
+    </div>
+
+    <div class="form-group">
+      <label>Apellidos *</label>
+      <input v-model="form.apellidos" @input="validarCampo('apellidos')" type="text" placeholder="Pérez Torres" />
+      <span v-if="erroresForm.apellidos" class="input-error-msg">{{ erroresForm.apellidos }}</span>
+    </div>
+
+    <div class="form-group">
+      <label>Teléfono</label>
+      <input 
+       v-model="form.telefono" 
+       @input="validarCampo('telefono')" 
+       type="text" 
+       maxlength="9" 
+       inputmode="numeric" 
+       placeholder="987654321" 
+      />
+        <span v-if="erroresForm.telefono" class="input-error-msg">{{ erroresForm.telefono }}</span>
+    </div>
+
+    <div class="form-group">
+      <label>Correo</label>
+      <input v-model="form.correo" @input="validarCampo('correo')" type="email" placeholder="juan@email.com" />
+      <span v-if="erroresForm.correo" class="input-error-msg">{{ erroresForm.correo }}</span>
+    </div>
+
+    <div class="form-group">
+      <label>Dirección</label>
+      <input v-model="form.direccion" type="text" placeholder="Av. Lima 123" />
+    </div>
+
+    <div class="form-group">
+      <label>F. Nacimiento *</label>
+      <input v-model="form.fecha_nacimiento" @change="validarCampo('fecha_nacimiento')" type="date" />
+      <span v-if="erroresForm.fecha_nacimiento" class="input-error-msg">{{ erroresForm.fecha_nacimiento }}</span>
+    </div>
+    <!-- ⬆️ FIN DEL BLOQUE PEGADO ⬆️ -->
+
+    <!-- Observaciones y botones que ya tenías abajo -->
+    <div class="form-group form-full">
+      <label>Observaciones</label>
+      <textarea v-model="form.observaciones" rows="3" placeholder="Notas clínicas..."></textarea>
+    </div>
+
+    <div class="modal-footer form-full">
+      <button type="button" class="btn-secundario" @click="cerrarModal">Cancelar</button>
+      <button type="submit" class="btn-primario" :disabled="isLoading">
+        {{ isLoading ? 'Guardando...' : 'Guardar' }}
+      </button>
+    </div>
+  </form>
+</template>
 
       </div>
     </div>
@@ -854,5 +952,12 @@ onMounted(fetchPacientes)
   .detalle-full { grid-column: 1; }
   .form-full { grid-column: 1; }
   .td-acciones { flex-wrap: wrap; }
+}
+
+.input-error-msg {
+  font-size: 0.72rem;
+  color: #ef4444;
+  margin-top: -0.2rem;
+  font-weight: 500;
 }
 </style>
