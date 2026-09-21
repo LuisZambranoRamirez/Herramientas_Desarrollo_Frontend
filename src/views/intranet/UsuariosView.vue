@@ -309,6 +309,167 @@
           </table>
         </div>
       </div>
+
+      <!-- Modal: Crear Usuario -->
+      <transition name="modal-fade">
+        <div v-if="mostrarModalCrear" class="modal-overlay" @click.self="cerrarModalCrear">
+          <div class="modal-card">
+            <div class="modal-header">
+              <div class="modal-header-title">
+                <div class="modal-icon-badge">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3>Registrar Nuevo Usuario</h3>
+                  <p class="modal-subtitle">Completa la información para crear una nueva cuenta de acceso.</p>
+                </div>
+              </div>
+              <button class="modal-close-btn" @click="cerrarModalCrear" title="Cerrar">×</button>
+            </div>
+
+            <form @submit.prevent="guardarNuevoUsuario" class="modal-body">
+              <div class="form-grid">
+                <!-- Nombre de Usuario -->
+                <div class="form-group">
+                  <label class="form-label required">Nombre de Usuario (Username)</label>
+                  <div class="input-with-icon">
+                    <span class="input-prefix">@</span>
+                    <input
+                      v-model="formCrear.username"
+                      type="text"
+                      class="form-input with-prefix"
+                      :class="{ 'has-error': erroresForm.username }"
+                      placeholder="ej. juan.perez"
+                      @input="validarCampo('username')"
+                    />
+                  </div>
+                  <span v-if="erroresForm.username" class="error-text">{{ erroresForm.username }}</span>
+                </div>
+
+                <!-- Contraseña -->
+                <div class="form-group">
+                  <label class="form-label required">Contraseña Inicial</label>
+                  <div class="input-with-icon">
+                    <input
+                      v-model="formCrear.password"
+                      :type="mostrarPassword ? 'text' : 'password'"
+                      class="form-input"
+                      :class="{ 'has-error': erroresForm.password }"
+                      placeholder="Mínimo 6 caracteres"
+                      @input="validarCampo('password')"
+                    />
+                    <button
+                      type="button"
+                      class="btn-toggle-password"
+                      @click="mostrarPassword = !mostrarPassword"
+                      tabindex="-1"
+                    >
+                      <svg v-if="!mostrarPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                      </svg>
+                    </button>
+                  </div>
+                  <span v-if="erroresForm.password" class="error-text">{{ erroresForm.password }}</span>
+                </div>
+
+                <!-- Nombre Completo -->
+                <div class="form-group span-2">
+                  <label class="form-label required">Nombre Completo</label>
+                  <input
+                    v-model="formCrear.nombre_completo"
+                    type="text"
+                    class="form-input"
+                    :class="{ 'has-error': erroresForm.nombre_completo }"
+                    placeholder="ej. Juan Carlos Pérez Silva"
+                    @input="validarCampo('nombre_completo')"
+                  />
+                  <span v-if="erroresForm.nombre_completo" class="error-text">{{ erroresForm.nombre_completo }}</span>
+                </div>
+
+                <!-- Rol -->
+                <div class="form-group">
+                  <label class="form-label required">Rol del Usuario</label>
+                  <select
+                    v-model="formCrear.user_role"
+                    class="form-select"
+                  >
+                    <option value="SYSTEM_ADMIN">🛡️ Administrador del Sistema</option>
+                    <option value="ODONTOLOGO">🩺 Odontólogo / Especialista</option>
+                    <option value="PACIENTE">👤 Paciente</option>
+                  </select>
+                </div>
+
+                <!-- Correo Electrónico -->
+                <div class="form-group">
+                  <label class="form-label">Correo Electrónico</label>
+                  <input
+                    v-model="formCrear.correo"
+                    type="email"
+                    class="form-input"
+                    :class="{ 'has-error': erroresForm.correo }"
+                    placeholder="ej. usuario@solident.com"
+                    @input="validarCampo('correo')"
+                  />
+                  <span v-if="erroresForm.correo" class="error-text">{{ erroresForm.correo }}</span>
+                </div>
+
+                <!-- Teléfono -->
+                <div class="form-group">
+                  <label class="form-label">Teléfono (9 dígitos)</label>
+                  <input
+                    v-model="formCrear.telefono"
+                    type="tel"
+                    maxlength="9"
+                    class="form-input"
+                    :class="{ 'has-error': erroresForm.telefono }"
+                    placeholder="ej. 987654321"
+                    @input="validarCampo('telefono')"
+                  />
+                  <span v-if="erroresForm.telefono" class="error-text">{{ erroresForm.telefono }}</span>
+                </div>
+
+                <!-- Estado Inicial -->
+                <div class="form-group">
+                  <label class="form-label">Estado Inicial</label>
+                  <div class="toggle-control">
+                    <label class="switch-label">
+                      <input type="checkbox" v-model="formCrear.activo" class="toggle-checkbox" />
+                      <span class="toggle-slider"></span>
+                      <span class="toggle-text">{{ formCrear.activo ? 'Usuario Activo' : 'Usuario Inactivo' }}</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mensaje de error general si ocurre al guardar -->
+              <div v-if="errorCreacion" class="error-banner">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <circle cx="12" cy="12" r="10" stroke-width="2" />
+                  <line x1="12" y1="8" x2="12" y2="12" stroke-width="2" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2" />
+                </svg>
+                <span>{{ errorCreacion }}</span>
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="btn-cancel" @click="cerrarModalCrear">
+                  Cancelar
+                </button>
+                <button type="submit" class="btn-submit" :disabled="guardandoUsuario">
+                  <span v-if="guardandoUsuario" class="btn-spinner"></span>
+                  <span>{{ guardandoUsuario ? 'Guardando...' : 'Crear Usuario' }}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </transition>
     </div>
   </DashboardLayout>
 </template>
@@ -421,9 +582,150 @@ onMounted(() => {
   cargarUsuarios()
 })
 
-// Acciones provisionales (se completarán en sus tareas respectivas)
+// Estado del modal de creación
+const mostrarModalCrear = ref(false)
+const guardandoUsuario = ref(false)
+const errorCreacion = ref<string | null>(null)
+const mostrarPassword = ref(false)
+
+const formCrear = ref({
+  username: '',
+  password: '',
+  nombre_completo: '',
+  correo: '',
+  telefono: '',
+  user_role: 'PACIENTE' as UserRole,
+  activo: true,
+})
+
+const erroresForm = ref({
+  username: '',
+  password: '',
+  nombre_completo: '',
+  correo: '',
+  telefono: '',
+})
+
 const abrirModalCrear = () => {
-  console.log('Abrir modal de creación de usuario')
+  formCrear.value = {
+    username: '',
+    password: '',
+    nombre_completo: '',
+    correo: '',
+    telefono: '',
+    user_role: 'PACIENTE',
+    activo: true,
+  }
+  erroresForm.value = {
+    username: '',
+    password: '',
+    nombre_completo: '',
+    correo: '',
+    telefono: '',
+  }
+  errorCreacion.value = null
+  mostrarPassword.value = false
+  mostrarModalCrear.value = true
+}
+
+const cerrarModalCrear = () => {
+  mostrarModalCrear.value = false
+}
+
+const validarCampo = (campo: string) => {
+  switch (campo) {
+    case 'username': {
+      formCrear.value.username = (formCrear.value.username || '').replace(/[^a-zA-Z0-9._-]/g, '')
+      const u = formCrear.value.username.trim()
+      if (!u) {
+        erroresForm.value.username = 'El nombre de usuario es obligatorio.'
+      } else if (u.length < 3) {
+        erroresForm.value.username = 'Debe tener al menos 3 caracteres.'
+      } else {
+        erroresForm.value.username = ''
+      }
+      break
+    }
+    case 'password': {
+      const p = formCrear.value.password
+      if (!p) {
+        erroresForm.value.password = 'La contraseña es obligatoria.'
+      } else if (p.length < 6) {
+        erroresForm.value.password = 'La contraseña debe tener al menos 6 caracteres.'
+      } else {
+        erroresForm.value.password = ''
+      }
+      break
+    }
+    case 'nombre_completo': {
+      const n = formCrear.value.nombre_completo.trim()
+      if (!n) {
+        erroresForm.value.nombre_completo = 'El nombre completo es obligatorio.'
+      } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(n)) {
+        erroresForm.value.nombre_completo = 'El nombre solo debe contener letras.'
+      } else {
+        erroresForm.value.nombre_completo = ''
+      }
+      break
+    }
+    case 'correo': {
+      const c = formCrear.value.correo.trim()
+      if (c && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c)) {
+        erroresForm.value.correo = 'Formato de correo electrónico inválido.'
+      } else {
+        erroresForm.value.correo = ''
+      }
+      break
+    }
+    case 'telefono': {
+      formCrear.value.telefono = (formCrear.value.telefono || '').replace(/\D/g, '')
+      const t = formCrear.value.telefono
+      if (t && t.length !== 9) {
+        erroresForm.value.telefono = 'El teléfono debe tener exactamente 9 dígitos.'
+      } else {
+        erroresForm.value.telefono = ''
+      }
+      break
+    }
+  }
+}
+
+const validarFormularioCompleto = (): boolean => {
+  validarCampo('username')
+  validarCampo('password')
+  validarCampo('nombre_completo')
+  validarCampo('correo')
+  validarCampo('telefono')
+  return !Object.values(erroresForm.value).some(err => err !== '')
+}
+
+const guardarNuevoUsuario = async () => {
+  if (!validarFormularioCompleto()) {
+    return
+  }
+
+  try {
+    guardandoUsuario.value = true
+    errorCreacion.value = null
+
+    const nuevo = await usuariosService.create({
+      username: formCrear.value.username.trim(),
+      password: formCrear.value.password,
+      nombre_completo: formCrear.value.nombre_completo.trim(),
+      correo: formCrear.value.correo.trim() || undefined,
+      telefono: formCrear.value.telefono.trim() || undefined,
+      user_role: formCrear.value.user_role,
+      activo: formCrear.value.activo,
+    })
+
+    usuarios.value.unshift(nuevo)
+    cerrarModalCrear()
+    mostrarMensaje(`¡Usuario @${nuevo.username} creado exitosamente!`)
+  } catch (err) {
+    errorCreacion.value = err instanceof Error ? err.message : 'Error al registrar el usuario.'
+  } finally {
+    guardandoUsuario.value = false
+  }
 }
 
 const verDetalle = (user: Usuario) => {
@@ -1293,6 +1595,402 @@ html.dark .btn-reset-filters:hover {
 html.dark .filtered-badge {
   background: rgba(79, 70, 229, 0.2);
   color: #a5b4fc;
+}
+
+/* Modal Overlay and Card */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.modal-card {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 600px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  animation: modalScaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-light, #e2e8f0);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #f8fafc;
+}
+
+.modal-header-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.modal-icon-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #eef2ff;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.modal-icon-badge svg {
+  width: 22px;
+  height: 22px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.modal-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.modal-close-btn:hover {
+  background: var(--border-light);
+  color: var(--text-main);
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group.span-2 {
+  grid-column: span 2;
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.form-label.required::after {
+  content: ' *';
+  color: #ef4444;
+}
+
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-prefix {
+  position: absolute;
+  left: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.form-input.with-prefix {
+  padding-left: 30px;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-input, #ffffff);
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--text-main);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus,
+.form-select:focus {
+  border-color: var(--border-focus, #4f46e5);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.form-input.has-error {
+  border-color: #ef4444;
+  background-color: #fffbfa;
+}
+
+.error-text {
+  font-size: 12px;
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.btn-toggle-password {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.btn-toggle-password svg {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-toggle-password:hover {
+  color: var(--text-main);
+}
+
+/* Toggle Control */
+.toggle-control {
+  padding: 6px 0;
+}
+
+.switch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.toggle-checkbox {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  width: 44px;
+  height: 24px;
+  background: #cbd5e1;
+  border-radius: 9999px;
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toggle-checkbox:checked + .toggle-slider {
+  background: #10b981;
+}
+
+.toggle-checkbox:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
+.toggle-text {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.error-banner {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.error-banner svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.modal-footer {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-light, #e2e8f0);
+}
+
+.btn-cancel {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light, #e2e8f0);
+  background: transparent;
+  color: var(--text-main);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel:hover {
+  background: #f1f5f9;
+}
+
+.btn-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent-teal-gradient, linear-gradient(135deg, #00c49f 0%, #00b4d8 100%));
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 196, 159, 0.25);
+  transition: all 0.2s ease;
+}
+
+.btn-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 196, 159, 0.35);
+}
+
+.btn-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Transitions */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
+/* Dark mode for Modal */
+html.dark .modal-card {
+  background-color: #131b2e;
+  border-color: #1e293b;
+}
+
+html.dark .modal-header {
+  background-color: #0f172a;
+  border-bottom-color: #1e293b;
+}
+
+html.dark .modal-icon-badge {
+  background-color: rgba(79, 70, 229, 0.2);
+  color: #a5b4fc;
+}
+
+html.dark .form-input,
+html.dark .form-select {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+html.dark .form-input.has-error {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+}
+
+html.dark .toggle-slider {
+  background: #334155;
+}
+
+html.dark .error-banner {
+  background: rgba(185, 28, 28, 0.2);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+html.dark .modal-footer {
+  border-top-color: #1e293b;
+}
+
+html.dark .btn-cancel {
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+html.dark .btn-cancel:hover {
+  background-color: #1e293b;
+  color: #f8fafc;
 }
 
 /* Responsiveness */
