@@ -95,6 +95,79 @@
         </div>
       </transition>
 
+      <!-- Filtros y Barra de Búsqueda -->
+      <div class="filters-card">
+        <div class="search-input-wrapper">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            v-model="busqueda"
+            type="text"
+            class="search-input"
+            placeholder="Buscar por usuario, nombre, correo o teléfono..."
+          />
+          <button v-if="busqueda" class="clear-search-btn" @click="busqueda = ''" title="Limpiar búsqueda">
+            ×
+          </button>
+        </div>
+
+        <div class="filter-controls">
+          <!-- Filtro por Rol -->
+          <div class="filter-group">
+            <label class="filter-label">Rol:</label>
+            <select v-model="filtroRol" class="filter-select">
+              <option value="TODOS">Todos los roles</option>
+              <option value="SYSTEM_ADMIN">🛡️ Administrador</option>
+              <option value="ODONTOLOGO">🩺 Odontólogo</option>
+              <option value="PACIENTE">👤 Paciente</option>
+            </select>
+          </div>
+
+          <!-- Filtro por Estado -->
+          <div class="filter-group">
+            <label class="filter-label">Estado:</label>
+            <select v-model="filtroEstado" class="filter-select">
+              <option value="TODOS">Todos los estados</option>
+              <option value="ACTIVOS">Solo Activos</option>
+              <option value="INACTIVOS">Solo Inactivos</option>
+            </select>
+          </div>
+
+          <!-- Ordenar por -->
+          <div class="filter-group">
+            <label class="filter-label">Ordenar:</label>
+            <select v-model="ordenarPor" class="filter-select">
+              <option value="recientes">Más recientes</option>
+              <option value="antiguos">Más antiguos</option>
+              <option value="nombre_asc">Nombre (A - Z)</option>
+              <option value="nombre_desc">Nombre (Z - A)</option>
+            </select>
+          </div>
+
+          <!-- Botón de Reset si hay filtros activos -->
+          <button
+            v-if="filtrosActivos"
+            class="btn-reset-filters"
+            @click="limpiarFiltros"
+            title="Restablecer todos los filtros"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Limpiar
+          </button>
+        </div>
+      </div>
+
+      <!-- Resumen de resultados filtrados -->
+      <div class="results-summary">
+        <span class="results-count">
+          Mostrando <strong>{{ usuariosFiltrados.length }}</strong> de <strong>{{ usuarios.length }}</strong> usuarios
+        </span>
+        <span v-if="filtrosActivos" class="filtered-badge">Filtros aplicados</span>
+      </div>
+
       <!-- Tabla Principal de Listado de Usuarios -->
       <div class="table-card">
         <!-- Estado de Carga -->
@@ -128,7 +201,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="user in usuarios" :key="user.username" class="user-row">
+              <tr v-for="user in usuariosFiltrados" :key="user.username" class="user-row">
                 <!-- Columna Usuario: Avatar, Nombre y Username -->
                 <td>
                   <div class="user-profile-cell">
@@ -214,13 +287,21 @@
               </tr>
 
               <!-- Estado Vacío -->
-              <tr v-if="usuarios.length === 0">
+              <tr v-if="usuariosFiltrados.length === 0">
                 <td colspan="6" class="empty-state">
                   <div class="empty-content">
-                    <div class="empty-icon">👥</div>
-                    <h4>No se encontraron usuarios</h4>
-                    <p>No hay usuarios registrados actualmente en la base de datos.</p>
-                    <button class="btn-primary" @click="abrirModalCrear">Registrar primer usuario</button>
+                    <div class="empty-icon">{{ filtrosActivos ? '🔍' : '👥' }}</div>
+                    <h4>{{ filtrosActivos ? 'No se encontraron coincidencias' : 'No se encontraron usuarios' }}</h4>
+                    <p v-if="filtrosActivos">
+                      No hay usuarios que coincidan con los criterios de búsqueda o filtros seleccionados.
+                    </p>
+                    <p v-else>No hay usuarios registrados actualmente en el sistema.</p>
+                    <button v-if="filtrosActivos" class="btn-primary" @click="limpiarFiltros">
+                      Restablecer filtros
+                    </button>
+                    <button v-else class="btn-primary" @click="abrirModalCrear">
+                      Registrar primer usuario
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -243,6 +324,79 @@ const usuarios = ref<Usuario[]>([])
 const cargando = ref(true)
 const error = ref<string | null>(null)
 const mensajeExito = ref<string | null>(null)
+
+// Búsqueda y filtros
+const busqueda = ref('')
+const filtroRol = ref<'TODOS' | UserRole>('TODOS')
+const filtroEstado = ref<'TODOS' | 'ACTIVOS' | 'INACTIVOS'>('TODOS')
+const ordenarPor = ref<'recientes' | 'antiguos' | 'nombre_asc' | 'nombre_desc'>('recientes')
+
+const filtrosActivos = computed(() => {
+  return (
+    busqueda.value.trim() !== '' ||
+    filtroRol.value !== 'TODOS' ||
+    filtroEstado.value !== 'TODOS' ||
+    ordenarPor.value !== 'recientes'
+  )
+})
+
+const limpiarFiltros = () => {
+  busqueda.value = ''
+  filtroRol.value = 'TODOS'
+  filtroEstado.value = 'TODOS'
+  ordenarPor.value = 'recientes'
+}
+
+const usuariosFiltrados = computed(() => {
+  let resultado = [...usuarios.value]
+
+  // Búsqueda por texto
+  if (busqueda.value.trim()) {
+    const q = busqueda.value.trim().toLowerCase()
+    resultado = resultado.filter(u => {
+      const usernameMatch = u.username.toLowerCase().includes(q)
+      const nombreMatch = (u.nombre_completo || '').toLowerCase().includes(q)
+      const correoMatch = (u.correo || '').toLowerCase().includes(q)
+      const telMatch = (u.telefono || '').toLowerCase().includes(q)
+      return usernameMatch || nombreMatch || correoMatch || telMatch
+    })
+  }
+
+  // Filtro por Rol
+  if (filtroRol.value !== 'TODOS') {
+    resultado = resultado.filter(u => u.user_role === filtroRol.value)
+  }
+
+  // Filtro por Estado
+  if (filtroEstado.value === 'ACTIVOS') {
+    resultado = resultado.filter(u => u.activo)
+  } else if (filtroEstado.value === 'INACTIVOS') {
+    resultado = resultado.filter(u => !u.activo)
+  }
+
+  // Ordenamiento
+  resultado.sort((a, b) => {
+    if (ordenarPor.value === 'recientes') {
+      return new Date(b.fecha_registro).getTime() - new Date(a.fecha_registro).getTime()
+    }
+    if (ordenarPor.value === 'antiguos') {
+      return new Date(a.fecha_registro).getTime() - new Date(b.fecha_registro).getTime()
+    }
+    if (ordenarPor.value === 'nombre_asc') {
+      const nombreA = a.nombre_completo || a.username
+      const nombreB = b.nombre_completo || b.username
+      return nombreA.localeCompare(nombreB)
+    }
+    if (ordenarPor.value === 'nombre_desc') {
+      const nombreA = a.nombre_completo || a.username
+      const nombreB = b.nombre_completo || b.username
+      return nombreB.localeCompare(nombreA)
+    }
+    return 0
+  })
+
+  return resultado
+})
 
 // Métricas computadas
 const totalAdmins = computed(() => usuarios.value.filter(u => u.user_role === 'SYSTEM_ADMIN').length)
@@ -553,6 +707,158 @@ const formatearHora = (fechaIso: string): string => {
   width: 20px;
   height: 20px;
   color: #10b981;
+}
+
+/* Filters Card */
+.filters-card {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-sm);
+}
+
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 280px;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted, #64748b);
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 38px 10px 42px;
+  background: var(--bg-input, #ffffff);
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--text-main, #1e293b);
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: var(--border-focus, #4f46e5);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.clear-search-btn:hover {
+  color: var(--text-main);
+  background: var(--border-light);
+}
+
+.filter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.filter-select {
+  padding: 9px 14px;
+  background: var(--bg-input, #ffffff);
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: 10px;
+  font-size: 13.5px;
+  color: var(--text-main);
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-select:focus {
+  border-color: var(--border-focus, #4f46e5);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.btn-reset-filters {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-reset-filters:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.btn-reset-filters svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Results Summary */
+.results-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 0 4px;
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+
+.results-count strong {
+  color: var(--text-main);
+}
+
+.filtered-badge {
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
 }
 
 /* Table Card */
@@ -959,6 +1265,34 @@ html.dark .toast-success {
   background: rgba(6, 95, 70, 0.3);
   border-color: rgba(16, 185, 129, 0.4);
   color: #a7f3d0;
+}
+
+html.dark .filters-card {
+  background-color: var(--bg-card);
+  border-color: var(--border-light);
+}
+
+html.dark .search-input,
+html.dark .filter-select {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+html.dark .btn-reset-filters {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+html.dark .btn-reset-filters:hover {
+  background: #334155;
+  color: #ffffff;
+}
+
+html.dark .filtered-badge {
+  background: rgba(79, 70, 229, 0.2);
+  color: #a5b4fc;
 }
 
 /* Responsiveness */
