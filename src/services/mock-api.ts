@@ -1,5 +1,7 @@
 import type {
   Usuario,
+  CrearUsuarioDto,
+  ActualizarUsuarioDto,
   Personal,
   Paciente,
   Odontologo,
@@ -83,21 +85,63 @@ export const mockDb = {
 mockDb.usuarios.push(
   {
     username: 'admin',
+    nombre_completo: 'Administrador SoliDent',
+    correo: 'admin@solident.com',
+    telefono: '987654321',
     activo: true,
     user_role: 'SYSTEM_ADMIN',
     fecha_registro: '2026-08-01T08:00:00',
+    ultimo_acceso: '2026-09-21T16:45:00',
   },
   {
     username: 'dr.garcia',
+    nombre_completo: 'Dr. Carlos García López',
+    correo: 'carlos.garcia@solident.com',
+    telefono: '987654322',
     activo: true,
     user_role: 'ODONTOLOGO',
     fecha_registro: '2026-08-02T09:00:00',
+    ultimo_acceso: '2026-09-21T14:30:00',
+  },
+  {
+    username: 'dra.rodriguez',
+    nombre_completo: 'Dra. Patricia Rodríguez Vega',
+    correo: 'patricia.rodriguez@solident.com',
+    telefono: '998877665',
+    activo: true,
+    user_role: 'ODONTOLOGO',
+    fecha_registro: '2026-08-05T11:15:00',
+    ultimo_acceso: '2026-09-20T18:20:00',
   },
   {
     username: 'maria.lopez',
+    nombre_completo: 'María López García',
+    correo: 'maria.lopez@gmail.com',
+    telefono: '987111222',
     activo: true,
     user_role: 'PACIENTE',
     fecha_registro: '2026-08-03T10:00:00',
+    ultimo_acceso: '2026-09-18T10:12:00',
+  },
+  {
+    username: 'juan.perez',
+    nombre_completo: 'Juan Pérez Silva',
+    correo: 'juan.perez@outlook.com',
+    telefono: '976543210',
+    activo: true,
+    user_role: 'PACIENTE',
+    fecha_registro: '2026-08-04T12:00:00',
+    ultimo_acceso: '2026-09-19T09:05:00',
+  },
+  {
+    username: 'lucia.mendez',
+    nombre_completo: 'Lucía Méndez Castro',
+    correo: 'lucia.mendez@hotmail.com',
+    telefono: '945678123',
+    activo: false,
+    user_role: 'PACIENTE',
+    fecha_registro: '2026-08-10T16:20:00',
+    ultimo_acceso: '2026-08-25T11:40:00',
   },
 )
 
@@ -306,8 +350,90 @@ export const usuarioApi = {
     await delay()
 
     return mockDb.usuarios.find(
-      usuario => usuario.username === username,
+      usuario => usuario.username.toLowerCase() === username.toLowerCase(),
     )
+  },
+
+  async create(data: CrearUsuarioDto): Promise<Usuario> {
+    await delay()
+
+    const existe = mockDb.usuarios.some(
+      u => u.username.toLowerCase() === data.username.trim().toLowerCase(),
+    )
+    if (existe) {
+      throw new Error(`El nombre de usuario "${data.username}" ya se encuentra registrado.`)
+    }
+
+    const nuevoUsuario: Usuario = {
+      username: data.username.trim(),
+      nombre_completo: data.nombre_completo?.trim() || data.username.trim(),
+      correo: data.correo?.trim() || undefined,
+      telefono: data.telefono?.trim() || undefined,
+      activo: data.activo !== undefined ? data.activo : true,
+      user_role: data.user_role,
+      fecha_registro: now(),
+      ultimo_acceso: undefined,
+    }
+
+    mockDb.usuarios.unshift(nuevoUsuario)
+    return nuevoUsuario
+  },
+
+  async update(username: string, data: ActualizarUsuarioDto): Promise<Usuario> {
+    await delay()
+
+    const index = mockDb.usuarios.findIndex(
+      u => u.username.toLowerCase() === username.toLowerCase(),
+    )
+    if (index === -1) {
+      throw new Error('Usuario no encontrado.')
+    }
+
+    const usuarioActual = mockDb.usuarios[index]
+    if (!usuarioActual) {
+      throw new Error('Usuario no encontrado.')
+    }
+
+    const usuarioActualizado: Usuario = {
+      username: usuarioActual.username,
+      nombre_completo: data.nombre_completo !== undefined ? data.nombre_completo.trim() : usuarioActual.nombre_completo,
+      correo: data.correo !== undefined ? data.correo.trim() : usuarioActual.correo,
+      telefono: data.telefono !== undefined ? data.telefono.trim() : usuarioActual.telefono,
+      activo: data.activo !== undefined ? data.activo : usuarioActual.activo,
+      user_role: data.user_role !== undefined ? data.user_role : usuarioActual.user_role,
+      fecha_registro: usuarioActual.fecha_registro,
+      ultimo_acceso: usuarioActual.ultimo_acceso,
+    }
+
+    mockDb.usuarios[index] = usuarioActualizado
+    return usuarioActualizado
+  },
+
+  async toggleStatus(username: string): Promise<Usuario> {
+    await delay()
+
+    const usuario = mockDb.usuarios.find(
+      u => u.username.toLowerCase() === username.toLowerCase(),
+    )
+    if (!usuario) {
+      throw new Error('Usuario no encontrado.')
+    }
+
+    usuario.activo = !usuario.activo
+    return { ...usuario }
+  },
+
+  async delete(username: string): Promise<void> {
+    await delay()
+
+    const index = mockDb.usuarios.findIndex(
+      u => u.username.toLowerCase() === username.toLowerCase(),
+    )
+    if (index === -1) {
+      throw new Error('Usuario no encontrado.')
+    }
+
+    mockDb.usuarios.splice(index, 1)
   },
 }
 
