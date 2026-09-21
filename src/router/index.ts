@@ -7,6 +7,7 @@ import DashboardView from '@/views/DashboardView.vue'
 import InventarioView from '@/views/InventarioView.vue'
 import AgendaView from '@/views/intranet/AgendaView.vue'
 import PacientesView from '@/views/intranet/PacientesView.vue'
+import UsuariosView from '@/views/intranet/UsuariosView.vue'
 import TratamientosView from '@/views/intranet/TratamientosView.vue'
 import PagosView from '@/views/intranet/PagosView.vue'
 import ConfiguracionView from '@/views/intranet/ConfiguracionView.vue'
@@ -52,9 +53,15 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/pacientes',
+      name: 'pacientes',
+      component: PacientesView,
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/usuarios',
       name: 'usuarios',
-      component: PacientesView,
+      component: UsuariosView,
       meta: { requiresAuth: true },
     },
     {

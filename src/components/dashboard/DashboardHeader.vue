@@ -15,7 +15,8 @@ const { isDark, toggleTheme } = useTheme()
 
 const titulosPorRuta: Record<string, string> = {
   '/dashboard': 'Panel Principal',
-  '/usuarios': 'Gestión de Pacientes',
+  '/pacientes': 'Gestión de Pacientes',
+  '/usuarios': 'Gestión de Usuarios',
   '/agenda': 'Agenda y Citas Médicas',
   '/tratamientos': 'Catálogo de Tratamientos',
   '/pagos': 'Registro de Pagos',
