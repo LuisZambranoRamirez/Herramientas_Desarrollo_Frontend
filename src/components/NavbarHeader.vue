@@ -1,58 +1,159 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { RouterLink } from 'vue-router'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
+const route = useRoute()
+const router = useRouter()
 const isMobileMenuOpen = ref(false)
 
-// ✅ ESTADO REACTIVO
-const currentPath = ref(window.location.pathname)
-const currentHash = ref(window.location.hash)
+const sectionIds = ['inicio', 'nosotros', 'servicios', 'especialistas']
+const activeSection = ref<string>('inicio')
 
-// ✅ FUNCIÓN PARA ACTUALIZAR EL ESTADO
-function updateRoute() {
-  currentPath.value = window.location.pathname
-  currentHash.value = window.location.hash
+let isManualScrolling = false
+let scrollTimeout: ReturnType<typeof setTimeout> | null = null
+let ticking = false
+
+function updateActiveSectionOnScroll() {
+  if (route.path !== '/') return
+  if (isManualScrolling) return
+
+  const scrollY = window.scrollY
+  if (scrollY < 120) {
+    activeSection.value = 'inicio'
+    return
+  }
+
+  const windowHeight = window.innerHeight
+  const docHeight = document.documentElement.scrollHeight
+  if (windowHeight + scrollY >= docHeight - 60) {
+    activeSection.value = 'especialistas'
+    return
+  }
+
+  const navOffset = 130
+  let current = 'inicio'
+  for (const id of sectionIds) {
+    const el = document.getElementById(id)
+    if (el) {
+      const rect = el.getBoundingClientRect()
+      if (rect.top <= navOffset) {
+        current = id
+      }
+    }
+  }
+  activeSection.value = current
 }
 
-// ✅ FORZAR ACTUALIZACIÓN CADA 200ms (para detectar cambios de hash)
-let intervalId: number | null = null
-
-onMounted(() => {
-  updateRoute()
-  // Forzar actualización cada 200ms
-  intervalId = setInterval(updateRoute, 200)
-  
-  // También escuchar eventos
-  window.addEventListener('hashchange', updateRoute)
-  window.addEventListener('popstate', updateRoute)
-})
-
-onUnmounted(() => {
-  if (intervalId) clearInterval(intervalId)
-  window.removeEventListener('hashchange', updateRoute)
-  window.removeEventListener('popstate', updateRoute)
-})
-
-// ✅ FUNCIONES DE DETECCIÓN
-const isHome = () => currentPath.value === '/' && currentHash.value === ''
-const isSection = (id: string) => currentPath.value === '/' && currentHash.value === `#${id}`
-const isActiveRoute = (path: string) => currentPath.value === path
+function handleScroll() {
+  if (!ticking) {
+    window.requestAnimationFrame(() => {
+      updateActiveSectionOnScroll()
+      ticking = false
+    })
+    ticking = true
+  }
+}
 
 function scrollToSection(sectionId: string) {
   isMobileMenuOpen.value = false
+
+  if (route.path !== '/') {
+    router.push({ path: '/', hash: sectionId === 'inicio' ? undefined : `#${sectionId}` }).then(() => {
+      nextTick(() => {
+        scrollToElement(sectionId)
+      })
+    })
+    return
+  }
+
+  scrollToElement(sectionId)
+}
+
+function scrollToElement(sectionId: string) {
+  isManualScrolling = true
+  activeSection.value = sectionId
+
+  if (scrollTimeout) clearTimeout(scrollTimeout)
+  scrollTimeout = setTimeout(() => {
+    isManualScrolling = false
+  }, 800)
+
+  if (sectionId === 'inicio') {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    if (window.location.hash) {
+      history.replaceState(null, '', window.location.pathname)
+    }
+    return
+  }
+
   const el = document.getElementById(sectionId)
   if (el) {
     el.scrollIntoView({ behavior: 'smooth' })
-    window.location.hash = sectionId
-    updateRoute()
+    history.pushState(null, '', `#${sectionId}`)
   }
 }
+
+const isSectionActive = (id: string) => {
+  return route.path === '/' && activeSection.value === id
+}
+
+const isRouteActive = (path: string) => {
+  return route.path === path
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll, { passive: true })
+
+  if (route.path === '/') {
+    if (route.hash) {
+      const targetId = route.hash.replace('#', '')
+      if (sectionIds.includes(targetId)) {
+        activeSection.value = targetId
+        setTimeout(() => {
+          scrollToElement(targetId)
+        }, 150)
+        return
+      }
+    }
+    updateActiveSectionOnScroll()
+  }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+  if (scrollTimeout) clearTimeout(scrollTimeout)
+})
+
+watch(
+  () => route.hash,
+  (newHash) => {
+    if (route.path === '/') {
+      const targetId = newHash.replace('#', '')
+      if (sectionIds.includes(targetId)) {
+        activeSection.value = targetId
+      } else if (!newHash) {
+        activeSection.value = 'inicio'
+      }
+    }
+  }
+)
+
+watch(
+  () => route.path,
+  (newPath) => {
+    if (newPath === '/') {
+      nextTick(() => {
+        updateActiveSectionOnScroll()
+      })
+    }
+  }
+)
 </script>
 
 <template>
   <header class="navbar">
     <div class="navbar-container">
-      <RouterLink to="/" class="brand" @click="isMobileMenuOpen = false">
+      <RouterLink to="/" class="brand" @click.prevent="scrollToSection('inicio')">
         <div class="brand-logo">
           <span class="logo-letter">S</span>
         </div>
@@ -60,27 +161,62 @@ function scrollToSection(sectionId: string) {
       </RouterLink>
 
       <nav class="nav-menu">
-        <RouterLink to="/" class="nav-link" :class="{ active: isHome() }">
+        <a
+          href="#inicio"
+          class="nav-link"
+          :class="{ active: isSectionActive('inicio') }"
+          @click.prevent="scrollToSection('inicio')"
+        >
           Inicio
-        </RouterLink>
-        <a href="#nosotros" class="nav-link" :class="{ active: isSection('nosotros') }" @click.prevent="scrollToSection('nosotros')">
+        </a>
+        <a
+          href="#nosotros"
+          class="nav-link"
+          :class="{ active: isSectionActive('nosotros') }"
+          @click.prevent="scrollToSection('nosotros')"
+        >
           Nosotros
         </a>
-        <a href="#servicios" class="nav-link" :class="{ active: isSection('servicios') }" @click.prevent="scrollToSection('servicios')">
+        <a
+          href="#servicios"
+          class="nav-link"
+          :class="{ active: isSectionActive('servicios') }"
+          @click.prevent="scrollToSection('servicios')"
+        >
           Servicios
         </a>
-        <a href="#especialistas" class="nav-link" :class="{ active: isSection('especialistas') }" @click.prevent="scrollToSection('especialistas')">
+        <a
+          href="#especialistas"
+          class="nav-link"
+          :class="{ active: isSectionActive('especialistas') }"
+          @click.prevent="scrollToSection('especialistas')"
+        >
           Especialistas
         </a>
-        <RouterLink to="/reservar" class="nav-link nav-link-highlight" :class="{ active: isActiveRoute('/reservar') }">
+        <RouterLink
+          to="/reservar"
+          class="nav-link nav-link-highlight"
+          :class="{ active: isRouteActive('/reservar') }"
+          @click="isMobileMenuOpen = false"
+        >
           Reservar Cita
         </RouterLink>
-        <RouterLink to="/login" class="nav-link nav-link-highlight" :class="{ active: isActiveRoute('/login') }">
+        <RouterLink
+          to="/login"
+          class="nav-link nav-link-highlight"
+          :class="{ active: isRouteActive('/login') }"
+          @click="isMobileMenuOpen = false"
+        >
           Intranet
         </RouterLink>
       </nav>
 
-      <button type="button" class="mobile-toggle" @click="isMobileMenuOpen = !isMobileMenuOpen" aria-label="Abrir menú">
+      <button
+        type="button"
+        class="mobile-toggle"
+        @click="isMobileMenuOpen = !isMobileMenuOpen"
+        aria-label="Abrir menú"
+      >
         <svg v-if="!isMobileMenuOpen" class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
@@ -91,22 +227,52 @@ function scrollToSection(sectionId: string) {
     </div>
 
     <div v-if="isMobileMenuOpen" class="mobile-menu">
-      <RouterLink to="/" class="mobile-nav-link" :class="{ active: isHome() }" @click="isMobileMenuOpen = false">
+      <a
+        href="#inicio"
+        class="mobile-nav-link"
+        :class="{ active: isSectionActive('inicio') }"
+        @click.prevent="scrollToSection('inicio')"
+      >
         Inicio
-      </RouterLink>
-      <a href="#nosotros" class="mobile-nav-link" :class="{ active: isSection('nosotros') }" @click.prevent="scrollToSection('nosotros')">
+      </a>
+      <a
+        href="#nosotros"
+        class="mobile-nav-link"
+        :class="{ active: isSectionActive('nosotros') }"
+        @click.prevent="scrollToSection('nosotros')"
+      >
         Nosotros
       </a>
-      <a href="#servicios" class="mobile-nav-link" :class="{ active: isSection('servicios') }" @click.prevent="scrollToSection('servicios')">
+      <a
+        href="#servicios"
+        class="mobile-nav-link"
+        :class="{ active: isSectionActive('servicios') }"
+        @click.prevent="scrollToSection('servicios')"
+      >
         Servicios
       </a>
-      <a href="#especialistas" class="mobile-nav-link" :class="{ active: isSection('especialistas') }" @click.prevent="scrollToSection('especialistas')">
+      <a
+        href="#especialistas"
+        class="mobile-nav-link"
+        :class="{ active: isSectionActive('especialistas') }"
+        @click.prevent="scrollToSection('especialistas')"
+      >
         Especialistas
       </a>
-      <RouterLink to="/reservar" class="mobile-nav-link highlight" :class="{ active: isActiveRoute('/reservar') }" @click="isMobileMenuOpen = false">
+      <RouterLink
+        to="/reservar"
+        class="mobile-nav-link highlight"
+        :class="{ active: isRouteActive('/reservar') }"
+        @click="isMobileMenuOpen = false"
+      >
         Reservar Cita
       </RouterLink>
-      <RouterLink to="/login" class="mobile-nav-link highlight" :class="{ active: isActiveRoute('/login') }" @click="isMobileMenuOpen = false">
+      <RouterLink
+        to="/login"
+        class="mobile-nav-link highlight"
+        :class="{ active: isRouteActive('/login') }"
+        @click="isMobileMenuOpen = false"
+      >
         Intranet
       </RouterLink>
     </div>
