@@ -470,6 +470,154 @@
           </div>
         </div>
       </transition>
+
+      <!-- Modal: Detalle de Usuario -->
+      <transition name="modal-fade">
+        <div v-if="usuarioSeleccionado" class="modal-overlay" @click.self="cerrarDetalle">
+          <div class="modal-card modal-detail-card">
+            <div class="modal-header detail-header">
+              <div class="detail-header-profile">
+                <div class="avatar avatar-large" :class="getAvatarClass(usuarioSeleccionado.user_role)">
+                  {{ getInitials(usuarioSeleccionado.nombre_completo || usuarioSeleccionado.username) }}
+                </div>
+                <div class="detail-header-info">
+                  <div class="detail-name-row">
+                    <h3>{{ usuarioSeleccionado.nombre_completo || usuarioSeleccionado.username }}</h3>
+                    <span class="status-pill" :class="usuarioSeleccionado.activo ? 'status-active' : 'status-inactive'">
+                      <span class="status-dot"></span>
+                      {{ usuarioSeleccionado.activo ? 'Activo' : 'Inactivo' }}
+                    </span>
+                  </div>
+                  <div class="detail-sub-row">
+                    <span class="user-tag-lg">@{{ usuarioSeleccionado.username }}</span>
+                    <span class="role-badge" :class="getRoleBadgeClass(usuarioSeleccionado.user_role)">
+                      <span class="role-icon">{{ getRoleIcon(usuarioSeleccionado.user_role) }}</span>
+                      {{ getRoleLabel(usuarioSeleccionado.user_role) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button class="modal-close-btn" @click="cerrarDetalle" title="Cerrar">×</button>
+            </div>
+
+            <div class="modal-body detail-body">
+              <!-- Grid de información de cuenta y contacto -->
+              <div class="detail-sections-grid">
+                <!-- Tarjeta 1: Cuenta y Acceso -->
+                <div class="detail-card-box">
+                  <div class="detail-box-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <h4>Información de Cuenta</h4>
+                  </div>
+                  <div class="detail-items-list">
+                    <div class="detail-item">
+                      <span class="detail-item-label">Identificador:</span>
+                      <span class="detail-item-value">@{{ usuarioSeleccionado.username }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-item-label">Fecha de Registro:</span>
+                      <span class="detail-item-value">{{ formatearFecha(usuarioSeleccionado.fecha_registro) }} a las {{ formatearHora(usuarioSeleccionado.fecha_registro) }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-item-label">Último Acceso:</span>
+                      <span class="detail-item-value">
+                        {{ usuarioSeleccionado.ultimo_acceso ? formatearFecha(usuarioSeleccionado.ultimo_acceso) + ' ' + formatearHora(usuarioSeleccionado.ultimo_acceso) : 'Sin inicio de sesión reciente' }}
+                      </span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-item-label">Estado de la cuenta:</span>
+                      <div class="detail-status-action">
+                        <span class="badge-status-text" :class="usuarioSeleccionado.activo ? 'text-green' : 'text-red'">
+                          {{ usuarioSeleccionado.activo ? 'Habilitado para ingresar' : 'Acceso restringido' }}
+                        </span>
+                        <button
+                          class="btn-text-action"
+                          @click="toggleEstadoModal(usuarioSeleccionado)"
+                        >
+                          {{ usuarioSeleccionado.activo ? 'Desactivar' : 'Activar' }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tarjeta 2: Datos de Contacto -->
+                <div class="detail-card-box">
+                  <div class="detail-box-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <h4>Datos de Contacto</h4>
+                  </div>
+                  <div class="detail-items-list">
+                    <div class="detail-item">
+                      <span class="detail-item-label">Correo Electrónico:</span>
+                      <span class="detail-item-value" v-if="usuarioSeleccionado.correo">
+                        <a :href="'mailto:' + usuarioSeleccionado.correo" class="link-contact">
+                          {{ usuarioSeleccionado.correo }}
+                        </a>
+                      </span>
+                      <span class="detail-item-value text-muted" v-else>No especificado</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-item-label">Teléfono / Celular:</span>
+                      <span class="detail-item-value" v-if="usuarioSeleccionado.telefono">
+                        <a :href="'tel:' + usuarioSeleccionado.telefono" class="link-contact">
+                          {{ usuarioSeleccionado.telefono }}
+                        </a>
+                      </span>
+                      <span class="detail-item-value text-muted" v-else>No especificado</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-item-label">Tipo de Perfil:</span>
+                      <span class="detail-item-value font-medium">{{ getRoleLabel(usuarioSeleccionado.user_role) }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tarjeta 3: Alcance y Permisos del Rol -->
+              <div class="detail-card-box full-width">
+                <div class="detail-box-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                  <h4>Privilegios y Permisos Asignados</h4>
+                </div>
+                <p class="role-desc-text">{{ getRoleDescription(usuarioSeleccionado.user_role) }}</p>
+                <div class="permissions-chips">
+                  <div
+                    v-for="perm in getPermissionsList(usuarioSeleccionado.user_role)"
+                    :key="perm"
+                    class="perm-chip"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>{{ perm }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button
+                  type="button"
+                  class="btn-action-status-modal"
+                  :class="usuarioSeleccionado.activo ? 'btn-deactivate-lg' : 'btn-activate-lg'"
+                  @click="toggleEstadoModal(usuarioSeleccionado)"
+                >
+                  {{ usuarioSeleccionado.activo ? 'Desactivar Cuenta' : 'Activar Cuenta' }}
+                </button>
+                <button type="button" class="btn-primary" @click="cerrarDetalle">
+                  Entendido / Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </transition>
     </div>
   </DashboardLayout>
 </template>
@@ -728,8 +876,65 @@ const guardarNuevoUsuario = async () => {
   }
 }
 
+// Estado del modal de detalle
+const usuarioSeleccionado = ref<Usuario | null>(null)
+
 const verDetalle = (user: Usuario) => {
-  console.log('Ver detalle de usuario:', user.username)
+  usuarioSeleccionado.value = { ...user }
+}
+
+const cerrarDetalle = () => {
+  usuarioSeleccionado.value = null
+}
+
+const toggleEstadoModal = async (user: Usuario) => {
+  await toggleEstado(user)
+  const actualizado = usuarios.value.find(u => u.username === user.username)
+  if (actualizado) {
+    usuarioSeleccionado.value = { ...actualizado }
+  }
+}
+
+const getRoleDescription = (role: UserRole): string => {
+  switch (role) {
+    case 'SYSTEM_ADMIN':
+      return 'Acceso administrativo total. Permite configurar la plataforma, gestionar usuarios, auditar pagos y supervisar la operación global de la clínica.'
+    case 'ODONTOLOGO':
+      return 'Perfil médico clínico. Permite visualizar la agenda de citas médicas, registrar diagnósticos, ejecutar tratamientos y solicitar insumos.'
+    case 'PACIENTE':
+      return 'Perfil de usuario final. Permite gestionar y agendar sus citas odontológicas personales, visualizar historiales y verificar estados de pago.'
+    default:
+      return 'Perfil estándar de usuario del sistema.'
+  }
+}
+
+const getPermissionsList = (role: UserRole): string[] => {
+  switch (role) {
+    case 'SYSTEM_ADMIN':
+      return [
+        'Gestión total de usuarios y credenciales',
+        'Control y administración de inventario y stock',
+        'Registro y visualización de pagos e ingresos',
+        'Administración y supervisión de citas clínicas',
+        'Configuración general del sistema SoliDent',
+      ]
+    case 'ODONTOLOGO':
+      return [
+        'Gestión de agenda y citas asignadas',
+        'Registro clínico de atenciones odontológicas',
+        'Evolución y seguimiento de tratamientos',
+        'Consulta de pacientes e insumos médicos',
+      ]
+    case 'PACIENTE':
+      return [
+        'Reserva y reprogramación de citas propias',
+        'Consulta de historial médico y odontológico',
+        'Visualización de pagos y comprobantes',
+        'Actualización de datos personales de contacto',
+      ]
+    default:
+      return ['Acceso básico de consulta']
+  }
 }
 
 const toggleEstado = async (user: Usuario) => {
@@ -1991,6 +2196,271 @@ html.dark .btn-cancel {
 html.dark .btn-cancel:hover {
   background-color: #1e293b;
   color: #f8fafc;
+}
+
+/* User Detail Modal Styles */
+.modal-detail-card {
+  max-width: 680px;
+}
+
+.detail-header {
+  padding: 24px;
+}
+
+.detail-header-profile {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.avatar-large {
+  width: 58px;
+  height: 58px;
+  font-size: 20px;
+  border-radius: 16px;
+}
+
+.detail-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detail-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.detail-name-row h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.detail-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-tag-lg {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.detail-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.detail-sections-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.detail-card-box {
+  background: #f8fafc;
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-card-box.full-width {
+  grid-column: span 2;
+}
+
+.detail-box-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--primary-purple, #4f46e5);
+}
+
+.detail-box-title svg {
+  width: 18px;
+  height: 18px;
+}
+
+.detail-box-title h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.detail-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detail-item-label {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.detail-item-value {
+  font-size: 13.5px;
+  color: var(--text-main);
+}
+
+.detail-item-value.font-medium {
+  font-weight: 600;
+}
+
+.link-contact {
+  color: var(--primary-purple, #4f46e5);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.link-contact:hover {
+  text-decoration: underline;
+}
+
+.detail-status-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.badge-status-text {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.text-green {
+  color: #16a34a;
+}
+
+.text-red {
+  color: #dc2626;
+}
+
+.btn-text-action {
+  background: none;
+  border: none;
+  color: var(--primary-purple, #4f46e5);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.btn-text-action:hover {
+  background: rgba(79, 70, 229, 0.1);
+}
+
+.role-desc-text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.permissions-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.perm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid var(--border-light, #e2e8f0);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.perm-chip svg {
+  width: 14px;
+  height: 14px;
+  color: #10b981;
+}
+
+.btn-action-status-modal {
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.btn-deactivate-lg {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.btn-deactivate-lg:hover {
+  background: #fee2e2;
+}
+
+.btn-activate-lg {
+  background: #f0fdf4;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
+
+.btn-activate-lg:hover {
+  background: #dcfce7;
+}
+
+/* Dark mode for Detail Modal */
+html.dark .detail-card-box {
+  background: #0b0f19;
+  border-color: #1e293b;
+}
+
+html.dark .perm-chip {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+html.dark .detail-box-title {
+  color: #a5b4fc;
+}
+
+html.dark .btn-deactivate-lg {
+  background: rgba(220, 38, 38, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+html.dark .btn-activate-lg {
+  background: rgba(22, 163, 74, 0.15);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #86efac;
 }
 
 /* Responsiveness */
