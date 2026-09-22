@@ -39,6 +39,7 @@
           <table class="data-table tabla tabla-generica">
             <thead>
               <tr>
+                <th>Código único</th>
                 <th>Nombre</th>
                 <th>Stock</th>
                 <th>Stock mínimo</th>
@@ -54,6 +55,7 @@
                 class="tabla-fila"
                 :class="{ 'fila-alerta': insumo.stock < insumo.stock_minimo }"
               >
+               <td>{{ insumo.codigo_unico }}</td>
                 <td>{{ insumo.nombre }}</td>
                 <td>{{ insumo.stock }}</td>
                 <td>{{ insumo.stock_minimo }}</td>
@@ -116,10 +118,23 @@
       <div class="modal-box">
       <h3>{{ insumoEditandoId ? 'Editar insumo' : 'Nuevo insumo' }}</h3>
 
+
         <form @submit.prevent="guardarInsumo">
+
           <div class="campo">
-            <label>Nombre</label>
-            <input v-model="nuevoInsumo.nombre" type="text" required />
+    <label>Código único</label>
+    <input v-model="nuevoInsumo.codigo_unico" type="text" required placeholder="Ej. INS-001" />
+  </div>
+
+         <div class="campo">
+         <label>Nombre</label>
+         <input
+    v-model="nuevoInsumo.nombre"
+    type="text"
+    @keypress="(e) => { if (!/[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/.test(e.key)) e.preventDefault() }"
+    @paste.prevent
+    required
+  />
           </div>
 
           <div class="campo">
@@ -190,6 +205,7 @@ const guardando = ref(false)
 const errorFormulario = ref('')
 
 const insumoVacio = (): CrearInsumoDto => ({
+  codigo_unico: '',
   nombre: '',
   stock: 0,
   stock_minimo: 0,
@@ -209,6 +225,7 @@ const abrirModalCrear = () => {
 const abrirModalEditar = (insumo: Insumo) => {
   insumoEditandoId.value = insumo.insumo_id
   nuevoInsumo.value = {
+    codigo_unico: insumo.codigo_unico ?? '',
     nombre: insumo.nombre,
     stock: insumo.stock,
     stock_minimo: insumo.stock_minimo,

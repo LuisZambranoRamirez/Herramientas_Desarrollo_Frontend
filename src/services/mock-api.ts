@@ -294,6 +294,7 @@ mockDb.tratamientos.push(
 mockDb.insumos.push(
   {
     insumo_id: generateId(),
+    codigo_unico: 'INS-001',
     nombre: 'Guantes de nitrilo',
     stock: 250,
     stock_minimo: 50,
@@ -302,6 +303,7 @@ mockDb.insumos.push(
   },
   {
     insumo_id: generateId(),
+    codigo_unico: 'INS-002',
     nombre: 'Resina dental',
     stock: 25,
     stock_minimo: 10,
@@ -310,6 +312,7 @@ mockDb.insumos.push(
   },
   {
     insumo_id: generateId(),
+    codigo_unico: 'INS-003',
     nombre: 'Anestesia dental',
     stock: 8,
     stock_minimo: 10,
@@ -855,6 +858,7 @@ export const insumoApi = {
 
     const insumo: Insumo = {
       insumo_id: generateId(),
+      codigo_unico: data.codigo_unico,
       nombre: data.nombre,
       stock: data.stock,
       stock_minimo: data.stock_minimo,
