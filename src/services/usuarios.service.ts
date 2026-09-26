@@ -3,6 +3,8 @@ import type {
   CrearUsuarioDto,
   ActualizarUsuarioDto,
 } from '@/types'
+import { api } from '@/services/api/client'
+import { env } from '@/config/env'
 import { usuarioApi } from '@/services/mock-api'
 
 const STORAGE_KEY = 'solident_usuarios'
@@ -63,6 +65,10 @@ export const validarDatosUsuario = (data: Partial<CrearUsuarioDto & ActualizarUs
 
 export const usuariosService = {
   async getAll(): Promise<Usuario[]> {
+    if (!env.useMock) {
+      return api.get<Usuario[]>('/usuarios')
+    }
+
     const guardados = obtenerDeStorage()
     if (guardados && guardados.length > 0) {
       return guardados
@@ -74,12 +80,20 @@ export const usuariosService = {
   },
 
   async getByUsername(username: string): Promise<Usuario | undefined> {
+    if (!env.useMock) {
+      return api.get<Usuario>(`/usuarios/${username}`)
+    }
+
     const lista = await this.getAll()
     return lista.find(u => u.username.toLowerCase() === username.toLowerCase())
   },
 
   async create(data: CrearUsuarioDto): Promise<Usuario> {
     validarDatosUsuario(data)
+
+    if (!env.useMock) {
+      return api.post<Usuario>('/usuarios', data)
+    }
 
     const lista = await this.getAll()
     const existe = lista.some(u => u.username.toLowerCase() === data.username.trim().toLowerCase())
@@ -98,6 +112,10 @@ export const usuariosService = {
   async update(username: string, data: ActualizarUsuarioDto): Promise<Usuario> {
     validarDatosUsuario(data)
 
+    if (!env.useMock) {
+      return api.patch<Usuario>(`/usuarios/${username}`, data)
+    }
+
     const lista = await this.getAll()
     const index = lista.findIndex(u => u.username.toLowerCase() === username.toLowerCase())
     if (index === -1 || !lista[index]) {
@@ -111,6 +129,10 @@ export const usuariosService = {
   },
 
   async toggleStatus(username: string): Promise<Usuario> {
+    if (!env.useMock) {
+      return api.patch<Usuario>(`/usuarios/${username}/toggle-status`)
+    }
+
     const lista = await this.getAll()
     const index = lista.findIndex(u => u.username.toLowerCase() === username.toLowerCase())
     const item = lista[index]
@@ -124,6 +146,10 @@ export const usuariosService = {
   },
 
   async delete(username: string): Promise<void> {
+    if (!env.useMock) {
+      return api.delete<void>(`/usuarios/${username}`)
+    }
+
     const lista = await this.getAll()
     const filtrados = lista.filter(u => u.username.toLowerCase() !== username.toLowerCase())
     guardarEnStorage(filtrados)

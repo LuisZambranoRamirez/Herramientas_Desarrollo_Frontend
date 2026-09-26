@@ -1,12 +1,9 @@
 import type {
-Pago,
-CrearPagoDto,
+  Pago,
+  CrearPagoDto,
 } from '@/types'
-
-// ============================================================
-// MOCKS
-// ============================================================
-
+import { api } from '@/services/api/client'
+import { env } from '@/config/env'
 import { pagoApi } from '@/services/mock-api'
 
 // ============================================================
@@ -14,57 +11,33 @@ import { pagoApi } from '@/services/mock-api'
 // ============================================================
 
 export const pagosService = {
-getAll(): Promise<Pago[]> {
-// Backend:
-// return api.get<Pago[]>(
-// '/pagos',
-// )
+  getAll(): Promise<Pago[]> {
+    if (env.useMock) {
+      return pagoApi.getAll()
+    }
+    return api.get<Pago[]>('/pagos')
+  },
 
-    return pagoApi.getAll()
-},
+  getById(id: string): Promise<Pago | undefined> {
+    if (env.useMock) {
+      return pagoApi.getAll().then(
+        pagos => pagos.find(pago => pago.pago_id === id),
+      )
+    }
+    return api.get<Pago>(`/pagos/${id}`)
+  },
 
-getById(
-    id: string,
-): Promise<Pago | undefined> {
-    // Backend:
-    // return api.get<Pago>(
-    //     `/pagos/${id}`,
-    // )
+  getByTratamiento(tratamientoId: string): Promise<Pago[]> {
+    if (env.useMock) {
+      return pagoApi.getByTratamiento(tratamientoId)
+    }
+    return api.get<Pago[]>(`/pagos/tratamiento/${tratamientoId}`)
+  },
 
-    const pagos = pagoApi.getAll()
-
-    return pagos.then(
-        pagos =>
-            pagos.find(
-                pago => pago.pago_id === id,
-            ),
-    )
-},
-
-getByTratamiento(
-    tratamientoId: string,
-): Promise<Pago[]> {
-    // Backend:
-    // return api.get<Pago[]>(
-    //     `/pagos/tratamiento/${tratamientoId}`,
-    // )
-
-    return pagoApi.getByTratamiento(
-        tratamientoId,
-    )
-},
-
-create(
-    data: CrearPagoDto,
-): Promise<Pago> {
-    // Backend:
-    // return api.post<Pago>(
-    //     '/pagos',
-    //     data,
-    // )
-
-    return pagoApi.create(data)
-},
-
-
+  create(data: CrearPagoDto): Promise<Pago> {
+    if (env.useMock) {
+      return pagoApi.create(data)
+    }
+    return api.post<Pago>('/pagos', data)
+  },
 }
