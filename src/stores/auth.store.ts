@@ -1,6 +1,6 @@
 // Store de autenticación
 import { defineStore } from 'pinia'
-import type { Usuario, LoginDto } from '@/types'
+import type { Usuario, LoginDto, RegistroDto } from '@/types'
 import { authService } from '@/services/auth.service'
 
 interface AuthState {
@@ -35,6 +35,23 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         console.error('Error al iniciar sesión:', error)
         return false
+      }
+    },
+
+    async register(data: RegistroDto): Promise<{ success: boolean; message?: string }> {
+      try {
+        const response = await authService.register(data)
+        const token = response.accessToken || response.access_token
+        if (token && response.user) {
+          this.token = token
+          this.user = response.user
+          localStorage.setItem('token', token)
+          localStorage.setItem('user', JSON.stringify(response.user))
+        }
+        return { success: true, message: response.message || 'Cuenta registrada exitosamente' }
+      } catch (error: any) {
+        console.error('Error al registrar usuario:', error)
+        return { success: false, message: error.message || 'Error al crear la cuenta' }
       }
     },
 

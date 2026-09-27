@@ -1,6 +1,8 @@
 import type {
   LoginDto,
   LoginResponse,
+  RegistroDto,
+  RegistroResponse,
   Usuario,
 } from '@/types'
 import { api } from '@/services/api/client'
@@ -30,6 +32,31 @@ export const authService = {
     }
 
     return {
+      accessToken,
+      user,
+    }
+  },
+
+  async register(data: RegistroDto): Promise<RegistroResponse> {
+    if (env.useMock) {
+      return {
+        message: 'Cuenta registrada exitosamente',
+        accessToken: `mock-token-paciente-${Date.now()}`,
+        user: {
+          username: data.username,
+          activo: true,
+          user_role: 'PACIENTE',
+          fecha_registro: new Date().toISOString(),
+        },
+      }
+    }
+
+    const res = await api.post<any>('/auth/register', data)
+    const accessToken = res.access_token || res.accessToken
+    const user = res.user || res.usuario
+
+    return {
+      message: res.message || 'Registro exitoso',
       accessToken,
       user,
     }

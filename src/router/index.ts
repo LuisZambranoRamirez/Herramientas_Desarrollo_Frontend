@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import HomeView from '../views/HomeView.vue'
 import ReservarCitasView from '../views/ReservarCitasView.vue'
 import LoginView from '../views/LoginView.vue'
+import RegisterView from '../views/RegisterView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import InventarioView from '@/views/InventarioView.vue'
 import AgendaView from '@/views/intranet/AgendaView.vue'
@@ -33,6 +34,11 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
+    },
+    {
+      path: '/registro',
+      name: 'registro',
+      component: RegisterView,
     },
     {
       path: '/dashboard',
