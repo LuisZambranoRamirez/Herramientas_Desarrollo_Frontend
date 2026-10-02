@@ -107,10 +107,35 @@ const router = createRouter({
 router.beforeEach((to) => {
   const authStore = useAuthStore()
 
+  // Proteger rutas que requieren autenticación
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return { name: 'login' }
   }
-  if (to.name === 'login' && authStore.isAuthenticated) {
+
+  // Si un paciente autenticado intenta entrar a rutas de intranet administrativa
+  const rutasIntranet = [
+    'dashboard',
+    'inventario',
+    'agenda',
+    'pacientes',
+    'usuarios',
+    'tratamientos',
+    'pagos',
+    'configuracion',
+  ]
+  if (
+    authStore.isAuthenticated &&
+    authStore.userRole === 'PACIENTE' &&
+    rutasIntranet.includes(to.name as string)
+  ) {
+    return { name: 'home' }
+  }
+
+  // Si ya está autenticado e intenta ir a login o registro
+  if ((to.name === 'login' || to.name === 'registro') && authStore.isAuthenticated) {
+    if (authStore.userRole === 'PACIENTE') {
+      return { name: 'home' }
+    }
     return { name: 'dashboard' }
   }
 

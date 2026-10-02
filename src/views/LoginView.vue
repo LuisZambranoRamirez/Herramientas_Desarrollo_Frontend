@@ -41,7 +41,11 @@ async function iniciarSesion() {
   })
 
   if (exito) {
-    router.push('/dashboard')
+    if (authStore.userRole === 'PACIENTE') {
+      router.push('/')
+    } else {
+      router.push('/dashboard')
+    }
   } else {
     mensajeError.value = 'Credenciales incorrectas. Verifica tu correo y contraseña.'
   }

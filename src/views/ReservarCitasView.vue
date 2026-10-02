@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useAuthStore } from '@/stores/auth.store'
 import BookingStepper from '../components/BookingStepper.vue'
 import ServiceSelectionStep from '../components/ServiceSelectionStep.vue'
 import SpecialistSelectionStep from '../components/SpecialistSelectionStep.vue'
 import CalendarSelector from '../components/CalendarSelector.vue'
 import PatientForm, { type PatientData } from '../components/PatientForm.vue'
 import ConfirmationStep from '../components/ConfirmationStep.vue'
+
+const authStore = useAuthStore()
 
 // Paso actual del flujo (1: Servicio, 2: Especialista, 3: Fecha y Hora, 4: Confirmación)
 const currentStep = ref<number>(1)
@@ -38,9 +41,9 @@ const selectedTime = ref<string>('10:00 AM')
 const selectedMonth = ref<string>('Agosto 2026')
 
 const patientData = ref<PatientData>({
-  fullName: '',
-  email: '',
-  phone: '',
+  fullName: authStore.user?.nombre_completo || '',
+  email: authStore.user?.correo || (authStore.user?.username.includes('@') ? authStore.user?.username : '') || '',
+  phone: authStore.user?.telefono || '',
 })
 
 // Texto de fecha formateada

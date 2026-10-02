@@ -135,7 +135,11 @@ async function registrarse() {
       mensajeExito.value = '¡Tu cuenta ha sido creada exitosamente! Redirigiendo...'
       setTimeout(() => {
         if (authStore.isAuthenticated) {
-          router.push('/dashboard')
+          if (authStore.userRole === 'PACIENTE') {
+            router.push('/')
+          } else {
+            router.push('/dashboard')
+          }
         } else {
           router.push('/login')
         }

@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth.store'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 // Obtener fecha mínima (hoy) en formato local YYYY-MM-DD
 function getTodayDateString(): string {
@@ -25,9 +27,9 @@ const timeOptions = [
 ]
 
 const quickForm = reactive({
-  fullName: '',
-  email: '',
-  phone: '',
+  fullName: authStore.user?.nombre_completo || '',
+  email: authStore.user?.correo || (authStore.user?.username.includes('@') ? authStore.user?.username : '') || '',
+  phone: authStore.user?.telefono || '',
   service: '',
   date: '',
   time: '',
