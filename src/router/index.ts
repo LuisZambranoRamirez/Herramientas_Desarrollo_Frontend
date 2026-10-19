@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import HomeView from '../views/HomeView.vue'
 import ReservarCitasView from '../views/ReservarCitasView.vue'
 import LoginView from '../views/LoginView.vue'
+import RegisterView from '../views/RegisterView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import InventarioView from '@/views/InventarioView.vue'
 import AgendaView from '@/views/intranet/AgendaView.vue'
@@ -33,6 +34,11 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
+    },
+    {
+      path: '/registro',
+      name: 'registro',
+      component: RegisterView,
     },
     {
       path: '/dashboard',
@@ -101,10 +107,35 @@ const router = createRouter({
 router.beforeEach((to) => {
   const authStore = useAuthStore()
 
+  // Proteger rutas que requieren autenticación
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return { name: 'login' }
   }
-  if (to.name === 'login' && authStore.isAuthenticated) {
+
+  // Si un paciente autenticado intenta entrar a rutas de intranet administrativa
+  const rutasIntranet = [
+    'dashboard',
+    'inventario',
+    'agenda',
+    'pacientes',
+    'usuarios',
+    'tratamientos',
+    'pagos',
+    'configuracion',
+  ]
+  if (
+    authStore.isAuthenticated &&
+    authStore.userRole === 'PACIENTE' &&
+    rutasIntranet.includes(to.name as string)
+  ) {
+    return { name: 'home' }
+  }
+
+  // Si ya está autenticado e intenta ir a login o registro
+  if ((to.name === 'login' || to.name === 'registro') && authStore.isAuthenticated) {
+    if (authStore.userRole === 'PACIENTE') {
+      return { name: 'home' }
+    }
     return { name: 'dashboard' }
   }
 

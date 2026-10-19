@@ -1,13 +1,10 @@
 import type {
-Proveedor,
-CrearProveedorDto,
-ActualizarProveedorDto,
+  Proveedor,
+  CrearProveedorDto,
+  ActualizarProveedorDto,
 } from '@/types'
-
-// ============================================================
-// MOCKS
-// ============================================================
-
+import { api } from '@/services/api/client'
+import { env } from '@/config/env'
 import { proveedorApi } from '@/services/mock-api'
 
 // ============================================================
@@ -15,61 +12,41 @@ import { proveedorApi } from '@/services/mock-api'
 // ============================================================
 
 export const proveedoresService = {
-getAll(): Promise<Proveedor[]> {
-// Backend:
-// return api.get<Proveedor[]>(
-// '/proveedores',
-// )
+  getAll(): Promise<Proveedor[]> {
+    if (env.useMock) {
+      return proveedorApi.getAll()
+    }
+    return api.get<Proveedor[]>('/proveedores')
+  },
 
-    return proveedorApi.getAll()
-},
+  getByRuc(ruc: string): Promise<Proveedor | undefined> {
+    if (env.useMock) {
+      return proveedorApi.getByRuc(ruc)
+    }
+    return api.get<Proveedor>(`/proveedores/${ruc}`)
+  },
 
-getByRuc(
-    ruc: string,
-): Promise<Proveedor | undefined> {
-    // Backend:
-    // return api.get<Proveedor>(
-    //     `/proveedores/${ruc}`,
-    // )
+  create(data: CrearProveedorDto): Promise<Proveedor> {
+    if (env.useMock) {
+      return proveedorApi.create(data)
+    }
+    return api.post<Proveedor>('/proveedores', data)
+  },
 
-    return proveedorApi.getByRuc(ruc)
-},
-
-create(
-    data: CrearProveedorDto,
-): Promise<Proveedor> {
-    // Backend:
-    // return api.post<Proveedor>(
-    //     '/proveedores',
-    //     data,
-    // )
-
-    return proveedorApi.create(data)
-},
-
-update(
+  update(
     ruc: string,
     data: ActualizarProveedorDto,
-): Promise<Proveedor> {
-    // Backend:
-    // return api.patch<Proveedor>(
-    //     `/proveedores/${ruc}`,
-    //     data,
-    // )
+  ): Promise<Proveedor> {
+    if (env.useMock) {
+      return proveedorApi.update(ruc, data)
+    }
+    return api.patch<Proveedor>(`/proveedores/${ruc}`, data)
+  },
 
-    return proveedorApi.update(ruc, data)
-},
-
-delete(
-    ruc: string,
-): Promise<void> {
-    // Backend:
-    // return api.delete<void>(
-    //     `/proveedores/${ruc}`,
-    // )
-
-    return proveedorApi.delete(ruc)
-},
-
-
+  delete(ruc: string): Promise<void> {
+    if (env.useMock) {
+      return proveedorApi.delete(ruc)
+    }
+    return api.delete<void>(`/proveedores/${ruc}`)
+  },
 }

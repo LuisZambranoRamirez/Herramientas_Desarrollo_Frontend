@@ -4,11 +4,8 @@ import type {
   ActualizarCitaDto,
   EstadoCita,
 } from '@/types'
-
-// ============================================================
-// MOCKS
-// ============================================================
-
+import { api } from '@/services/api/client'
+import { env } from '@/config/env'
 import { citaApi } from '@/services/mock-api'
 
 // ============================================================
@@ -17,87 +14,58 @@ import { citaApi } from '@/services/mock-api'
 
 export const citasService = {
   getAll(): Promise<Cita[]> {
-    // Backend:
-    // return api.get<Cita[]>('/citas')
-
-    return citaApi.getAll()
+    if (env.useMock) {
+      return citaApi.getAll()
+    }
+    return api.get<Cita[]>('/citas')
   },
 
-  getById(
-    id: string,
-  ): Promise<Cita | undefined> {
-    // Backend:
-    // return api.get<Cita>(`/citas/${id}`)
-
-    return citaApi.getById(id)
+  getById(id: string): Promise<Cita | undefined> {
+    if (env.useMock) {
+      return citaApi.getById(id)
+    }
+    return api.get<Cita>(`/citas/${id}`)
   },
 
-  getByPaciente(
-    dniPaciente: string,
-  ): Promise<Cita[]> {
-    // Backend:
-    // return api.get<Cita[]>(
-    //   `/citas/paciente/${dniPaciente}`,
-    // )
-
-    return citaApi.getByPaciente(dniPaciente)
+  getByPaciente(dniPaciente: string): Promise<Cita[]> {
+    if (env.useMock) {
+      return citaApi.getByPaciente(dniPaciente)
+    }
+    return api.get<Cita[]>(`/citas/paciente/${dniPaciente}`)
   },
 
-  getByOdontologo(
-    dniOdontologo: string,
-  ): Promise<Cita[]> {
-    // Backend:
-    // return api.get<Cita[]>(
-    //   `/citas/odontologo/${dniOdontologo}`,
-    // )
-
-    return citaApi.getByOdontologo(dniOdontologo)
+  getByOdontologo(dniOdontologo: string): Promise<Cita[]> {
+    if (env.useMock) {
+      return citaApi.getByOdontologo(dniOdontologo)
+    }
+    return api.get<Cita[]>(`/citas/odontologo/${dniOdontologo}`)
   },
 
-  getByEstado(
-    estado: EstadoCita,
-  ): Promise<Cita[]> {
-    // Backend:
-    // return api.get<Cita[]>(
-    //   `/citas/estado/${estado}`,
-    // )
-
-    return citaApi.getByEstado(estado)
+  getByEstado(estado: EstadoCita): Promise<Cita[]> {
+    if (env.useMock) {
+      return citaApi.getByEstado(estado)
+    }
+    return api.get<Cita[]>(`/citas/estado/${estado}`)
   },
 
-  create(
-    data: CrearCitaDto,
-  ): Promise<Cita> {
-    // Backend:
-    // return api.post<Cita>(
-    //   '/citas',
-    //   data,
-    // )
-
-    return citaApi.create(data)
+  create(data: CrearCitaDto): Promise<Cita> {
+    if (env.useMock) {
+      return citaApi.create(data)
+    }
+    return api.post<Cita>('/citas', data)
   },
 
-  update(
-    id: string,
-    data: ActualizarCitaDto,
-  ): Promise<Cita> {
-    // Backend:
-    // return api.patch<Cita>(
-    //   `/citas/${id}`,
-    //   data,
-    // )
-
-    return citaApi.update(id, data)
+  update(id: string, data: ActualizarCitaDto): Promise<Cita> {
+    if (env.useMock) {
+      return citaApi.update(id, data)
+    }
+    return api.patch<Cita>(`/citas/${id}`, data)
   },
 
-  delete(
-    id: string,
-  ): Promise<void> {
-    // Backend:
-    // return api.delete<void>(
-    //   `/citas/${id}`,
-    // )
-
-    return citaApi.delete(id)
+  delete(id: string): Promise<void> {
+    if (env.useMock) {
+      return citaApi.delete(id)
+    }
+    return api.delete<void>(`/citas/${id}`)
   },
 }

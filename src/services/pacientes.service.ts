@@ -3,20 +3,13 @@ import type {
   CrearPacienteDto,
   ActualizarPacienteDto,
 } from '@/types'
-
-// ============================================================
-// MOCKS
-// ============================================================
-
+import { api } from '@/services/api/client'
+import { env } from '@/config/env'
 import { pacienteApi } from '@/services/mock-api'
 
 // ============================================================
 // FUNCIONES DE VALIDACIÓN PRIVADAS
 // ============================================================
-// Cambia esto:
-// const validarDatosPaciente = (data: { dni?: string; nombres?: string; apellidos?: string; telefono?: string }) => {
-
-// Por esto (más flexible para TypeScript):
 const validarDatosPaciente = (data: Record<string, any>) => {
   const regexDni = /^\d{8}$/
   const regexLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
@@ -53,28 +46,43 @@ const validarDatosPaciente = (data: Record<string, any>) => {
 
 export const pacientesService = {
   getAll(): Promise<Paciente[]> {
-    return pacienteApi.getAll()
+    if (env.useMock) {
+      return pacienteApi.getAll()
+    }
+    return api.get<Paciente[]>('/pacientes')
   },
 
   getByDni(dni: string): Promise<Paciente | undefined> {
-    return pacienteApi.getByDni(dni)
+    if (env.useMock) {
+      return pacienteApi.getByDni(dni)
+    }
+    return api.get<Paciente>(`/pacientes/${dni}`)
   },
 
   create(data: CrearPacienteDto): Promise<Paciente> {
     // Validamos estrictamente antes de enviar al mock/API
     validarDatosPaciente(data)
 
-    return pacienteApi.create(data)
+    if (env.useMock) {
+      return pacienteApi.create(data)
+    }
+    return api.post<Paciente>('/pacientes', data)
   },
 
   update(dni: string, data: ActualizarPacienteDto): Promise<Paciente> {
     // Validamos el DNI y los campos que se estén actualizando
     validarDatosPaciente({ dni, ...data })
 
-    return pacienteApi.update(dni, data)
+    if (env.useMock) {
+      return pacienteApi.update(dni, data)
+    }
+    return api.patch<Paciente>(`/pacientes/${dni}`, data)
   },
 
   delete(dni: string): Promise<void> {
-    return pacienteApi.delete(dni)
+    if (env.useMock) {
+      return pacienteApi.delete(dni)
+    }
+    return api.delete<void>(`/pacientes/${dni}`)
   },
 }

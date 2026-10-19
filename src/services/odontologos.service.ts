@@ -1,17 +1,14 @@
 import type {
-Odontologo,
-HorarioPersonal,
-Especialidad,
-DiaSemana,
+  Odontologo,
+  HorarioPersonal,
+  Especialidad,
+  DiaSemana,
 } from '@/types'
-
-// ============================================================
-// MOCKS
-// ============================================================
-
+import { api } from '@/services/api/client'
+import { env } from '@/config/env'
 import {
-odontologoApi,
-horarioApi,
+  odontologoApi,
+  horarioApi,
 } from '@/services/mock-api'
 
 // ============================================================
@@ -19,65 +16,43 @@ horarioApi,
 // ============================================================
 
 export const odontologosService = {
-getAll(): Promise<Odontologo[]> {
-// Backend:
-// return api.get<Odontologo[]>(
-// '/odontologos',
-// )
+  getAll(): Promise<Odontologo[]> {
+    if (env.useMock) {
+      return odontologoApi.getAll()
+    }
+    return api.get<Odontologo[]>('/odontologos')
+  },
 
-    return odontologoApi.getAll()
-},
+  getByDni(dni: string): Promise<Odontologo | undefined> {
+    if (env.useMock) {
+      return odontologoApi.getByDni(dni)
+    }
+    return api.get<Odontologo>(`/odontologos/${dni}`)
+  },
 
-getByDni(
-    dni: string,
-): Promise<Odontologo | undefined> {
-    // Backend:
-    // return api.get<Odontologo>(
-    //     `/odontologos/${dni}`,
-    // )
+  getByEspecialidad(especialidad: Especialidad): Promise<Odontologo[]> {
+    if (env.useMock) {
+      return odontologoApi.getByEspecialidad(especialidad)
+    }
+    return api.get<Odontologo[]>(`/odontologos/especialidad/${especialidad}`)
+  },
 
-    return odontologoApi.getByDni(dni)
-},
+  getHorarios(dni: string): Promise<HorarioPersonal[]> {
+    if (env.useMock) {
+      return horarioApi.getByOdontologo(dni)
+    }
+    return api.get<HorarioPersonal[]>(`/odontologos/${dni}/horarios`)
+  },
 
-getByEspecialidad(
-    especialidad: Especialidad,
-): Promise<Odontologo[]> {
-    // Backend:
-    // return api.get<Odontologo[]>(
-    //     `/odontologos/especialidad/${especialidad}`,
-    // )
-
-    return odontologoApi.getByEspecialidad(especialidad)
-},
-
-getHorarios(
-    dni: string,
-): Promise<HorarioPersonal[]> {
-    // Backend:
-    // return api.get<HorarioPersonal[]>(
-    //     `/odontologos/${dni}/horarios`,
-    // )
-
-    return horarioApi.getByOdontologo(dni)
-},
-
-getHorariosByDia(
-    dni: string,
-    dia: DiaSemana,
-): Promise<HorarioPersonal[]> {
-    // Backend:
-    // return api.get<HorarioPersonal[]>(
-    //     `/odontologos/${dni}/horarios/${dia}`,
-    // )
-
-    return horarioApi.getByOdontologo(dni).then(
+  getHorariosByDia(dni: string, dia: DiaSemana): Promise<HorarioPersonal[]> {
+    if (env.useMock) {
+      return horarioApi.getByOdontologo(dni).then(
         horarios =>
-            horarios.filter(
-                horario =>
-                    horario.dia_semana === dia,
-            ),
-    )
-},
-
-
+          horarios.filter(
+            horario => horario.dia_semana === dia,
+          ),
+      )
+    }
+    return api.get<HorarioPersonal[]>(`/odontologos/${dni}/horarios/${dia}`)
+  },
 }

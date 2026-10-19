@@ -42,3 +42,22 @@ export interface LoginResponse {
   accessToken: string
   user: Usuario
 }
+
+export interface RegistroDto {
+  username: string
+  password: string
+  dni: string
+  nombres: string
+  apellidos: string
+  telefono: string
+  correo: string
+  fecha_nacimiento: string
+  direccion?: string
+}
+
+export interface RegistroResponse {
+  message?: string
+  accessToken?: string
+  access_token?: string
+  user?: Usuario
+}
