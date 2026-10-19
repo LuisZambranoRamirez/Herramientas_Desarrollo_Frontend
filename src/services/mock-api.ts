@@ -166,33 +166,6 @@ mockDb.personal.push(
   },
 )
 
-mockDb.pacientes.push(
-  {
-    dni: '72845631',
-    username: 'maria.lopez',
-    nombres: 'María',
-    apellidos: 'López García',
-    direccion: 'Av. Arequipa 1234',
-    telefono: '987111222',
-    correo: 'maria.lopez@gmail.com',
-    observaciones: 'Paciente con sensibilidad dental.',
-    fecha_nacimiento: '1998-05-20',
-    fecha_registro: '2026-08-03T10:00:00',
-  },
-  {
-    dni: '71523489',
-    username: 'juan.perez',
-    nombres: 'Juan',
-    apellidos: 'Pérez Torres',
-    direccion: 'Jr. Los Olivos 456',
-    telefono: '912333444',
-    correo: 'juan.perez@gmail.com',
-    observaciones: 'Sin observaciones.',
-    fecha_nacimiento: '1995-11-12',
-    fecha_registro: '2026-08-04T14:30:00',
-  },
-)
-
 mockDb.odontologos.push(
   {
     dni: '45678912',
