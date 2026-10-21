@@ -40,7 +40,11 @@ async function iniciarSesion() {
     })
 
     if (exito) {
-      router.push('/dashboard')
+      if (authStore.userRole === 'PACIENTE') {
+        router.push('/')
+      } else {
+        router.push('/dashboard')
+      }
     } else {
       mensajeError.value = 'Credenciales incorrectas. Verifica tus datos.'
     }
@@ -155,6 +159,11 @@ async function iniciarSesion() {
         </button>
 
       </form>
+
+      <div class="register-prompt">
+        <span>¿No tienes una cuenta aún?</span>
+        <RouterLink to="/registro" class="register-link">Regístrate como paciente</RouterLink>
+      </div>
 
       <div class="security-info">
         <span class="security-icon">◈</span>
@@ -516,6 +525,30 @@ async function iniciarSesion() {
   50% {
     transform: translateY(-4px);
   }
+}
+
+.register-prompt {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.register-link {
+  color: #38bdf8;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.register-link:hover {
+  color: #7dd3fc;
+  text-decoration: underline;
 }
 
 /* Responsive */

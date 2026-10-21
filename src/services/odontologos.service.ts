@@ -24,10 +24,10 @@ export const odontologosService = {
   },
 
   getHorarios(dni: string): Promise<HorarioPersonal[]> {
-    return Promise.resolve([])
+    return api.get<HorarioPersonal[]>(`/odontologos/${dni}/horarios`).catch(() => [])
   },
 
   getHorariosByDia(dni: string, dia: DiaSemana): Promise<HorarioPersonal[]> {
-    return Promise.resolve([])
+    return api.get<HorarioPersonal[]>(`/odontologos/${dni}/horarios/${dia}`).catch(() => [])
   },
 }

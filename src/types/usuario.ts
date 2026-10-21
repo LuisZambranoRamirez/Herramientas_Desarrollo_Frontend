@@ -2,18 +2,29 @@ import type { UserRole } from './enums'
 
 export interface Usuario {
   username: string
+  nombre_completo?: string
+  correo?: string
+  telefono?: string
   activo: boolean
   user_role: UserRole
   fecha_registro: string
+  ultimo_acceso?: string
 }
 
 export interface CrearUsuarioDto {
   username: string
   password: string
+  nombre_completo?: string
+  correo?: string
+  telefono?: string
   user_role: UserRole
+  activo?: boolean
 }
 
 export interface ActualizarUsuarioDto {
+  nombre_completo?: string
+  correo?: string
+  telefono?: string
   activo?: boolean
   user_role?: UserRole
 }
@@ -30,4 +41,23 @@ export interface LoginDto {
 export interface LoginResponse {
   accessToken: string
   user: Usuario
+}
+
+export interface RegistroDto {
+  username: string
+  password: string
+  dni: string
+  nombres: string
+  apellidos: string
+  telefono: string
+  correo: string
+  fecha_nacimiento: string
+  direccion?: string
+}
+
+export interface RegistroResponse {
+  message?: string
+  accessToken?: string
+  access_token?: string
+  user?: Usuario
 }

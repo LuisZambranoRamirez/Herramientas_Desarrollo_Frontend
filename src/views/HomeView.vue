@@ -11,9 +11,9 @@ import FooterSection from '../components/FooterSection.vue'
 <template>
   <main class="home-page">
     <HeroSection />
-    <section id="nosotros"><AboutSection /></section>
-    <section id="servicios"><ServicesSection /></section>
-    <section id="especialistas"><SpecialistsSection /></section>
+    <AboutSection />
+    <ServicesSection />
+    <SpecialistsSection />
     <section id="mapa"><MapSection /></section>
     <QuickBookingSection />
     <FooterSection />

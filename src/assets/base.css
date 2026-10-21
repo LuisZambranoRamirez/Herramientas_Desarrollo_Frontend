@@ -5,6 +5,11 @@
   --color-border: #e2e8f0;
 }
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 85px;
+}
+
 *,
 *::before,
 *::after {

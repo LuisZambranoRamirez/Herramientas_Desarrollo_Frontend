@@ -14,8 +14,8 @@ async function request<T>(
 
   headers.set('Content-Type', 'application/json')
 
+  // Inyectar token explícito o recuperarlo de localStorage
   const authToken = token || (typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null)
-
   if (authToken) {
     headers.set('Authorization', `Bearer ${authToken}`)
   }
@@ -43,9 +43,23 @@ async function request<T>(
 
     try {
       const error = await response.json()
-      message = error.detail ?? error.message ?? message
+      // Compatibilidad con FastAPI (error.detail) y respuestas estándar (error.message)
+      if (typeof error.detail === 'string') {
+        message = error.detail
+      } else if (Array.isArray(error.detail)) {
+        message = error.detail
+          .map((d: { msg?: string }) => d.msg || JSON.stringify(d))
+          .join(', ')
+      } else if (error.message) {
+        message = error.message
+      }
     } catch {
       // La respuesta no contenía JSON
+    }
+
+    if (response.status === 401 && !endpoint.includes('/auth/login')) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
     }
 
     throw new Error(message)
