@@ -6,8 +6,6 @@ import type {
   Usuario,
 } from '@/types'
 import { api } from '@/services/api/client'
-import { env } from '@/config/env'
-import { authApi } from '@/services/mock-api'
 
 // ============================================================
 // SERVICIO DE AUTENTICACIÓN
@@ -15,15 +13,9 @@ import { authApi } from '@/services/mock-api'
 
 export const authService = {
   async login(data: LoginDto): Promise<LoginResponse> {
-    if (env.useMock) {
-      return authApi.login(data)
-    }
-
-    // Backend FastAPI: POST /auth/login
-    // Compatible con respuesta FastAPI OAuth2/JWT o personalizada
     const res = await api.post<any>('/auth/login', data)
 
-    const accessToken = res.access_token || res.accessToken
+    const accessToken = res.accessToken || res.access_token
     const user: Usuario = res.user || res.usuario || {
       username: data.username,
       activo: true,
@@ -38,21 +30,8 @@ export const authService = {
   },
 
   async register(data: RegistroDto): Promise<RegistroResponse> {
-    if (env.useMock) {
-      return {
-        message: 'Cuenta registrada exitosamente',
-        accessToken: `mock-token-paciente-${Date.now()}`,
-        user: {
-          username: data.username,
-          activo: true,
-          user_role: 'PACIENTE',
-          fecha_registro: new Date().toISOString(),
-        },
-      }
-    }
-
     const res = await api.post<any>('/auth/register', data)
-    const accessToken = res.access_token || res.accessToken
+    const accessToken = res.accessToken || res.access_token
     const user = res.user || res.usuario
 
     return {
@@ -63,19 +42,10 @@ export const authService = {
   },
 
   async me(token?: string): Promise<Usuario | undefined> {
-    if (env.useMock) {
-      const username = (token || '').replace('mock-token-', '')
-      return authApi.me(username)
-    }
-
     return api.get<Usuario>('/auth/me', { token })
   },
 
   async logout(token?: string): Promise<void> {
-    if (env.useMock) {
-      return authApi.logout()
-    }
-
     try {
       await api.post<void>('/auth/logout', undefined, { token })
     } catch {
