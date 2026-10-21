@@ -39,7 +39,7 @@ export type EstadoTratamiento =
 
 export type Permiso =
   | 'LEER'
-  | 'ACTULIZAR'
+  | 'ACTUALIZAR'
   | 'ELIMINAR'
   | 'CREAR'
 

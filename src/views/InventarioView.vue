@@ -170,7 +170,8 @@
 import { ref, onMounted } from 'vue'
 import type { Insumo, Proveedor, CrearInsumoDto } from '@/types'
 import DashboardLayout from '@/components/dashboard/DashboardLayout.vue'
-import { insumoApi, proveedorApi } from '@/services/mock-api'
+import { insumosService } from '@/services/insumos.service'
+import { proveedoresService } from '@/services/proveedores.service'
 
 const tabActiva = ref<'insumos' | 'proveedores'>('insumos')
 
@@ -184,7 +185,7 @@ const errorProveedores = ref('')
 
 onMounted(async () => {
   try {
-    insumos.value = await insumoApi.getAll()
+    insumos.value = await insumosService.getAll()
   } catch (e) {
     errorInsumos.value = 'No se pudo cargar el inventario.'
   } finally {
@@ -192,7 +193,7 @@ onMounted(async () => {
   }
 
   try {
-    proveedores.value = await proveedorApi.getAll()
+    proveedores.value = await proveedoresService.getAll()
   } catch (e) {
     errorProveedores.value = 'No se pudo cargar los proveedores.'
   } finally {
@@ -245,13 +246,13 @@ const guardarInsumo = async () => {
 
   try {
     if (insumoEditandoId.value) {
-      const actualizado = await insumoApi.update(insumoEditandoId.value, nuevoInsumo.value)
+      const actualizado = await insumosService.update(insumoEditandoId.value, nuevoInsumo.value)
       const index = insumos.value.findIndex(insumo => insumo.insumo_id === insumoEditandoId.value)
       if (index !== -1) {
         insumos.value[index] = actualizado
       }
     } else {
-      const creado = await insumoApi.create(nuevoInsumo.value)
+      const creado = await insumosService.create(nuevoInsumo.value)
       insumos.value.push(creado)
     }
 
@@ -270,7 +271,7 @@ const eliminarInsumo = async (id: string) => {
   }
 
   try {
-    await insumoApi.delete(id)
+    await insumosService.delete(id)
     insumos.value = insumos.value.filter(insumo => insumo.insumo_id !== id)
   } catch (e) {
     alert('No se pudo eliminar el insumo.')

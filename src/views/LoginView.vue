@@ -14,16 +14,14 @@ const errorEmail = ref('')
 const errorPassword = ref('')
 
 async function iniciarSesion() {
-    mensajeError.value = ''
-    errorEmail.value = ''
-    errorPassword.value = ''
+  mensajeError.value = ''
+  errorEmail.value = ''
+  errorPassword.value = ''
 
-    const emailNormalizado = email.value.trim().toLowerCase()
+  const usuarioNormalizado = email.value.trim().toLowerCase()
 
-  if (!email.value.trim()) {
-    errorEmail.value = 'El correo es obligatorio.'
-    } else if (!emailNormalizado.includes('@')) {
-    errorEmail.value = 'Ingresa un correo electrónico válido.'
+  if (!usuarioNormalizado) {
+    errorEmail.value = 'El usuario o correo es obligatorio.'
   }
 
   if (!password.value) {
@@ -35,15 +33,19 @@ async function iniciarSesion() {
     return
   }
 
-  const exito = await authStore.login({
-    username: emailNormalizado,
-    password: password.value
-  })
+  try {
+    const exito = await authStore.login({
+      username: usuarioNormalizado,
+      password: password.value,
+    })
 
-  if (exito) {
-    router.push('/dashboard')
-  } else {
-    mensajeError.value = 'Credenciales incorrectas. Verifica tu correo y contraseña.'
+    if (exito) {
+      router.push('/dashboard')
+    } else {
+      mensajeError.value = 'Credenciales incorrectas. Verifica tus datos.'
+    }
+  } catch (error: any) {
+    mensajeError.value = error.message || 'Error de conexión con el servidor.'
   }
 }
 </script>
@@ -94,22 +96,20 @@ async function iniciarSesion() {
       <form @submit.prevent="iniciarSesion" novalidate>
 
         <div class="form-group">
-          <label for="email">Correo electrónico</label>
+          <label for="email">Usuario o correo electrónico</label>
 
           <div class="input-wrapper">
-            <span class="input-icon">✉</span>
+            <span class="input-icon">👤</span>
 
-          
-              <input
-                id="email"
-                v-model="email"
-                @input="errorEmail = ''"
-                type="text"
-                inputmode="email"
-                autocomplete="username"
-                placeholder="admin@solident.com"
-                :class="{ 'input-error': errorEmail }"
-              />
+            <input
+              id="email"
+              v-model="email"
+              @input="errorEmail = ''"
+              type="text"
+              autocomplete="username"
+              placeholder="admin o tu@correo.com"
+              :class="{ 'input-error': errorEmail }"
+            />
           </div>
 
           <span v-if="errorEmail" class="field-error">

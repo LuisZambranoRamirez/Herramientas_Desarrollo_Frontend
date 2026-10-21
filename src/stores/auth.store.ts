@@ -1,6 +1,6 @@
-//Store de autenticación
 import { defineStore } from 'pinia'
 import type { Usuario, LoginDto } from '@/types'
+import { authService } from '@/services/auth.service'
 
 interface AuthState {
   user: Usuario | null
@@ -20,36 +20,19 @@ export const useAuthStore = defineStore('auth', {
 
   actions: {
     async login(credentials: LoginDto) {
-
-      const USUARIOS_MOCK = [
-        {
-          username: 'admin@solident.com',
-          password: 'admin123',
-          user_role: 'SYSTEM_ADMIN' as const,
-        },
-      ]
-
-      const encontrado = USUARIOS_MOCK.find(
-        (u) => u.username === credentials.username && u.password === credentials.password
-      )
-
-      if (encontrado) {
-        const fakeToken = 'mock-jwt-token-123456'
-        const fakeUser: Usuario = {
-          username: encontrado.username,
-          activo: true,
-          user_role: encontrado.user_role,
-          fecha_registro: new Date().toISOString(),
+      try {
+        const response = await authService.login(credentials)
+        if (response && response.accessToken) {
+          this.token = response.accessToken
+          this.user = response.user
+          localStorage.setItem('token', response.accessToken)
+          localStorage.setItem('user', JSON.stringify(response.user))
+          return true
         }
-
-        this.token = fakeToken
-        this.user = fakeUser
-        localStorage.setItem('token', fakeToken)
-        localStorage.setItem('user', JSON.stringify(fakeUser))
-
-        return true
+        return false
+      } catch (error) {
+        throw error
       }
-      return false
     },
 
     logout() {

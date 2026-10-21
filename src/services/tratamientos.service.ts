@@ -1,119 +1,47 @@
 import type {
-TratamientoPaciente,
-CrearTratamientoPacienteDto,
-ActualizarTratamientoPacienteDto,
-AgendaTratamiento,
-CrearAgendaTratamientoDto,
-EstadoTratamiento,
+  TratamientoPaciente,
+  CrearTratamientoPacienteDto,
+  ActualizarTratamientoPacienteDto,
+  AgendaTratamiento,
+  CrearAgendaTratamientoDto,
+  EstadoTratamiento,
 } from '@/types'
-
-// ============================================================
-// MOCKS
-// ============================================================
-
-import {
-tratamientoApi,
-agendaTratamientoApi,
-} from '@/services/mock-api'
+import { api } from '@/services/api/client'
 
 // ============================================================
 // SERVICIO DE TRATAMIENTOS
 // ============================================================
 
 export const tratamientosService = {
-getAll(): Promise<TratamientoPaciente[]> {
-// Backend:
-// return api.get<TratamientoPaciente[]>(
-// '/tratamientos',
-// )
+  getAll(): Promise<TratamientoPaciente[]> {
+    return api.get<TratamientoPaciente[]>('/tratamientos')
+  },
 
-    return tratamientoApi.getAll()
-},
+  getById(id: string): Promise<TratamientoPaciente | undefined> {
+    return api.get<TratamientoPaciente>(`/tratamientos/${id}`)
+  },
 
-getById(
-    id: string,
-): Promise<TratamientoPaciente | undefined> {
-    // Backend:
-    // return api.get<TratamientoPaciente>(
-    //     `/tratamientos/${id}`,
-    // )
+  getByPaciente(dni: string): Promise<TratamientoPaciente[]> {
+    return api.get<TratamientoPaciente[]>(`/tratamientos/paciente/${dni}`)
+  },
 
-    return tratamientoApi.getById(id)
-},
+  getByEstado(estado: EstadoTratamiento): Promise<TratamientoPaciente[]> {
+    return api.get<TratamientoPaciente[]>(`/tratamientos/estado/${estado}`)
+  },
 
-getByPaciente(
-    dni: string,
-): Promise<TratamientoPaciente[]> {
-    // Backend:
-    // return api.get<TratamientoPaciente[]>(
-    //     `/tratamientos/paciente/${dni}`,
-    // )
+  create(data: CrearTratamientoPacienteDto): Promise<TratamientoPaciente> {
+    return api.post<TratamientoPaciente>('/tratamientos', data)
+  },
 
-    return tratamientoApi.getByPaciente(dni)
-},
+  update(id: string, data: ActualizarTratamientoPacienteDto): Promise<TratamientoPaciente> {
+    return api.patch<TratamientoPaciente>(`/tratamientos/${id}`, data)
+  },
 
-getByEstado(
-    estado: EstadoTratamiento,
-): Promise<TratamientoPaciente[]> {
-    // Backend:
-    // return api.get<TratamientoPaciente[]>(
-    //     `/tratamientos/estado/${estado}`,
-    // )
+  getAgenda(tratamientoId: string): Promise<AgendaTratamiento[]> {
+    return api.get<AgendaTratamiento[]>(`/tratamientos/${tratamientoId}/agenda`)
+  },
 
-    return tratamientoApi.getByEstado(estado)
-},
-
-create(
-    data: CrearTratamientoPacienteDto,
-): Promise<TratamientoPaciente> {
-    // Backend:
-    // return api.post<TratamientoPaciente>(
-    //     '/tratamientos',
-    //     data,
-    // )
-
-    return tratamientoApi.create(data)
-},
-
-update(
-    id: string,
-    data: ActualizarTratamientoPacienteDto,
-): Promise<TratamientoPaciente> {
-    // Backend:
-    // return api.patch<TratamientoPaciente>(
-    //     `/tratamientos/${id}`,
-    //     data,
-    // )
-
-    return tratamientoApi.update(id, data)
-},
-
-getAgenda(
-    tratamientoId: string,
-): Promise<AgendaTratamiento[]> {
-    // Backend:
-    // return api.get<AgendaTratamiento[]>(
-    //     `/tratamientos/${tratamientoId}/agenda`,
-    // )
-
-    return agendaTratamientoApi.getByTratamiento(
-        tratamientoId,
-    )
-},
-
-createAgenda(
-    data: CrearAgendaTratamientoDto,
-): Promise<AgendaTratamiento> {
-    // Backend:
-    // return api.post<AgendaTratamiento>(
-    //     '/tratamientos/agenda',
-    //     data,
-    // )
-
-    throw new Error(
-        'createAgenda aún no está implementado en el mock API',
-    )
-},
-
-
+  createAgenda(data: CrearAgendaTratamientoDto): Promise<AgendaTratamiento> {
+    return api.post<AgendaTratamiento>('/tratamientos/agenda', data)
+  },
 }

@@ -14,24 +14,36 @@ async function request<T>(
 
   headers.set('Content-Type', 'application/json')
 
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`)
+  const authToken = token || (typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null)
+
+  if (authToken) {
+    headers.set('Authorization', `Bearer ${authToken}`)
   }
 
-  const response = await fetch(
-    `${env.apiUrl}${endpoint}`,
-    {
-      ...fetchOptions,
-      headers,
-    },
-  )
+  let response: Response
+  try {
+    response = await fetch(
+      `${env.apiUrl}${endpoint}`,
+      {
+        ...fetchOptions,
+        headers,
+      },
+    )
+  } catch (error: any) {
+    if (error instanceof TypeError) {
+      throw new Error(
+        'Error de conexión: No se pudo comunicar con el servidor backend (revisa si está activo o bloqueado por CORS).',
+      )
+    }
+    throw error
+  }
 
   if (!response.ok) {
     let message = 'Ha ocurrido un error'
 
     try {
       const error = await response.json()
-      message = error.message ?? message
+      message = error.detail ?? error.message ?? message
     } catch {
       // La respuesta no contenía JSON
     }

@@ -3,20 +3,11 @@ import type {
   CrearPacienteDto,
   ActualizarPacienteDto,
 } from '@/types'
-
-// ============================================================
-// MOCKS
-// ============================================================
-
-import { pacienteApi } from '@/services/mock-api'
+import { api } from '@/services/api/client'
 
 // ============================================================
 // FUNCIONES DE VALIDACIÓN PRIVADAS
 // ============================================================
-// Cambia esto:
-// const validarDatosPaciente = (data: { dni?: string; nombres?: string; apellidos?: string; telefono?: string }) => {
-
-// Por esto (más flexible para TypeScript):
 const validarDatosPaciente = (data: Record<string, any>) => {
   const regexDni = /^\d{8}$/
   const regexLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
@@ -53,28 +44,24 @@ const validarDatosPaciente = (data: Record<string, any>) => {
 
 export const pacientesService = {
   getAll(): Promise<Paciente[]> {
-    return pacienteApi.getAll()
+    return api.get<Paciente[]>('/pacientes')
   },
 
   getByDni(dni: string): Promise<Paciente | undefined> {
-    return pacienteApi.getByDni(dni)
+    return api.get<Paciente>(`/pacientes/${dni}`)
   },
 
   create(data: CrearPacienteDto): Promise<Paciente> {
-    // Validamos estrictamente antes de enviar al mock/API
     validarDatosPaciente(data)
-
-    return pacienteApi.create(data)
+    return api.post<Paciente>('/pacientes', data)
   },
 
   update(dni: string, data: ActualizarPacienteDto): Promise<Paciente> {
-    // Validamos el DNI y los campos que se estén actualizando
     validarDatosPaciente({ dni, ...data })
-
-    return pacienteApi.update(dni, data)
+    return api.put<Paciente>(`/pacientes/${dni}`, data)
   },
 
   delete(dni: string): Promise<void> {
-    return pacienteApi.delete(dni)
+    return api.delete<void>(`/pacientes/${dni}`)
   },
 }
