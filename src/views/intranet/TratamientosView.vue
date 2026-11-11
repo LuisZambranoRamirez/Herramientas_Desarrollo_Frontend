@@ -1,266 +1,455 @@
 <script setup lang="ts">
-// CAMBIO: Importación de funciones reactivas de Vue
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import DashboardLayout from '@/components/dashboard/DashboardLayout.vue'
+import { useAuthStore } from '@/stores/auth.store'
+import { tratamientosService } from '@/services/tratamientos.service'
+import { pacientesService } from '@/services/pacientes.service'
+import { citasService } from '@/services/citas.service'
+import type {
+  TratamientoPaciente,
+  AgendaTratamiento,
+  EstadoTratamiento,
+  TratamientoOdontologico,
+  DiaSemana,
+  CitaOdontologoResumen,
+  Paciente,
+} from '@/types'
 
-// CAMBIO: Interfaz del modelo de Tratamiento según especificación
-export interface Tratamiento {
-  id: string | number
-  categoria: string
-  nombre: string
-  descripcion: string
-  precioReferencial: number
-  duracionEstimadaMin: number
+interface PacienteOption {
+  dni: string
+  nombreCompleto: string
 }
 
-// CAMBIO: Constante de clave de localStorage
-const STORAGE_KEY = 'tratamientos'
-
-// CAMBIO: Catálogo inicial (Seed Data) con 10 categorías y procedimientos
-const SEED_TRATAMIENTOS: Tratamiento[] = [
-  // 1. Diagnóstico y Prevención
-  { id: 1, categoria: 'Diagnóstico y Prevención', nombre: 'Consulta y examen clínico general', descripcion: 'Evaluación integral de la cavidad bucal', precioReferencial: 50, duracionEstimadaMin: 30 },
-  { id: 2, categoria: 'Diagnóstico y Prevención', nombre: 'Odontograma digital', descripcion: 'Registro gráfico digital del estado dental', precioReferencial: 40, duracionEstimadaMin: 20 },
-  { id: 3, categoria: 'Diagnóstico y Prevención', nombre: 'Profilaxis dental (limpieza simple)', descripcion: 'Limpieza e higiene dental de rutina', precioReferencial: 80, duracionEstimadaMin: 30 },
-  { id: 4, categoria: 'Diagnóstico y Prevención', nombre: 'Destartraje supragingival (ultrasonido)', descripcion: 'Eliminación de sarro con ultrasonido', precioReferencial: 120, duracionEstimadaMin: 45 },
-  { id: 5, categoria: 'Diagnóstico y Prevención', nombre: 'Aplicación tópica de flúor barniz', descripcion: 'Tratamiento preventivo para remineralización', precioReferencial: 60, duracionEstimadaMin: 20 },
-  { id: 6, categoria: 'Diagnóstico y Prevención', nombre: 'Sellantes de fosas y fisuras (por pieza)', descripcion: 'Protección preventiva de fosas dentales', precioReferencial: 50, duracionEstimadaMin: 20 },
-  { id: 7, categoria: 'Diagnóstico y Prevención', nombre: 'Radiografía periapical', descripcion: 'Toma radiográfica individual de pieza dental', precioReferencial: 30, duracionEstimadaMin: 15 },
-  { id: 8, categoria: 'Diagnóstico y Prevención', nombre: 'Radiografía panorámica', descripcion: 'Imagen radiográfica completa maxilofacial', precioReferencial: 80, duracionEstimadaMin: 20 },
-
-  // 2. Odontología Restauradora y Operatoria
-  { id: 9, categoria: 'Odontología Restauradora y Operatoria', nombre: 'Restauración con resina simple (1 superficie)', descripcion: 'Obturación estética en 1 cara dental', precioReferencial: 100, duracionEstimadaMin: 30 },
-  { id: 10, categoria: 'Odontología Restauradora y Operatoria', nombre: 'Restauración con resina compuesta (2 o más superficies)', descripcion: 'Obturación estética múltiple cara dental', precioReferencial: 150, duracionEstimadaMin: 45 },
-  { id: 11, categoria: 'Odontología Restauradora y Operatoria', nombre: 'Restauración con ionómero de vidrio', descripcion: 'Restauración biocompatible y liberadora de flúor', precioReferencial: 90, duracionEstimadaMin: 30 },
-  { id: 12, categoria: 'Odontología Restauradora y Operatoria', nombre: 'Incrustación dental estética (Inlay / Onlay en resina o cerámica)', descripcion: 'Restauración indirecta para alta pérdida estructural', precioReferencial: 450, duracionEstimadaMin: 60 },
-  { id: 13, categoria: 'Odontología Restauradora y Operatoria', nombre: 'Reconstrucción dental con perno de fibra de vidrio', descripcion: 'Refuerzo intrarradicular post-endodoncia', precioReferencial: 250, duracionEstimadaMin: 50 },
-
-  // 3. Endodoncia
-  { id: 14, categoria: 'Endodoncia', nombre: 'Pulpotomía / Pulpectomía (dientes deciduos)', descripcion: 'Tratamiento pulpar en piezas pediátricas', precioReferencial: 180, duracionEstimadaMin: 40 },
-  { id: 15, categoria: 'Endodoncia', nombre: 'Tratamiento de conducto unirradicular (incisivos/caninos)', descripcion: 'Endodoncia en piezas anteriores de 1 conducto', precioReferencial: 300, duracionEstimadaMin: 60 },
-  { id: 16, categoria: 'Endodoncia', nombre: 'Tratamiento de conducto birradicular (premolares)', descripcion: 'Endodoncia en piezas de 2 conductos', precioReferencial: 400, duracionEstimadaMin: 60 },
-  { id: 17, categoria: 'Endodoncia', nombre: 'Tratamiento de conducto multirradicular (molares)', descripcion: 'Endodoncia en molares de 3 o más conductos', precioReferencial: 550, duracionEstimadaMin: 90 },
-  { id: 18, categoria: 'Endodoncia', nombre: 'Retratamiento endodóntico (por conducto)', descripcion: 'Desobturación y re-tratamiento de conducto', precioReferencial: 350, duracionEstimadaMin: 60 },
-
-  // 4. Periodoncia
-  { id: 19, categoria: 'Periodoncia', nombre: 'Raspaje y alisado radicular por cuadrante (curetaje)', descripcion: 'Limpieza profunda periodontal bajo encía', precioReferencial: 180, duracionEstimadaMin: 45 },
-  { id: 20, categoria: 'Periodoncia', nombre: 'Cirugía a colgajo periodontal', descripcion: 'Procedimiento quirúrgico para sacos periodontales', precioReferencial: 600, duracionEstimadaMin: 90 },
-  { id: 21, categoria: 'Periodoncia', nombre: 'Gingivectomía / Gingivoplastia estética (por pieza o sector)', descripcion: 'Remodelado estético de encías', precioReferencial: 250, duracionEstimadaMin: 45 },
-  { id: 22, categoria: 'Periodoncia', nombre: 'Injerto de encía / tejido conectivo', descripcion: 'Recubrimiento de recesiones gingivales', precioReferencial: 800, duracionEstimadaMin: 90 },
-  { id: 23, categoria: 'Periodoncia', nombre: 'Mantenimiento periodontal periódico', descripcion: 'Control y soporte periodontal continuo', precioReferencial: 130, duracionEstimadaMin: 30 },
-
-  // 5. Ortodoncia y Ortopedia Maxilar
-  { id: 24, categoria: 'Ortodoncia y Ortopedia Maxilar', nombre: 'Estudio ortodóntico completo (fotos, modelos, trazado cefalométrico)', descripcion: 'Diagnóstico integral para planificación ortodóntica', precioReferencial: 250, duracionEstimadaMin: 45 },
-  { id: 25, categoria: 'Ortodoncia y Ortopedia Maxilar', nombre: 'Brackets metálicos convencionales (instalación)', descripcion: 'Montaje de aparatología fija metálica', precioReferencial: 1200, duracionEstimadaMin: 90 },
-  { id: 26, categoria: 'Ortodoncia y Ortopedia Maxilar', nombre: 'Brackets estéticos (cerámica / zafiro)', descripcion: 'Instalación de aparatos de alta estética', precioReferencial: 2200, duracionEstimadaMin: 90 },
-  { id: 27, categoria: 'Ortodoncia y Ortopedia Maxilar', nombre: 'Brackets de autoligado', descripcion: 'Sistema de baja fricción y tratamiento eficiente', precioReferencial: 2800, duracionEstimadaMin: 90 },
-  { id: 28, categoria: 'Ortodoncia y Ortopedia Maxilar', nombre: 'Alineadores invisibles (tratamiento correctivo)', descripcion: 'Ortodoncia transparente mediante alineadores secuenciales', precioReferencial: 6000, duracionEstimadaMin: 60 },
-  { id: 29, categoria: 'Ortodoncia y Ortopedia Maxilar', nombre: 'Control mensual de ortodoncia', descripcion: 'Ajuste y activación periódica de brackets', precioReferencial: 150, duracionEstimadaMin: 30 },
-  { id: 30, categoria: 'Ortodoncia y Ortopedia Maxilar', nombre: 'Retenedores post-ortodoncia (Hawley o Essix)', descripcion: 'Aparato de contención post-tratamiento', precioReferencial: 300, duracionEstimadaMin: 30 },
-
-  // 6. Cirugía Bucal y Maxilofacial
-  { id: 31, categoria: 'Cirugía Bucal y Maxilofacial', nombre: 'Exodoncia simple (diente permanente o temporal)', descripcion: 'Extracción dental convencional no compleja', precioReferencial: 100, duracionEstimadaMin: 30 },
-  { id: 32, categoria: 'Cirugía Bucal y Maxilofacial', nombre: 'Exodoncia compleja / por disección', descripcion: 'Extracción con osteotomía o odontosección', precioReferencial: 220, duracionEstimadaMin: 45 },
-  { id: 33, categoria: 'Cirugía Bucal y Maxilofacial', nombre: 'Extracción quirúrgica de tercera molar erupcionada', descripcion: 'Cirugía de muela del juicio erupcionada', precioReferencial: 300, duracionEstimadaMin: 45 },
-  { id: 34, categoria: 'Cirugía Bucal y Maxilofacial', nombre: 'Extracción quirúrgica de tercera molar impactada / retenida', descripcion: 'Cirugía compleja de muela del juicio retenida', precioReferencial: 500, duracionEstimadaMin: 60 },
-  { id: 35, categoria: 'Cirugía Bucal y Maxilofacial', nombre: 'Frenectomía labial o lingual', descripcion: 'Corrección quirúrgica de frenillos bucales', precioReferencial: 350, duracionEstimadaMin: 40 },
-  { id: 36, categoria: 'Cirugía Bucal y Maxilofacial', nombre: 'Drenaje de absceso periapical', descripcion: 'Evacuación de infección aguda en cavidad oral', precioReferencial: 150, duracionEstimadaMin: 30 },
-
-  // 7. Rehabilitación Oral y Prótesis
-  { id: 37, categoria: 'Rehabilitación Oral y Prótesis', nombre: 'Prótesis total acrílica (por arcada)', descripcion: 'Dentadura completa removible en acrílico', precioReferencial: 900, duracionEstimadaMin: 60 },
-  { id: 38, categoria: 'Rehabilitación Oral y Prótesis', nombre: 'Prótesis parcial removible metálica (cromo-cobalto)', descripcion: 'Prótesis parcial esquelética metálica', precioReferencial: 1200, duracionEstimadaMin: 60 },
-  { id: 39, categoria: 'Rehabilitación Oral y Prótesis', nombre: 'Prótesis flexible (Valplast)', descripcion: 'Prótesis removible estética altamente flexible', precioReferencial: 950, duracionEstimadaMin: 60 },
-  { id: 40, categoria: 'Rehabilitación Oral y Prótesis', nombre: 'Corona metal-porcelana', descripcion: 'Funda dental con estructura metálica y revestimiento cerámico', precioReferencial: 650, duracionEstimadaMin: 60 },
-  { id: 41, categoria: 'Rehabilitación Oral y Prótesis', nombre: 'Corona libre de metal (Zirconio / Disilicato de litio E-max)', descripcion: 'Corona estética libre de metal de alta resistencia', precioReferencial: 1200, duracionEstimadaMin: 60 },
-  { id: 42, categoria: 'Rehabilitación Oral y Prótesis', nombre: 'Carilla dental de porcelana / disilicato', descripcion: 'Lámina estética frontal cerámico de alta definición', precioReferencial: 1100, duracionEstimadaMin: 60 },
-  { id: 43, categoria: 'Rehabilitación Oral y Prótesis', nombre: 'Carilla dental directa en resina', descripcion: 'Modelado estético directo sobre esmalte', precioReferencial: 350, duracionEstimadaMin: 45 },
-
-  // 8. Implantología
-  { id: 44, categoria: 'Implantología', nombre: 'Colocación de implante dental de titanio (quirúrgico)', descripcion: 'Fase quirúrgica de colocación de raíz artificial', precioReferencial: 2500, duracionEstimadaMin: 90 },
-  { id: 45, categoria: 'Implantología', nombre: 'Corona sobre implante (fase protésica)', descripcion: 'Restauración protésica sobre implante integrado', precioReferencial: 1400, duracionEstimadaMin: 60 },
-  { id: 46, categoria: 'Implantología', nombre: 'Regeneración ósea guiada / Injerto óseo', descripcion: 'Aumento de volumen óseo maxilar o mandibular', precioReferencial: 900, duracionEstimadaMin: 60 },
-  { id: 47, categoria: 'Implantología', nombre: 'Elevación de seno maxilar', descripcion: 'Procedimiento para ganar altura ósea posterior superior', precioReferencial: 1800, duracionEstimadaMin: 90 },
-
-  // 9. Odontopediatría
-  { id: 48, categoria: 'Odontopediatría', nombre: 'Restauración preventiva en niños', descripcion: 'Obturación selladora en piezas deciduas', precioReferencial: 80, duracionEstimadaMin: 30 },
-  { id: 49, categoria: 'Odontopediatría', nombre: 'Corona de acero infantil', descripcion: 'Corona preformada para molares primarias destruidas', precioReferencial: 200, duracionEstimadaMin: 40 },
-  { id: 50, categoria: 'Odontopediatría', nombre: 'Mantenedor de espacio fijo o removible', descripcion: 'Dispositivo para prevenir pérdida de espacio dental', precioReferencial: 350, duracionEstimadaMin: 40 },
-  { id: 51, categoria: 'Odontopediatría', nombre: 'Terapia pulpar infantil', descripcion: 'Tratamiento desinfectante de pulpa en niños', precioReferencial: 160, duracionEstimadaMin: 40 },
-
-  // 10. Estética Dental y Blanqueamiento
-  { id: 52, categoria: 'Estética Dental y Blanqueamiento', nombre: 'Blanqueamiento dental en consultorio (fotoactivado)', descripcion: 'Aclaramiento dental intensivo con luz en clínica', precioReferencial: 450, duracionEstimadaMin: 60 },
-  { id: 53, categoria: 'Estética Dental y Blanqueamiento', nombre: 'Blanqueamiento dental casero (con férulas personalizadas)', descripcion: 'Tratamiento de aclaramiento ambulatorio con cubetas', precioReferencial: 300, duracionEstimadaMin: 30 },
-  { id: 54, categoria: 'Estética Dental y Blanqueamiento', nombre: 'Microabrasión del esmalte dental', descripcion: 'Eliminación superficial de manchas en esmalte', precioReferencial: 200, duracionEstimadaMin: 40 },
-]
-
-// CAMBIO: Carga condicional desde localStorage con fallback a Seed Data
-const cargarTratamientosIniciales = (): Tratamiento[] => {
-  try {
-    const guardados = localStorage.getItem(STORAGE_KEY)
-    if (guardados) {
-      const parsed = JSON.parse(guardados)
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed
-      }
-    }
-  } catch (e) {
-    console.error('Error al leer tratamientos de localStorage:', e)
-  }
-  // Si está vacío o es null, inicializar con el catálogo completo
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_TRATAMIENTOS))
-  return [...SEED_TRATAMIENTOS]
+interface FormTratamiento {
+  dni_paciente: string
+  dni_odontologo: string
+  tratamiento: TratamientoOdontologico
+  precio: number
+  estado: EstadoTratamiento
+  observaciones: string
 }
 
-// CAMBIO: Estado reactivo de tratamientos
-const tratamientos = ref<Tratamiento[]>(cargarTratamientosIniciales())
-const busqueda = ref('')
+interface FormAgenda {
+  dia_semana: DiaSemana
+  hora_inicio: string
+  hora_fin: string
+}
 
-// CAMBIO: Persistencia automática en localStorage ante cualquier cambio
-watch(
-  tratamientos,
-  (nuevos) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevos))
+const router = useRouter()
+const authStore = useAuthStore()
+
+const TRATAMIENTOS_META: Record<
+  TratamientoOdontologico,
+  { label: string; categoria: string; precioRef: number }
+> = {
+  Limpieza_dental_profunda: {
+    label: 'Limpieza dental profunda',
+    categoria: 'Diagnóstico y Prevención',
+    precioRef: 120,
   },
-  { deep: true }
-)
+  Aplicacion_de_fluor: {
+    label: 'Aplicación de flúor',
+    categoria: 'Diagnóstico y Prevención',
+    precioRef: 60,
+  },
+  Selladores_de_fosas_y_fisuras: {
+    label: 'Selladores de fosas y fisuras',
+    categoria: 'Diagnóstico y Prevención',
+    precioRef: 50,
+  },
+  Restauracion_con_resina: {
+    label: 'Restauración con resina',
+    categoria: 'Odontología Restauradora',
+    precioRef: 150,
+  },
+  Ortopedia_maxilar: {
+    label: 'Ortopedia maxilar',
+    categoria: 'Ortodoncia y Ortopedia',
+    precioRef: 1200,
+  },
+  Implante_dental: {
+    label: 'Implante dental',
+    categoria: 'Implantología',
+    precioRef: 2500,
+  },
+}
 
-// CAMBIO: Asegura la inicialización en la carga inicial del componente
-onMounted(() => {
-  if (!localStorage.getItem(STORAGE_KEY)) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_TRATAMIENTOS))
-  }
-})
+const TIPOS_TRATAMIENTO = Object.keys(TRATAMIENTOS_META) as TratamientoOdontologico[]
 
-// CAMBIO: Categorías clínicas disponibles para el selector del formulario
-const CATEGORIAS_DISPONIBLES = [
-  'Diagnóstico y Prevención',
-  'Odontología Restauradora y Operatoria',
-  'Endodoncia',
-  'Periodoncia',
-  'Ortodoncia y Ortopedia Maxilar',
-  'Cirugía Bucal y Maxilofacial',
-  'Rehabilitación Oral y Prótesis',
-  'Implantología',
-  'Odontopediatría',
-  'Estética Dental y Blanqueamiento',
+const ESTADO_META: Record<EstadoTratamiento, { label: string; clase: string }> = {
+  INICIADO: { label: 'Iniciado', clase: 'estado-iniciado' },
+  EN_PROCESO: { label: 'En Proceso', clase: 'estado-proceso' },
+  PENDIENTE: { label: 'Pendiente', clase: 'estado-pendiente' },
+  FINALIZADO: { label: 'Finalizado', clase: 'estado-finalizado' },
+}
+
+const ESTADOS_OPCIONES: EstadoTratamiento[] = [
+  'INICIADO',
+  'EN_PROCESO',
+  'PENDIENTE',
+  'FINALIZADO',
 ]
 
-// CAMBIO: Computed para ordenar por categoría (alfabéticamente) y nombre dentro de cada categoría
-const tratamientosOrdenados = computed(() => {
+const DIAS_SEMANA: DiaSemana[] = [
+  'LUNES',
+  'MARTES',
+  'MIERCOLES',
+  'JUEVES',
+  'VIERNES',
+  'SABADO',
+  'DOMINGO',
+]
+
+// Estado reactivo conectado al backend
+const tratamientos = ref<TratamientoPaciente[]>([])
+const opcionesPacientes = ref<PacienteOption[]>([])
+const opcionesOdontologos = ref<CitaOdontologoResumen[]>([])
+
+const cargando = ref(false)
+const guardando = ref(false)
+const cargandoDetalle = ref(false)
+const guardandoAgenda = ref(false)
+
+const errorCarga = ref<string | null>(null)
+const errorAccion = ref<string | null>(null)
+const errorModal = ref<string | null>(null)
+const errorAgenda = ref<string | null>(null)
+
+const busqueda = ref('')
+const filtroEstado = ref<EstadoTratamiento | 'TODOS'>('TODOS')
+
+const puedeGestionar = computed(
+  () => authStore.userRole === 'SYSTEM_ADMIN' || authStore.userRole === 'ODONTOLOGO',
+)
+const esAdmin = computed(() => authStore.userRole === 'SYSTEM_ADMIN')
+
+const cargarDatos = async () => {
+  cargando.value = true
+  errorCarga.value = null
+  try {
+    const [tratData, odonData, pacData] = await Promise.all([
+      tratamientosService.getAll(),
+      citasService.getOdontologos().catch(() => [] as CitaOdontologoResumen[]),
+      pacientesService.getAll().catch(() => [] as Paciente[]),
+    ])
+
+    tratamientos.value = tratData
+    opcionesOdontologos.value = odonData
+    opcionesPacientes.value = pacData.map((p) => ({
+      dni: p.dni,
+      nombreCompleto: `${p.nombres} ${p.apellidos}`.trim(),
+    }))
+  } catch (err) {
+    errorCarga.value =
+      err instanceof Error
+        ? err.message
+        : 'No se pudieron cargar los tratamientos desde el servidor.'
+  } finally {
+    cargando.value = false
+  }
+}
+
+onMounted(cargarDatos)
+
+const obtenerLabelTratamiento = (tipo: TratamientoOdontologico | string): string => {
+  const meta = TRATAMIENTOS_META[tipo as TratamientoOdontologico]
+  return meta ? meta.label : String(tipo).replace(/_/g, ' ')
+}
+
+const obtenerCategoriaTratamiento = (tipo: TratamientoOdontologico | string): string => {
+  const meta = TRATAMIENTOS_META[tipo as TratamientoOdontologico]
+  return meta ? meta.categoria : 'Odontología Clínica'
+}
+
+const obtenerNombrePaciente = (dni: string): string => {
+  const enc = opcionesPacientes.value.find((p) => p.dni === dni)
+  return enc ? enc.nombreCompleto : `Paciente (${dni})`
+}
+
+const obtenerNombreOdontologo = (dni: string): string => {
+  const enc = opcionesOdontologos.value.find((doc) => doc.dni === dni)
+  return enc ? `Dr(a). ${enc.nombres} ${enc.apellidos}`.trim() : `Dr(a). (${dni})`
+}
+
+// Métricas reactivas por estado
+const totalPorEstado = computed(() => ({
+  total: tratamientos.value.length,
+  INICIADO: tratamientos.value.filter((t) => t.estado === 'INICIADO').length,
+  EN_PROCESO: tratamientos.value.filter((t) => t.estado === 'EN_PROCESO').length,
+  PENDIENTE: tratamientos.value.filter((t) => t.estado === 'PENDIENTE').length,
+  FINALIZADO: tratamientos.value.filter((t) => t.estado === 'FINALIZADO').length,
+}))
+
+const tratamientosFiltrados = computed(() => {
   const q = busqueda.value.toLowerCase().trim()
 
-  // Filtrado reactivo por término de búsqueda
-  const filtrados = tratamientos.value.filter((t) => {
+  return tratamientos.value.filter((t) => {
+    if (filtroEstado.value !== 'TODOS' && t.estado !== filtroEstado.value) {
+      return false
+    }
+
     if (!q) return true
+
+    const nombrePac = obtenerNombrePaciente(t.dni_paciente).toLowerCase()
+    const nombreDoc = obtenerNombreOdontologo(t.dni_odontologo).toLowerCase()
+    const nombreTrat = obtenerLabelTratamiento(t.tratamiento).toLowerCase()
+    const categoria = obtenerCategoriaTratamiento(t.tratamiento).toLowerCase()
+
     return (
-      t.nombre.toLowerCase().includes(q) ||
-      t.categoria.toLowerCase().includes(q) ||
-      t.descripcion.toLowerCase().includes(q)
+      t.dni_paciente.toLowerCase().includes(q) ||
+      nombrePac.includes(q) ||
+      t.dni_odontologo.toLowerCase().includes(q) ||
+      nombreDoc.includes(q) ||
+      nombreTrat.includes(q) ||
+      categoria.includes(q) ||
+      (t.observaciones && t.observaciones.toLowerCase().includes(q)) ||
+      t.tratamiento_paciente_id.toLowerCase().includes(q)
     )
   })
-
-  // Obtener categorías únicas presentes en los resultados filtrados y ordenarlas alfabéticamente
-  const categoriasUnicas = [...new Set(filtrados.map((t) => t.categoria))].sort((a, b) =>
-    a.localeCompare(b, 'es', { sensitivity: 'base' })
-  )
-
-  // Agrupar elementos por categoría y ordenarlos alfabéticamente por nombre
-  return categoriasUnicas.map((cat) => ({
-    categoria: cat,
-    items: filtrados
-      .filter((t) => t.categoria === cat)
-      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })),
-  }))
 })
 
-// CAMBIO: Total global de tratamientos filtrados
-const totalFiltrados = computed(() =>
-  tratamientosOrdenados.value.reduce((acc, grupo) => acc + grupo.items.length, 0)
-)
-
-// CAMBIO: Manejo de modales (crear / editar / ver)
+// Control de modales (crear | editar | ver | null)
 type ModoModal = 'crear' | 'editar' | 'ver' | null
 const modoModal = ref<ModoModal>(null)
-const idSeleccionado = ref<string | number | null>(null)
+const idSeleccionado = ref<string | null>(null)
+const tratamientoActivo = ref<TratamientoPaciente | null>(null)
+const agendaSesiones = ref<AgendaTratamiento[]>([])
 
-const formVacio = (): Omit<Tratamiento, 'id'> => ({
-  categoria: 'Diagnóstico y Prevención',
-  nombre: '',
-  descripcion: '',
-  precioReferencial: 0,
-  duracionEstimadaMin: 30,
+const formVacio = (): FormTratamiento => ({
+  dni_paciente: opcionesPacientes.value[0]?.dni || '',
+  dni_odontologo: opcionesOdontologos.value[0]?.dni || '',
+  tratamiento: 'Limpieza_dental_profunda',
+  precio: TRATAMIENTOS_META.Limpieza_dental_profunda.precioRef,
+  estado: 'INICIADO',
+  observaciones: '',
 })
 
-const form = ref<Omit<Tratamiento, 'id'>>(formVacio())
+const form = ref<FormTratamiento>(formVacio())
 
-const tratamientoSeleccionado = computed(() =>
-  tratamientos.value.find((t) => t.id === idSeleccionado.value) ?? null
-)
+const agendaVacia = (): FormAgenda => ({
+  dia_semana: 'LUNES',
+  hora_inicio: '09:00',
+  hora_fin: '10:00',
+})
 
-const resetForm = () => {
-  form.value = formVacio()
-  idSeleccionado.value = null
+const agendaForm = ref<FormAgenda>(agendaVacia())
+
+const pacientesSelect = computed<PacienteOption[]>(() => {
+  const lista = [...opcionesPacientes.value]
+  if (
+    tratamientoActivo.value &&
+    !lista.some((p) => p.dni === tratamientoActivo.value!.dni_paciente)
+  ) {
+    lista.unshift({
+      dni: tratamientoActivo.value.dni_paciente,
+      nombreCompleto: obtenerNombrePaciente(tratamientoActivo.value.dni_paciente),
+    })
+  }
+  return lista
+})
+
+const odontologosSelect = computed<CitaOdontologoResumen[]>(() => {
+  const lista = [...opcionesOdontologos.value]
+  if (
+    tratamientoActivo.value &&
+    !lista.some((o) => o.dni === tratamientoActivo.value!.dni_odontologo)
+  ) {
+    lista.unshift({
+      dni: tratamientoActivo.value.dni_odontologo,
+      nombres: 'Odontólogo',
+      apellidos: `(${tratamientoActivo.value.dni_odontologo})`,
+      especialidad: '',
+      colegiatura: '',
+    })
+  }
+  return lista
+})
+
+const alCambiarTipoTratamiento = () => {
+  if (modoModal.value === 'crear') {
+    const meta = TRATAMIENTOS_META[form.value.tratamiento]
+    if (meta) {
+      form.value.precio = meta.precioRef
+    }
+  }
 }
 
 const abrirCrear = () => {
-  resetForm()
+  errorModal.value = null
+  errorAccion.value = null
+  idSeleccionado.value = null
+  tratamientoActivo.value = null
+  form.value = formVacio()
   modoModal.value = 'crear'
 }
 
-const abrirEditar = (item: Tratamiento) => {
-  idSeleccionado.value = item.id
+const abrirEditar = (item: TratamientoPaciente) => {
+  errorModal.value = null
+  errorAccion.value = null
+  idSeleccionado.value = item.tratamiento_paciente_id
+  tratamientoActivo.value = item
   form.value = {
-    categoria: item.categoria,
-    nombre: item.nombre,
-    descripcion: item.descripcion,
-    precioReferencial: item.precioReferencial,
-    duracionEstimadaMin: item.duracionEstimadaMin,
+    dni_paciente: item.dni_paciente,
+    dni_odontologo: item.dni_odontologo,
+    tratamiento: item.tratamiento,
+    precio: Number(item.precio),
+    estado: item.estado,
+    observaciones: item.observaciones || '',
   }
   modoModal.value = 'editar'
 }
 
-const abrirVer = (id: string | number) => {
-  idSeleccionado.value = id
+const abrirVer = async (item: TratamientoPaciente) => {
+  errorModal.value = null
+  errorAgenda.value = null
+  idSeleccionado.value = item.tratamiento_paciente_id
+  tratamientoActivo.value = item
+  agendaSesiones.value = []
+  agendaForm.value = agendaVacia()
   modoModal.value = 'ver'
+
+  cargandoDetalle.value = true
+  try {
+    const [detalle, sesiones] = await Promise.all([
+      tratamientosService.getById(item.tratamiento_paciente_id),
+      tratamientosService.getAgenda(item.tratamiento_paciente_id),
+    ])
+    if (detalle) {
+      tratamientoActivo.value = detalle
+    }
+    agendaSesiones.value = sesiones
+  } catch (err) {
+    errorAgenda.value =
+      err instanceof Error
+        ? err.message
+        : 'No se pudo cargar el detalle o las sesiones del tratamiento.'
+  } finally {
+    cargandoDetalle.value = false
+  }
 }
 
 const cerrarModal = () => {
+  if (guardando.value || guardandoAgenda.value) return
   modoModal.value = null
-  resetForm()
+  idSeleccionado.value = null
+  tratamientoActivo.value = null
+  errorModal.value = null
+  errorAgenda.value = null
 }
 
-// CAMBIO: Guardar creación o edición
-const guardar = () => {
-  if (!form.value.nombre.trim()) return
+const guardar = async () => {
+  const dniPaciente = form.value.dni_paciente.trim()
+  const dniOdontologo = form.value.dni_odontologo.trim()
+  const observaciones = form.value.observaciones.trim()
+  const precio = Number(form.value.precio)
 
   if (modoModal.value === 'crear') {
-    const nuevoId = Date.now()
-    tratamientos.value.push({
-      id: nuevoId,
-      ...form.value,
-    })
-  } else if (modoModal.value === 'editar' && idSeleccionado.value !== null) {
-    const idx = tratamientos.value.findIndex((t) => t.id === idSeleccionado.value)
-    if (idx !== -1) {
-      tratamientos.value.splice(idx, 1, {
-        id: idSeleccionado.value,
-        ...form.value,
-      })
+    if (!/^\d{8}$/.test(dniPaciente)) {
+      errorModal.value = 'El DNI del paciente debe contener exactamente 8 dígitos numéricos.'
+      return
+    }
+    if (!/^\d{8}$/.test(dniOdontologo)) {
+      errorModal.value = 'El DNI del odontólogo debe contener exactamente 8 dígitos numéricos.'
+      return
     }
   }
-  cerrarModal()
-}
 
-// CAMBIO: Eliminar procedimiento del catálogo
-const eliminarTratamiento = (id: string | number) => {
-  if (confirm('¿Estás seguro de eliminar este tratamiento del catálogo?')) {
-    tratamientos.value = tratamientos.value.filter((t) => t.id !== id)
+  if (!observaciones) {
+    errorModal.value = 'Ingresa las observaciones o notas clínicas del tratamiento.'
+    return
+  }
+
+  if (Number.isNaN(precio) || precio < 0) {
+    errorModal.value = 'El precio del tratamiento no puede ser negativo.'
+    return
+  }
+
+  guardando.value = true
+  errorModal.value = null
+
+  try {
+    if (modoModal.value === 'crear') {
+      const creado = await tratamientosService.create({
+        dni_paciente: dniPaciente,
+        dni_odontologo: dniOdontologo,
+        tratamiento: form.value.tratamiento,
+        precio,
+        observaciones,
+        estado: form.value.estado,
+      })
+      tratamientos.value.unshift(creado)
+    } else if (modoModal.value === 'editar' && idSeleccionado.value) {
+      const actualizado = await tratamientosService.update(idSeleccionado.value, {
+        tratamiento: form.value.tratamiento,
+        precio,
+        estado: form.value.estado,
+        observaciones,
+      })
+      const idx = tratamientos.value.findIndex(
+        (t) => t.tratamiento_paciente_id === idSeleccionado.value,
+      )
+      if (idx !== -1) {
+        tratamientos.value[idx] = actualizado
+      }
+    }
+
+    guardando.value = false
+    cerrarModal()
+  } catch (err) {
+    errorModal.value =
+      err instanceof Error ? err.message : 'Ocurrió un error al guardar el tratamiento.'
+  } finally {
+    guardando.value = false
   }
 }
 
-// CAMBIO: Formateador de moneda en soles peruanos
+const agregarSesionAgenda = async () => {
+  if (!tratamientoActivo.value) return
+  if (agendaForm.value.hora_fin <= agendaForm.value.hora_inicio) {
+    errorAgenda.value = 'La hora de fin debe ser posterior a la hora de inicio.'
+    return
+  }
+
+  guardandoAgenda.value = true
+  errorAgenda.value = null
+  try {
+    const nueva = await tratamientosService.createAgenda({
+      id_tratamiento_paciente: tratamientoActivo.value.tratamiento_paciente_id,
+      dia_semana: agendaForm.value.dia_semana,
+      hora_inicio: `${agendaForm.value.hora_inicio}:00`,
+      hora_fin: `${agendaForm.value.hora_fin}:00`,
+    })
+    agendaSesiones.value.push(nueva)
+  } catch (err) {
+    errorAgenda.value =
+      err instanceof Error ? err.message : 'No se pudo registrar la sesión del tratamiento.'
+  } finally {
+    guardandoAgenda.value = false
+  }
+}
+
+const irAPagarTratamiento = (item: TratamientoPaciente) => {
+  router.push({
+    path: '/pagos',
+    query: {
+      dni: item.dni_paciente,
+      tratamientoId: item.tratamiento_paciente_id,
+    },
+  })
+}
+
 const formatPrecio = (val: number): string =>
   new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(val)
+
+const formatFecha = (f: string): string => {
+  if (!f) return '—'
+  const partes = f.slice(0, 10).split('-')
+  if (partes.length === 3) {
+    return `${partes[2]}/${partes[1]}/${partes[0]}`
+  }
+  return f
+}
 </script>
 
 <template>
@@ -270,144 +459,302 @@ const formatPrecio = (val: number): string =>
       <!-- ── Cabecera ─────────────────────────────────────────── -->
       <div class="view-header">
         <div>
-          <h2 class="view-title">Catálogo Odontológico de Tratamientos</h2>
+          <h2 class="view-title">Planes y Tratamientos Odontológicos</h2>
           <p class="view-desc">
-            Explora, gestiona y clasifica el catálogo de procedimientos por categorías clínicas.
+            Gestiona los tratamientos clínicos asignados a pacientes, seguimiento de estado y agenda de sesiones.
           </p>
         </div>
-        <!-- CAMBIO: Botón para añadir procedimiento -->
-        <button class="btn-nuevo" type="button" @click="abrirCrear">
-          + Nuevo Tratamiento
+        <div class="header-actions">
+          <button class="btn-secundario" type="button" :disabled="cargando" @click="cargarDatos">
+            {{ cargando ? 'Actualizando...' : '↻ Actualizar' }}
+          </button>
+          <button
+            v-if="puedeGestionar"
+            class="btn-nuevo"
+            type="button"
+            :disabled="cargando"
+            @click="abrirCrear"
+          >
+            + Nuevo Tratamiento
+          </button>
+        </div>
+      </div>
+
+      <!-- Banner de error de acción -->
+      <div v-if="errorAccion" class="alert-banner" role="alert">
+        <span>⚠️ {{ errorAccion }}</span>
+        <button type="button" class="alert-close" @click="errorAccion = null">✕</button>
+      </div>
+
+      <!-- KPIs por estado -->
+      <div class="stats-row">
+        <div class="stat-mini-card">
+          <span class="stat-label">Total Planes</span>
+          <span class="stat-val">{{ totalPorEstado.total }}</span>
+        </div>
+        <div class="stat-mini-card">
+          <span class="stat-label">Iniciados</span>
+          <span class="stat-val text-indigo">{{ totalPorEstado.INICIADO }}</span>
+        </div>
+        <div class="stat-mini-card">
+          <span class="stat-label">En Proceso / Pendientes</span>
+          <span class="stat-val text-amber">
+            {{ totalPorEstado.EN_PROCESO + totalPorEstado.PENDIENTE }}
+          </span>
+        </div>
+        <div class="stat-mini-card">
+          <span class="stat-label">Finalizados</span>
+          <span class="stat-val text-emerald">{{ totalPorEstado.FINALIZADO }}</span>
+        </div>
+      </div>
+
+      <!-- Estado de carga inicial -->
+      <div v-if="cargando && tratamientos.length === 0" class="estado-carga" role="status">
+        <div class="spinner"></div>
+        <p class="vacio-titulo">Cargando tratamientos desde el servidor...</p>
+      </div>
+
+      <!-- Estado de error de carga -->
+      <div v-else-if="errorCarga && tratamientos.length === 0" class="estado-error" role="alert">
+        <p class="vacio-titulo">No se pudieron cargar los tratamientos</p>
+        <p class="vacio-desc">{{ errorCarga }}</p>
+        <button type="button" class="btn-primario" @click="cargarDatos">
+          Reintentar carga
         </button>
       </div>
 
-      <!-- ── Card principal con tabla agrupada ────────────────── -->
-      <div class="table-card">
+      <!-- ── Card principal con tabla ──────────────────────────── -->
+      <div v-else class="table-card">
         <div class="filter-bar">
           <input
             v-model="busqueda"
             type="text"
-            placeholder="Buscar por procedimiento, categoría o descripción..."
+            placeholder="Buscar por DNI, paciente, odontólogo, tratamiento u observaciones..."
             class="search-input"
           />
-          <span class="resultado-count">{{ totalFiltrados }} procedimiento(s)</span>
+          <select v-model="filtroEstado" class="estado-filter">
+            <option value="TODOS">Todos los estados</option>
+            <option value="INICIADO">Iniciado</option>
+            <option value="EN_PROCESO">En Proceso</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="FINALIZADO">Finalizado</option>
+          </select>
+          <span class="resultado-count">{{ tratamientosFiltrados.length }} tratamiento(s)</span>
         </div>
 
-        <!-- CAMBIO: Estado vacío cuando no hay coincidencias -->
-        <div v-if="totalFiltrados === 0" class="estado-vacio">
+        <div v-if="tratamientosFiltrados.length === 0" class="estado-vacio">
           <span class="vacio-icono">🦷</span>
-          <p class="vacio-titulo">Sin procedimientos encontrados</p>
+          <p class="vacio-titulo">Sin tratamientos encontrados</p>
           <p class="vacio-desc">
             {{
-              busqueda
-                ? 'No se encontraron registros para tu búsqueda.'
-                : 'El catálogo se encuentra vacío. Haz clic en "+ Nuevo Tratamiento".'
+              busqueda || filtroEstado !== 'TODOS'
+                ? 'No se encontraron tratamientos con el filtro seleccionado.'
+                : 'Aún no hay tratamientos registrados en el sistema. Haz clic en "+ Nuevo Tratamiento".'
             }}
           </p>
         </div>
 
-        <!-- CAMBIO: Visualización de tabla agrupada y ordenada por categoría -->
         <div v-else class="table-responsive">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Procedimiento / Tratamiento</th>
-                <th>Descripción</th>
-                <th>Duración Est.</th>
-                <th>Precio Referencial</th>
+                <th>Paciente</th>
+                <th>Tratamiento</th>
+                <th>Odontólogo</th>
+                <th>Observaciones</th>
+                <th>Precio</th>
+                <th>Estado</th>
+                <th>Registro</th>
                 <th class="text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              <template v-for="grupo in tratamientosOrdenados" :key="grupo.categoria">
-                <!-- CAMBIO: Encabezado de fila por categoría clínica -->
-                <tr class="categoria-header-row">
-                  <td colspan="5">
-                    <div class="categoria-header">
-                      <span class="categoria-badge">🏷️ {{ grupo.categoria }}</span>
-                      <span class="categoria-count">{{ grupo.items.length }} item(s)</span>
-                    </div>
-                  </td>
-                </tr>
-
-                <!-- CAMBIO: Filas de procedimientos ordenados alfabéticamente dentro de la categoría -->
-                <tr
-                  v-for="item in grupo.items"
-                  :key="item.id"
-                  class="tabla-fila"
-                >
-                  <td class="font-semibold">{{ item.nombre }}</td>
-                  <td class="text-secondary">{{ item.descripcion || '—' }}</td>
-                  <td class="font-mono">⏱️ {{ item.duracionEstimadaMin }} min</td>
-                  <td class="font-semibold text-emerald">{{ formatPrecio(item.precioReferencial) }}</td>
-                  <td class="td-acciones">
-                    <button
-                      class="btn-action view"
-                      title="Ver detalles"
-                      @click="abrirVer(item.id)"
-                    >
-                      👁
-                    </button>
-                    <button
-                      class="btn-action edit"
-                      title="Editar"
-                      @click="abrirEditar(item)"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      class="btn-action delete"
-                      title="Eliminar"
-                      @click="eliminarTratamiento(item.id)"
-                    >
-                      🗑️
-                    </button>
-                  </td>
-                </tr>
-              </template>
+              <tr
+                v-for="item in tratamientosFiltrados"
+                :key="item.tratamiento_paciente_id"
+                class="tabla-fila"
+              >
+                <td>
+                  <div class="cell-stacked">
+                    <span class="font-semibold">{{ obtenerNombrePaciente(item.dni_paciente) }}</span>
+                    <span class="font-mono text-secondary">DNI: {{ item.dni_paciente }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="cell-stacked">
+                    <span class="font-semibold">{{ obtenerLabelTratamiento(item.tratamiento) }}</span>
+                    <span class="categoria-inline">
+                      {{ obtenerCategoriaTratamiento(item.tratamiento) }}
+                    </span>
+                  </div>
+                </td>
+                <td>{{ obtenerNombreOdontologo(item.dni_odontologo) }}</td>
+                <td class="text-secondary">{{ item.observaciones || '—' }}</td>
+                <td class="font-semibold text-emerald">{{ formatPrecio(Number(item.precio)) }}</td>
+                <td>
+                  <span
+                    class="badge-estado"
+                    :class="ESTADO_META[item.estado]?.clase || 'estado-iniciado'"
+                  >
+                    {{ ESTADO_META[item.estado]?.label || item.estado }}
+                  </span>
+                </td>
+                <td class="font-mono">{{ formatFecha(item.fecha_registro) }}</td>
+                <td class="td-acciones">
+                  <button
+                    class="btn-action view"
+                    title="Ver detalle y sesiones"
+                    type="button"
+                    @click="abrirVer(item)"
+                  >
+                    👁
+                  </button>
+                  <button
+                    v-if="puedeGestionar"
+                    class="btn-action edit"
+                    title="Editar tratamiento"
+                    type="button"
+                    @click="abrirEditar(item)"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    v-if="esAdmin"
+                    class="btn-action pay"
+                    title="Registrar pago de este tratamiento"
+                    type="button"
+                    @click="irAPagarTratamiento(item)"
+                  >
+                    💳
+                  </button>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- CAMBIO: Modal de Crear / Editar / Ver -->
+    <!-- Modal de Ver / Crear / Editar -->
     <div v-if="modoModal" class="modal-overlay" @click.self="cerrarModal">
       <div class="modal">
 
-        <!-- Modo VER -->
-        <template v-if="modoModal === 'ver' && tratamientoSeleccionado">
+        <!-- Modo VER + Agenda de Sesiones -->
+        <template v-if="modoModal === 'ver' && tratamientoActivo">
           <div class="modal-header">
-            <h3>Detalle del Procedimiento</h3>
-            <button class="modal-close" @click="cerrarModal">✕</button>
+            <h3>Detalle del Tratamiento</h3>
+            <button class="modal-close" type="button" @click="cerrarModal">✕</button>
           </div>
+
           <div class="detalle-grid">
             <div class="detalle-item detalle-full">
               <span class="detalle-label">Categoría Clínica</span>
-              <span class="categoria-badge-modal">{{ tratamientoSeleccionado.categoria }}</span>
-            </div>
-            <div class="detalle-item detalle-full">
-              <span class="detalle-label">Nombre del Tratamiento</span>
-              <span class="font-semibold text-lg">{{ tratamientoSeleccionado.nombre }}</span>
-            </div>
-            <div class="detalle-item detalle-full">
-              <span class="detalle-label">Descripción</span>
-              <span>{{ tratamientoSeleccionado.descripcion || 'Sin descripción' }}</span>
-            </div>
-            <div class="detalle-item">
-              <span class="detalle-label">Duración Estimada</span>
-              <span>⏱️ {{ tratamientoSeleccionado.duracionEstimadaMin }} minutos</span>
-            </div>
-            <div class="detalle-item">
-              <span class="detalle-label">Precio Referencial</span>
-              <span class="text-emerald font-semibold text-lg">
-                {{ formatPrecio(tratamientoSeleccionado.precioReferencial) }}
+              <span class="categoria-badge-modal">
+                {{ obtenerCategoriaTratamiento(tratamientoActivo.tratamiento) }}
               </span>
             </div>
+            <div class="detalle-item">
+              <span class="detalle-label">Tratamiento</span>
+              <span class="font-semibold text-lg">
+                {{ obtenerLabelTratamiento(tratamientoActivo.tratamiento) }}
+              </span>
+            </div>
+            <div class="detalle-item">
+              <span class="detalle-label">Estado Actual</span>
+              <span
+                class="badge-estado"
+                :class="ESTADO_META[tratamientoActivo.estado]?.clase || 'estado-iniciado'"
+              >
+                {{ ESTADO_META[tratamientoActivo.estado]?.label || tratamientoActivo.estado }}
+              </span>
+            </div>
+            <div class="detalle-item">
+              <span class="detalle-label">Paciente</span>
+              <span>
+                {{ obtenerNombrePaciente(tratamientoActivo.dni_paciente) }}
+                ({{ tratamientoActivo.dni_paciente }})
+              </span>
+            </div>
+            <div class="detalle-item">
+              <span class="detalle-label">Odontólogo Asignado</span>
+              <span>
+                {{ obtenerNombreOdontologo(tratamientoActivo.dni_odontologo) }}
+              </span>
+            </div>
+            <div class="detalle-item">
+              <span class="detalle-label">Precio Acordado</span>
+              <span class="text-emerald font-semibold text-lg">
+                {{ formatPrecio(Number(tratamientoActivo.precio)) }}
+              </span>
+            </div>
+            <div class="detalle-item">
+              <span class="detalle-label">Fecha de Registro</span>
+              <span>{{ formatFecha(tratamientoActivo.fecha_registro) }}</span>
+            </div>
+            <div class="detalle-item detalle-full">
+              <span class="detalle-label">Observaciones Clínicas</span>
+              <span>{{ tratamientoActivo.observaciones || 'Sin observaciones' }}</span>
+            </div>
           </div>
+
+          <!-- Sesiones / Agenda del tratamiento -->
+          <div class="agenda-panel">
+            <h4 class="agenda-titulo">📅 Sesiones Agendadas del Tratamiento</h4>
+
+            <div v-if="errorAgenda" class="modal-alerta-error" role="alert">
+              {{ errorAgenda }}
+            </div>
+
+            <p v-if="cargandoDetalle" class="text-secondary">Cargando sesiones...</p>
+
+            <ul v-else-if="agendaSesiones.length > 0" class="agenda-lista">
+              <li
+                v-for="sesion in agendaSesiones"
+                :key="sesion.agenda_tratamientos_id"
+                class="agenda-item"
+              >
+                <span class="font-semibold">{{ sesion.dia_semana }}</span>
+                <span class="font-mono">
+                  {{ sesion.hora_inicio.slice(0, 5) }} - {{ sesion.hora_fin.slice(0, 5) }}
+                </span>
+              </li>
+            </ul>
+            <p v-else class="text-secondary">No hay sesiones semanales registradas aún.</p>
+
+            <form
+              v-if="puedeGestionar"
+              class="agenda-form"
+              @submit.prevent="agregarSesionAgenda"
+            >
+              <select v-model="agendaForm.dia_semana" class="form-select">
+                <option v-for="dia in DIAS_SEMANA" :key="dia" :value="dia">
+                  {{ dia }}
+                </option>
+              </select>
+              <input v-model="agendaForm.hora_inicio" type="time" required class="form-time" />
+              <input v-model="agendaForm.hora_fin" type="time" required class="form-time" />
+              <button type="submit" class="btn-primario" :disabled="guardandoAgenda">
+                {{ guardandoAgenda ? 'Agregando...' : '+ Sesión' }}
+              </button>
+            </form>
+          </div>
+
           <div class="modal-footer">
-            <button class="btn-secundario" @click="cerrarModal">Cerrar</button>
-            <button class="btn-primario" @click="abrirEditar(tratamientoSeleccionado)">
+            <button class="btn-secundario" type="button" @click="cerrarModal">Cerrar</button>
+            <button
+              v-if="esAdmin"
+              class="btn-secundario"
+              type="button"
+              @click="irAPagarTratamiento(tratamientoActivo)"
+            >
+              💳 Ir a Pagar
+            </button>
+            <button
+              v-if="puedeGestionar"
+              class="btn-primario"
+              type="button"
+              @click="abrirEditar(tratamientoActivo)"
+            >
               ✏️ Editar
             </button>
           </div>
@@ -416,45 +763,87 @@ const formatPrecio = (val: number): string =>
         <!-- Modo CREAR / EDITAR -->
         <template v-else-if="modoModal === 'crear' || modoModal === 'editar'">
           <div class="modal-header">
-            <h3>{{ modoModal === 'crear' ? 'Nuevo Procedimiento' : 'Editar Procedimiento' }}</h3>
-            <button class="modal-close" @click="cerrarModal">✕</button>
+            <h3>
+              {{ modoModal === 'crear' ? 'Nuevo Plan de Tratamiento' : 'Editar Tratamiento' }}
+            </h3>
+            <button class="modal-close" type="button" :disabled="guardando" @click="cerrarModal">
+              ✕
+            </button>
           </div>
 
           <form @submit.prevent="guardar" class="form-grid">
+            <div v-if="errorModal" class="modal-alerta-error form-full" role="alert">
+              {{ errorModal }}
+            </div>
+
+            <div class="form-group">
+              <label>Paciente *</label>
+              <select
+                v-if="pacientesSelect.length > 0"
+                v-model="form.dni_paciente"
+                required
+                :disabled="modoModal === 'editar'"
+                class="form-select"
+              >
+                <option value="" disabled>Seleccione un paciente</option>
+                <option v-for="pac in pacientesSelect" :key="pac.dni" :value="pac.dni">
+                  {{ pac.dni }} - {{ pac.nombreCompleto }}
+                </option>
+              </select>
+              <input
+                v-else
+                v-model="form.dni_paciente"
+                type="text"
+                maxlength="8"
+                required
+                :disabled="modoModal === 'editar'"
+                placeholder="DNI de 8 dígitos"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Odontólogo Tratante *</label>
+              <select
+                v-if="odontologosSelect.length > 0"
+                v-model="form.dni_odontologo"
+                required
+                :disabled="modoModal === 'editar'"
+                class="form-select"
+              >
+                <option value="" disabled>Seleccione un odontólogo</option>
+                <option v-for="doc in odontologosSelect" :key="doc.dni" :value="doc.dni">
+                  Dr(a). {{ doc.nombres }} {{ doc.apellidos }} ({{ doc.dni }})
+                </option>
+              </select>
+              <input
+                v-else
+                v-model="form.dni_odontologo"
+                type="text"
+                maxlength="8"
+                required
+                :disabled="modoModal === 'editar'"
+                placeholder="DNI de 8 dígitos"
+              />
+            </div>
 
             <div class="form-group form-full">
-              <label>Categoría Clínica *</label>
-              <select v-model="form.categoria" required class="form-select">
-                <option v-for="cat in CATEGORIAS_DISPONIBLES" :key="cat" :value="cat">
-                  {{ cat }}
+              <label>Procedimiento / Tipo de Tratamiento *</label>
+              <select
+                v-model="form.tratamiento"
+                required
+                class="form-select"
+                @change="alCambiarTipoTratamiento"
+              >
+                <option v-for="tipo in TIPOS_TRATAMIENTO" :key="tipo" :value="tipo">
+                  {{ TRATAMIENTOS_META[tipo].label }} ({{ TRATAMIENTOS_META[tipo].categoria }})
                 </option>
               </select>
             </div>
 
-            <div class="form-group form-full">
-              <label>Nombre del Tratamiento *</label>
-              <input
-              :value="form.nombre"
-              @input="form.nombre = ($event.target as HTMLInputElement).value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')"
-              type="text"
-              required
-              placeholder="Ej. Profilaxis dental"
-            />
-            </div>
-
-            <div class="form-group form-full">
-              <label>Descripción Breve</label>
-              <textarea
-                v-model="form.descripcion"
-                rows="2"
-                placeholder="Resumen del procedimiento..."
-              ></textarea>
-            </div>
-
             <div class="form-group">
-              <label>Precio Referencial (S/) *</label>
+              <label>Precio Acordado (S/) *</label>
               <input
-                v-model.number="form.precioReferencial"
+                v-model.number="form.precio"
                 type="number"
                 required
                 min="0"
@@ -464,21 +853,30 @@ const formatPrecio = (val: number): string =>
             </div>
 
             <div class="form-group">
-              <label>Duración Estimada (min) *</label>
-              <input
-                v-model.number="form.duracionEstimadaMin"
-                type="number"
+              <label>Estado del Tratamiento *</label>
+              <select v-model="form.estado" required class="form-select">
+                <option v-for="est in ESTADOS_OPCIONES" :key="est" :value="est">
+                  {{ ESTADO_META[est].label }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group form-full">
+              <label>Observaciones Clínicas *</label>
+              <textarea
+                v-model="form.observaciones"
+                rows="3"
                 required
-                min="5"
-                step="5"
-                placeholder="30"
-              />
+                placeholder="Detalle de piezas tratadas, indicaciones clínicas o plan por sesiones..."
+              ></textarea>
             </div>
 
             <div class="modal-footer form-full">
-              <button type="button" class="btn-secundario" @click="cerrarModal">Cancelar</button>
-              <button type="submit" class="btn-primario">
-                Guardar
+              <button type="button" class="btn-secundario" :disabled="guardando" @click="cerrarModal">
+                Cancelar
+              </button>
+              <button type="submit" class="btn-primario" :disabled="guardando">
+                {{ guardando ? 'Guardando...' : (modoModal === 'crear' ? 'Registrar Tratamiento' : 'Actualizar Tratamiento') }}
               </button>
             </div>
           </form>
@@ -533,6 +931,204 @@ const formatPrecio = (val: number): string =>
 .btn-nuevo:hover {
   filter: brightness(1.08);
   transform: translateY(-1px);
+}
+.btn-nuevo:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.stat-mini-card {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.stat-val {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-main, #1e293b);
+}
+
+.text-indigo { color: #4f46e5; }
+.text-amber { color: #d97706; }
+
+.estado-filter {
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font-size: 0.88rem;
+  color: var(--text-main, #1e293b);
+  background: transparent;
+  outline: none;
+}
+
+.cell-stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.categoria-inline {
+  font-size: 0.75rem;
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+.badge-estado {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.estado-iniciado   { background: #e0e7ff; color: #3730a3; }
+.estado-proceso    { background: #fef3c7; color: #b45309; }
+.estado-pendiente  { background: #fee2e2; color: #b91c1c; }
+.estado-finalizado { background: #dcfce7; color: #15803d; }
+
+.alert-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.alert-close {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+}
+
+.estado-carga,
+.estado-error {
+  text-align: center;
+  padding: 3.5rem 2rem;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: 16px;
+}
+
+.estado-error {
+  border-color: #fecaca;
+  color: #b91c1c;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #5046e5;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 0.9rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.modal-alerta-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.agenda-panel {
+  margin: 0 1.5rem 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.agenda-titulo {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main, #1e293b);
+}
+
+.agenda-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.agenda-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.45rem 0.75rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.agenda-form {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.form-time {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--text-main, #1e293b);
+  background: white;
 }
 
 .table-card {
@@ -686,6 +1282,7 @@ const formatPrecio = (val: number): string =>
 
 .btn-action.view { background: #dbeafe; }
 .btn-action.edit { background: #fef9c3; }
+.btn-action.pay { background: #dcfce7; }
 .btn-action.delete { background: #fee2e2; }
 
 .estado-vacio {
@@ -844,6 +1441,8 @@ const formatPrecio = (val: number): string =>
 }
 
 .btn-primario:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-primario:disabled,
+.btn-secundario:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
 
 .btn-secundario {
   padding: 0.55rem 1.2rem;
@@ -892,6 +1491,22 @@ const formatPrecio = (val: number): string =>
 :global(html.dark) .modal-footer { border-top-color: #1e293b; }
 :global(html.dark) .btn-secundario { background: #1e293b; color: #cbd5e1; border-color: #334155; }
 :global(html.dark) .btn-secundario:hover { background: #334155; color: #f8fafc; }
+:global(html.dark) .stat-mini-card { background: #131b2e; border-color: #1e293b; }
+:global(html.dark) .stat-val { color: #f8fafc; }
+:global(html.dark) .estado-filter { background: #1e293b; border-color: #334155; color: #f8fafc; }
+:global(html.dark) .estado-filter option { background: #131b2e; color: #f8fafc; }
+:global(html.dark) .form-select option { background: #131b2e; color: #f8fafc; }
+:global(html.dark) .estado-carga,
+:global(html.dark) .estado-error { background: #131b2e; border-color: #334155; color: #f8fafc; }
+:global(html.dark) .estado-error { border-color: #7f1d1d; color: #fca5a5; }
+:global(html.dark) .spinner { border-color: #334155; border-top-color: #818cf8; }
+:global(html.dark) .alert-banner,
+:global(html.dark) .modal-alerta-error { background: rgba(127, 29, 29, 0.35); border-color: #7f1d1d; color: #fca5a5; }
+:global(html.dark) .agenda-panel { background: #0f172a; border-color: #1e293b; }
+:global(html.dark) .agenda-titulo { color: #f8fafc; }
+:global(html.dark) .agenda-item { background: #131b2e; border-color: #334155; color: #cbd5e1; }
+:global(html.dark) .form-time { background: #1e293b; border-color: #334155; color: #f8fafc; }
+:global(html.dark) .btn-action.pay { background: rgba(16, 185, 129, 0.2); }
 
 @media (max-width: 600px) {
   .form-grid { grid-template-columns: 1fr; }

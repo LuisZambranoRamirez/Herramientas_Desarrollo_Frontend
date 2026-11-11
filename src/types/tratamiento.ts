@@ -20,11 +20,13 @@ export interface CrearTratamientoPacienteDto {
   observaciones: string
   precio: number
   tratamiento: TratamientoOdontologico
+  estado?: EstadoTratamiento
 }
 
 export interface ActualizarTratamientoPacienteDto {
   observaciones?: string
   precio?: number
+  tratamiento?: TratamientoOdontologico
   estado?: EstadoTratamiento
 }
 

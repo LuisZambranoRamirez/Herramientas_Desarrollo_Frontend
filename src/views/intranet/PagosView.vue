@@ -1,409 +1,382 @@
 <script setup lang="ts">
-// CAMBIO: Importaciones reactivas de Vue y Vue Router
-import { ref, computed, watch, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, RouterLink } from 'vue-router'
 import DashboardLayout from '@/components/dashboard/DashboardLayout.vue'
+import { useAuthStore } from '@/stores/auth.store'
+import { pagosService } from '@/services/pagos.service'
+import { tratamientosService } from '@/services/tratamientos.service'
+import { pacientesService } from '@/services/pacientes.service'
+import { citasService } from '@/services/citas.service'
+import type {
+  Pago,
+  MetodoPago,
+  TratamientoPaciente,
+  TratamientoOdontologico,
+  Paciente,
+  CitaOdontologoResumen,
+} from '@/types'
 
-// CAMBIO: Tipos e interfaz de dominio enriquecida para Pago (módulo dental)
-export type MetodoPagoTipo = 'Efectivo' | 'Tarjeta' | 'Yape' | 'Plin' | 'Transferencia'
-export type EstadoPagoTipo = 'Completado' | 'Pendiente' | 'Anulado'
-
-export interface Pago {
-  id: string | number
-  pacienteDni: string
-  pacienteNombre: string
-  tratamiento: string
+interface FormPago {
+  id_tratamiento_paciente: string
   monto: number
-  metodoPago: MetodoPagoTipo
-  fecha: string
-  estado: EstadoPagoTipo
-  numeroComprobante?: string
-  observaciones?: string
-}
-
-// CAMBIO: Interfaces para selectores dinámicos sincronizados
-interface PacienteOption {
-  dni: string
-  nombreCompleto: string
-}
-
-interface TratamientoOption {
-  id: string | number
-  nombre: string
-  precioReferencial: number
+  metodo_pago: MetodoPago
 }
 
 const route = useRoute()
-const STORAGE_KEY = 'pagos'
+const authStore = useAuthStore()
 
-// CAMBIO: Catálogo inicial de pagos (Seed Data)
-const SEED_PAGOS: Pago[] = [
-  {
-    id: 'PAG-1092',
-    pacienteDni: '72845631',
-    pacienteNombre: 'Carlos Mendoza Ramos',
-    tratamiento: 'Limpieza Dental Profunda',
-    monto: 70,
-    metodoPago: 'Yape',
-    fecha: '2026-09-02',
-    estado: 'Completado',
-    numeroComprobante: 'B001-0001092',
-    observaciones: 'Pago completo de la consulta',
-  },
-  {
-    id: 'PAG-1091',
-    pacienteDni: '45678912',
-    pacienteNombre: 'Lucía Fernández Torres',
-    tratamiento: 'Ortodoncia Control Mensual',
-    monto: 180,
-    metodoPago: 'Tarjeta',
-    fecha: '2026-09-02',
-    estado: 'Completado',
-    numeroComprobante: 'B001-0001091',
-    observaciones: 'Ajuste de brackets mensual',
-  },
-  {
-    id: 'PAG-1090',
-    pacienteDni: '12345678',
-    pacienteNombre: 'Jorge Morales Vega',
-    tratamiento: 'Implante Dental Primera Cuota',
-    monto: 300,
-    metodoPago: 'Transferencia',
-    fecha: '2026-09-01',
-    estado: 'Completado',
-    numeroComprobante: 'F001-0000450',
-    observaciones: 'Cuota 1 de 3 del implante',
-  },
-  {
-    id: 'PAG-1089',
-    pacienteDni: '87654321',
-    pacienteNombre: 'Ana Paula Gómez',
-    tratamiento: 'Evaluación y Diagnóstico',
-    monto: 50,
-    metodoPago: 'Efectivo',
-    fecha: '2026-09-01',
-    estado: 'Completado',
-    numeroComprobante: 'B001-0001089',
-  },
-  {
-    id: 'PAG-1088',
-    pacienteDni: '23456789',
-    pacienteNombre: 'María Elena Suárez',
-    tratamiento: 'Blanqueamiento Dental',
-    monto: 450,
-    metodoPago: 'Plin',
-    fecha: '2026-08-30',
-    estado: 'Pendiente',
-    numeroComprobante: 'B001-0001088',
-    observaciones: 'Falta validar transferencia',
-  },
-]
-
-// CAMBIO: Inicialización desde localStorage con fallback a Seed Data
-const cargarPagosIniciales = (): Pago[] => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
-    }
-  } catch (e) {
-    console.error('Error al leer pagos de localStorage:', e)
-  }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_PAGOS))
-  return [...SEED_PAGOS]
+const TRATAMIENTO_LABELS: Record<TratamientoOdontologico, string> = {
+  Limpieza_dental_profunda: 'Limpieza dental profunda',
+  Aplicacion_de_fluor: 'Aplicación de flúor',
+  Selladores_de_fosas_y_fisuras: 'Selladores de fosas y fisuras',
+  Restauracion_con_resina: 'Restauración con resina',
+  Ortopedia_maxilar: 'Ortopedia maxilar',
+  Implante_dental: 'Implante dental',
 }
 
-// CAMBIO: Lector dinámico de pacientes desde la clave exacta 'pacientes' de localStorage
-const cargarPacientesOpciones = (): PacienteOption[] => {
-  try {
-    const raw = localStorage.getItem('pacientes')
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((p: Record<string, unknown>, i: number) => {
-          const dni = String(p.dni || `DNI-${i + 1}`)
-          const nombres = (p.nombres as string) || ''
-          const apellidos = (p.apellidos as string) || ''
-          const nombreCompleto =
-            (p.nombreCompleto as string) ||
-            `${nombres} ${apellidos}`.trim() ||
-            (p.nombre as string) ||
-            'Paciente'
-          return { dni, nombreCompleto }
-        })
-      }
-    }
-  } catch (e) {
-    console.error('Error al leer pacientes en PagosView:', e)
-  }
-  return [
-    { dni: '72845631', nombreCompleto: 'Carlos Mendoza Ramos' },
-    { dni: '45678912', nombreCompleto: 'Lucía Fernández Torres' },
-    { dni: '12345678', nombreCompleto: 'Jorge Morales Vega' },
-    { dni: '87654321', nombreCompleto: 'Ana Paula Gómez' },
-    { dni: '23456789', nombreCompleto: 'María Elena Suárez' },
-  ]
+const METODO_LABELS: Record<MetodoPago, string> = {
+  efectivo: 'Efectivo',
+  digital: 'Digital (Yape / Plin / Tarjeta)',
 }
 
-// CAMBIO: Lector dinámico de tratamientos desde la clave 'tratamientos' de localStorage
-const cargarTratamientosOpciones = (): TratamientoOption[] => {
-  try {
-    const raw = localStorage.getItem('tratamientos')
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((t: Record<string, unknown>, i: number) => {
-          const id = (t.id || i + 1) as string | number
-          const nombre = (t.nombre || t.tratamiento || 'Tratamiento') as string
-          const precioReferencial = Number(t.precioReferencial || t.precio || 0)
-          return { id, nombre, precioReferencial }
-        })
-      }
-    }
-  } catch (e) {
-    console.error('Error al leer tratamientos en PagosView:', e)
-  }
-  return [
-    { id: 1, nombre: 'Limpieza Dental Profunda', precioReferencial: 70 },
-    { id: 2, nombre: 'Ortodoncia Control Mensual', precioReferencial: 180 },
-    { id: 3, nombre: 'Implante Dental Primera Cuota', precioReferencial: 300 },
-    { id: 4, nombre: 'Evaluación y Diagnóstico', precioReferencial: 50 },
-    { id: 5, nombre: 'Blanqueamiento Dental', precioReferencial: 450 },
-  ]
-}
+// Estado reactivo conectado al backend
+const pagos = ref<Pago[]>([])
+const todosPagosParaSaldo = ref<Pago[]>([])
+const tratamientos = ref<TratamientoPaciente[]>([])
+const pacientes = ref<Paciente[]>([])
+const odontologos = ref<CitaOdontologoResumen[]>([])
 
-// Estado reactivo principal
-const pagos = ref<Pago[]>(cargarPagosIniciales())
+const cargando = ref(false)
+const guardando = ref(false)
+const cargandoComprobante = ref(false)
+
+const errorCarga = ref<string | null>(null)
+const errorAccion = ref<string | null>(null)
+const errorModal = ref<string | null>(null)
+const errorComprobante = ref<string | null>(null)
+const exitoAccion = ref<string | null>(null)
+
 const busqueda = ref('')
-const opcionesPacientes = ref<PacienteOption[]>(cargarPacientesOpciones())
-const opcionesTratamientos = ref<TratamientoOption[]>(cargarTratamientosOpciones())
+const filtroMetodo = ref<MetodoPago | 'TODOS'>('TODOS')
+const filtroTratamientoId = ref<string>('TODOS')
 
-// CAMBIO: Auto-guardado en localStorage mediante watch profundo
-watch(
-  pagos,
-  (nuevosPagos) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevosPagos))
-  },
-  { deep: true }
+const esAdmin = computed(() => authStore.userRole === 'SYSTEM_ADMIN')
+
+const cargarDatos = async () => {
+  cargando.value = true
+  errorCarga.value = null
+  try {
+    const [pagosData, tratData, pacData, odonData] = await Promise.all([
+      pagosService.getAll(),
+      tratamientosService.getAll().catch(() => [] as TratamientoPaciente[]),
+      pacientesService.getAll().catch(() => [] as Paciente[]),
+      citasService.getOdontologos().catch(() => [] as CitaOdontologoResumen[]),
+    ])
+
+    pagos.value = pagosData
+    todosPagosParaSaldo.value = pagosData
+    tratamientos.value = tratData
+    pacientes.value = pacData
+    odontologos.value = odonData
+    filtroTratamientoId.value = 'TODOS'
+  } catch (err) {
+    errorCarga.value =
+      err instanceof Error
+        ? err.message
+        : 'No se pudieron cargar los pagos desde el servidor.'
+  } finally {
+    cargando.value = false
+  }
+}
+
+const filtrarPorTratamiento = async () => {
+  errorAccion.value = null
+  cargando.value = true
+  try {
+    if (filtroTratamientoId.value === 'TODOS') {
+      const lista = await pagosService.getAll()
+      pagos.value = lista
+      todosPagosParaSaldo.value = lista
+    } else {
+      pagos.value = await pagosService.getByTratamiento(filtroTratamientoId.value)
+    }
+  } catch (err) {
+    errorAccion.value =
+      err instanceof Error ? err.message : 'No se pudo filtrar los pagos por tratamiento.'
+  } finally {
+    cargando.value = false
+  }
+}
+
+// Mapas de consulta rápida para enriquecer la tabla y comprobantes
+const mapaTratamientos = computed(
+  () => new Map(tratamientos.value.map((t) => [t.tratamiento_paciente_id, t])),
 )
 
-// CAMBIO: Métricas computadas reactivamente
-const totalRecaudado = computed(() => {
-  const suma = pagos.value
-    .filter((p) => p.estado === 'Completado')
-    .reduce((acc, p) => acc + p.monto, 0)
-  return new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(suma)
+const mapaPacientes = computed(
+  () => new Map(pacientes.value.map((p) => [p.dni, p])),
+)
+
+const mapaOdontologos = computed(
+  () => new Map(odontologos.value.map((o) => [o.dni, o])),
+)
+
+const pagadoPorTratamiento = computed(() => {
+  const totales = new Map<string, number>()
+  for (const p of todosPagosParaSaldo.value) {
+    totales.set(
+      p.id_tratamiento_paciente,
+      (totales.get(p.id_tratamiento_paciente) || 0) + Number(p.monto),
+    )
+  }
+  return totales
 })
 
-const totalTransaccionesCompletadas = computed(
-  () => pagos.value.filter((p) => p.estado === 'Completado').length
+const formatNombreTratamiento = (slug?: TratamientoOdontologico | string): string => {
+  if (!slug) return 'Tratamiento asociado'
+  return TRATAMIENTO_LABELS[slug as TratamientoOdontologico] || slug.replace(/_/g, ' ')
+}
+
+const obtenerInfoPago = (pago: Pago) => {
+  const trat = mapaTratamientos.value.get(pago.id_tratamiento_paciente)
+  const dniPaciente = trat?.dni_paciente || ''
+  const pac = dniPaciente ? mapaPacientes.value.get(dniPaciente) : undefined
+  const odon = trat?.dni_odontologo ? mapaOdontologos.value.get(trat.dni_odontologo) : undefined
+
+  return {
+    dniPaciente,
+    nombrePaciente: pac
+      ? `${pac.nombres} ${pac.apellidos}`.trim()
+      : dniPaciente
+        ? `Paciente (${dniPaciente})`
+        : '—',
+    nombreOdontologo: odon
+      ? `Dr(a). ${odon.nombres} ${odon.apellidos}`.trim()
+      : trat?.dni_odontologo
+        ? `Dr(a). (${trat.dni_odontologo})`
+        : '—',
+    nombreTratamiento: trat
+      ? formatNombreTratamiento(trat.tratamiento)
+      : `Tratamiento ${pago.id_tratamiento_paciente.slice(0, 8)}`,
+    observacionesTratamiento: trat?.observaciones || '',
+    precioTratamiento: trat ? Number(trat.precio) : null,
+  }
+}
+
+// Métricas computadas reactivamente
+const totalRecaudado = computed(() => {
+  const suma = pagos.value.reduce((acc, p) => acc + Number(p.monto), 0)
+  return formatPrecio(suma)
+})
+
+const totalTransacciones = computed(() => pagos.value.length)
+
+const totalEfectivo = computed(
+  () => pagos.value.filter((p) => p.metodo_pago === 'efectivo').length,
 )
 
-const totalPendientes = computed(
-  () => pagos.value.filter((p) => p.estado === 'Pendiente').length
+const totalDigital = computed(
+  () => pagos.value.filter((p) => p.metodo_pago === 'digital').length,
 )
 
 const metodoMasUsado = computed(() => {
-  const conteo: Record<string, number> = {}
-  pagos.value
-    .filter((p) => p.estado === 'Completado')
-    .forEach((p) => {
-      conteo[p.metodoPago] = (conteo[p.metodoPago] || 0) + 1
-    })
-
-  let maxMetodo = '—'
-  let maxCount = 0
-  for (const [metodo, count] of Object.entries(conteo)) {
-    if (count > maxCount) {
-      maxCount = count
-      maxMetodo = metodo
-    }
-  }
-  return maxMetodo
+  if (pagos.value.length === 0) return '—'
+  if (totalEfectivo.value === totalDigital.value) return 'Efectivo / Digital'
+  return totalEfectivo.value > totalDigital.value ? 'Efectivo' : 'Digital'
 })
 
-// CAMBIO: Búsqueda inteligente por DNI, nombre de paciente, tratamiento, recibo u observaciones
+// Búsqueda reactiva en la tabla cargada
 const pagosFiltrados = computed(() => {
   const q = busqueda.value.toLowerCase().trim()
-  if (!q) return pagos.value
-  return pagos.value.filter(
-    (p) =>
-      p.pacienteNombre.toLowerCase().includes(q) ||
-      p.pacienteDni.toLowerCase().includes(q) ||
-      p.tratamiento.toLowerCase().includes(q) ||
-      p.metodoPago.toLowerCase().includes(q) ||
-      p.estado.toLowerCase().includes(q) ||
-      (p.numeroComprobante && p.numeroComprobante.toLowerCase().includes(q)) ||
-      (p.observaciones && p.observaciones.toLowerCase().includes(q)) ||
-      String(p.id).toLowerCase().includes(q)
-  )
+
+  return pagos.value.filter((p) => {
+    if (filtroMetodo.value !== 'TODOS' && p.metodo_pago !== filtroMetodo.value) {
+      return false
+    }
+
+    if (!q) return true
+
+    const info = obtenerInfoPago(p)
+    return (
+      p.pago_id.toLowerCase().includes(q) ||
+      p.id_tratamiento_paciente.toLowerCase().includes(q) ||
+      info.dniPaciente.toLowerCase().includes(q) ||
+      info.nombrePaciente.toLowerCase().includes(q) ||
+      info.nombreTratamiento.toLowerCase().includes(q) ||
+      p.metodo_pago.toLowerCase().includes(q)
+    )
+  })
 })
 
-// CAMBIO: Modo modal de registro / edición
-type ModoModal = 'crear' | 'editar' | null
+// Modales: Registrar pago / Consultar comprobante
+type ModoModal = 'crear' | 'comprobante' | null
 const modoModal = ref<ModoModal>(null)
-const idSeleccionado = ref<string | number | null>(null)
+const comprobanteActual = ref<Pago | null>(null)
+const dniPacienteFiltro = ref<string>('')
 
-const METODOS_OPCIONES: MetodoPagoTipo[] = ['Efectivo', 'Tarjeta', 'Yape', 'Plin', 'Transferencia']
-const ESTADOS_OPCIONES: EstadoPagoTipo[] = ['Completado', 'Pendiente', 'Anulado']
-
-const formVacio = () => ({
-  pacienteDni: '',
-  pacienteNombre: '',
-  tratamiento: '',
+const form = ref<FormPago>({
+  id_tratamiento_paciente: '',
   monto: 0,
-  metodoPago: 'Efectivo' as MetodoPagoTipo,
-  estado: 'Completado' as EstadoPagoTipo,
-  numeroComprobante: '',
-  observaciones: '',
+  metodo_pago: 'efectivo',
 })
 
-const form = ref(formVacio())
+const tratamientosDisponiblesModal = computed(() => {
+  if (!dniPacienteFiltro.value) return tratamientos.value
+  return tratamientos.value.filter((t) => t.dni_paciente === dniPacienteFiltro.value)
+})
 
-// CAMBIO: Abrir modal re-consultando localStorage para reflejar pacientes/tratamientos recién agregados
-const abrirModalRegistro = (pacienteInicial?: { dni?: string; nombre?: string }) => {
-  opcionesPacientes.value = cargarPacientesOpciones()
-  opcionesTratamientos.value = cargarTratamientosOpciones()
+const tratamientoSeleccionadoModal = computed(() =>
+  tratamientos.value.find(
+    (t) => t.tratamiento_paciente_id === form.value.id_tratamiento_paciente,
+  ) || null,
+)
 
-  modoModal.value = 'crear'
-  idSeleccionado.value = null
-  form.value = formVacio()
+const resumenSaldoTratamiento = computed(() => {
+  const trat = tratamientoSeleccionadoModal.value
+  if (!trat) return null
+  const total = Number(trat.precio)
+  const pagado = pagadoPorTratamiento.value.get(trat.tratamiento_paciente_id) || 0
+  const pendiente = Math.max(0, Number((total - pagado).toFixed(2)))
+  return { total, pagado, pendiente }
+})
 
-  const numRandom = Math.floor(1000 + Math.random() * 9000)
-  form.value.numeroComprobante = `B001-${numRandom}`
-
-  if (pacienteInicial?.dni) {
-    const enc = opcionesPacientes.value.find((p) => p.dni === pacienteInicial.dni)
-    if (enc) {
-      form.value.pacienteDni = enc.dni
-      form.value.pacienteNombre = enc.nombreCompleto
-    } else if (pacienteInicial.nombre) {
-      form.value.pacienteDni = pacienteInicial.dni
-      form.value.pacienteNombre = pacienteInicial.nombre
-    }
-  } else {
-    const primerPaciente = opcionesPacientes.value[0]
-    if (primerPaciente) {
-      form.value.pacienteDni = primerPaciente.dni
-      form.value.pacienteNombre = primerPaciente.nombreCompleto
-    }
+const aplicarSaldoSugerido = () => {
+  const trat = tratamientoSeleccionadoModal.value
+  if (!trat) {
+    form.value.monto = 0
+    return
   }
-
-  const primerTratamiento = opcionesTratamientos.value[0]
-  if (primerTratamiento) {
-    form.value.tratamiento = primerTratamiento.nombre
-    form.value.monto = primerTratamiento.precioReferencial
-  }
+  const pagado = pagadoPorTratamiento.value.get(trat.tratamiento_paciente_id) || 0
+  const saldo = Number((Number(trat.precio) - pagado).toFixed(2))
+  form.value.monto = saldo > 0 ? saldo : Number(trat.precio)
 }
 
-// CAMBIO: Abrir modal en modo edición
-const abrirEditarPago = (pago: Pago) => {
-  opcionesPacientes.value = cargarPacientesOpciones()
-  opcionesTratamientos.value = cargarTratamientosOpciones()
+const alCambiarPacienteModal = () => {
+  const primero = tratamientosDisponiblesModal.value[0]
+  form.value.id_tratamiento_paciente = primero?.tratamiento_paciente_id || ''
+  aplicarSaldoSugerido()
+}
 
-  modoModal.value = 'editar'
-  idSeleccionado.value = pago.id
+const abrirModalRegistro = (preseleccion?: { dni?: string; tratamientoId?: string }) => {
+  errorModal.value = null
+  errorAccion.value = null
+  modoModal.value = 'crear'
+
+  dniPacienteFiltro.value = preseleccion?.dni || ''
+
+  let tratInicial: TratamientoPaciente | undefined
+  if (preseleccion?.tratamientoId) {
+    tratInicial = tratamientos.value.find(
+      (t) => t.tratamiento_paciente_id === preseleccion.tratamientoId,
+    )
+    if (tratInicial && !dniPacienteFiltro.value) {
+      dniPacienteFiltro.value = tratInicial.dni_paciente
+    }
+  }
+
+  if (!tratInicial) {
+    const lista = tratamientosDisponiblesModal.value
+    tratInicial = lista.find((t) => t.estado !== 'FINALIZADO') || lista[0]
+  }
+
   form.value = {
-    pacienteDni: pago.pacienteDni,
-    pacienteNombre: pago.pacienteNombre,
-    tratamiento: pago.tratamiento,
-    monto: pago.monto,
-    metodoPago: pago.metodoPago,
-    estado: pago.estado,
-    numeroComprobante: pago.numeroComprobante || '',
-    observaciones: pago.observaciones || '',
+    id_tratamiento_paciente: tratInicial?.tratamiento_paciente_id || '',
+    monto: 0,
+    metodo_pago: 'efectivo',
+  }
+  aplicarSaldoSugerido()
+}
+
+const verComprobante = async (pago: Pago) => {
+  errorComprobante.value = null
+  comprobanteActual.value = pago
+  modoModal.value = 'comprobante'
+  cargandoComprobante.value = true
+
+  try {
+    const detalle = await pagosService.getById(pago.pago_id)
+    if (detalle) {
+      comprobanteActual.value = detalle
+    }
+  } catch (err) {
+    errorComprobante.value =
+      err instanceof Error
+        ? err.message
+        : 'No se pudo consultar el comprobante en el servidor.'
+  } finally {
+    cargandoComprobante.value = false
   }
 }
 
 const cerrarModal = () => {
+  if (guardando.value) return
   modoModal.value = null
-  idSeleccionado.value = null
+  comprobanteActual.value = null
+  errorModal.value = null
+  errorComprobante.value = null
 }
 
-// CAMBIO: Evento al seleccionar paciente en el selector desplegable
-const alSeleccionarPaciente = (e: Event) => {
-  const dniSel = (e.target as HTMLSelectElement).value
-  const pEncontrado = opcionesPacientes.value.find((p) => p.dni === dniSel)
-  if (pEncontrado) {
-    form.value.pacienteDni = pEncontrado.dni
-    form.value.pacienteNombre = pEncontrado.nombreCompleto
-  }
-}
-
-// CAMBIO: Evento al seleccionar tratamiento en el selector desplegable
-const alSeleccionarTratamiento = (e: Event) => {
-  const nombreSel = (e.target as HTMLSelectElement).value
-  const tEncontrado = opcionesTratamientos.value.find((t) => t.nombre === nombreSel)
-  if (tEncontrado && tEncontrado.precioReferencial > 0) {
-    form.value.monto = tEncontrado.precioReferencial
-  }
-}
-
-// CAMBIO: Guardar pago creado o editado con tipado estricto
-const guardarPago = () => {
-  const pacienteDni = form.value.pacienteDni?.trim()
-  const pacienteNombre = form.value.pacienteNombre?.trim()
-  const tratamiento = form.value.tratamiento?.trim()
+const guardarPago = async () => {
+  const idTratamiento = form.value.id_tratamiento_paciente.trim()
   const monto = Number(form.value.monto)
 
-  if (!pacienteNombre || !tratamiento || isNaN(monto) || monto <= 0) {
+  if (!idTratamiento) {
+    errorModal.value = 'Debes seleccionar un tratamiento registrado para asociar el pago.'
     return
   }
 
-  const hoy = new Date().toISOString().slice(0, 10)
-
-  if (modoModal.value === 'crear') {
-    const nuevoId: string = `PAG-${Date.now()}`
-    const nuevoPago: Pago = {
-      id: nuevoId,
-      pacienteDni: pacienteDni || '72845631',
-      pacienteNombre,
-      tratamiento,
-      monto,
-      metodoPago: form.value.metodoPago,
-      fecha: hoy,
-      estado: form.value.estado,
-      numeroComprobante: form.value.numeroComprobante?.trim() || undefined,
-      observaciones: form.value.observaciones?.trim() || undefined,
-    }
-    pagos.value.unshift(nuevoPago)
-  } else if (modoModal.value === 'editar' && idSeleccionado.value !== null) {
-    const pagoExistente = pagos.value.find((p) => p.id === idSeleccionado.value)
-    if (pagoExistente) {
-      pagoExistente.pacienteDni = pacienteDni || pagoExistente.pacienteDni
-      pagoExistente.pacienteNombre = pacienteNombre
-      pagoExistente.tratamiento = tratamiento
-      pagoExistente.monto = monto
-      pagoExistente.metodoPago = form.value.metodoPago
-      pagoExistente.estado = form.value.estado
-      pagoExistente.numeroComprobante = form.value.numeroComprobante?.trim() || undefined
-      pagoExistente.observaciones = form.value.observaciones?.trim() || undefined
-    }
+  if (Number.isNaN(monto) || monto <= 0) {
+    errorModal.value = 'El monto del pago debe ser mayor a cero.'
+    return
   }
 
-  cerrarModal()
+  guardando.value = true
+  errorModal.value = null
+  exitoAccion.value = null
+
+  try {
+    const creado = await pagosService.create({
+      id_tratamiento_paciente: idTratamiento,
+      monto,
+      metodo_pago: form.value.metodo_pago,
+    })
+
+    todosPagosParaSaldo.value = [creado, ...todosPagosParaSaldo.value]
+    if (
+      filtroTratamientoId.value === 'TODOS' ||
+      filtroTratamientoId.value === creado.id_tratamiento_paciente
+    ) {
+      pagos.value.unshift(creado)
+    }
+
+    exitoAccion.value = `Pago registrado correctamente. Comprobante #${creado.pago_id.slice(0, 8).toUpperCase()}`
+    guardando.value = false
+    cerrarModal()
+  } catch (err) {
+    errorModal.value =
+      err instanceof Error ? err.message : 'Ocurrió un error al registrar el pago en el servidor.'
+  } finally {
+    guardando.value = false
+  }
 }
 
+onMounted(async () => {
+  await cargarDatos()
 
+  const dniQuery = route.query.dni ? String(route.query.dni) : undefined
+  const tratIdQuery = route.query.tratamientoId
+    ? String(route.query.tratamientoId)
+    : undefined
 
-// CAMBIO: Detección de query parameters al montar si viene desde PacientesView
-onMounted(() => {
-  if (!localStorage.getItem(STORAGE_KEY)) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_PAGOS))
-  }
-  opcionesPacientes.value = cargarPacientesOpciones()
-  opcionesTratamientos.value = cargarTratamientosOpciones()
-
-  if (route.query.dni) {
-    abrirModalRegistro({
-      dni: String(route.query.dni),
-      nombre: route.query.nombre ? String(route.query.nombre) : undefined,
-    })
+  if ((dniQuery || tratIdQuery) && !errorCarga.value) {
+    if (esAdmin.value) {
+      abrirModalRegistro({ dni: dniQuery, tratamientoId: tratIdQuery })
+    } else if (dniQuery) {
+      busqueda.value = dniQuery
+    }
   }
 })
 
-// CAMBIO: Formateadores
 const formatPrecio = (monto: number): string =>
   new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(monto)
 
@@ -415,6 +388,18 @@ const formatFecha = (f: string): string => {
   }
   return f
 }
+
+const formatFechaHora = (f: string): string => {
+  if (!f) return '—'
+  const parsed = new Date(f)
+  if (!Number.isNaN(parsed.getTime())) {
+    return new Intl.DateTimeFormat('es-PE', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(parsed)
+  }
+  return formatFecha(f)
+}
 </script>
 
 <template>
@@ -424,12 +409,39 @@ const formatFecha = (f: string): string => {
       <!-- ── Cabecera ─────────────────────────────────────────── -->
       <div class="view-header">
         <div>
-          <h2 class="view-title">Registro de Pagos</h2>
-          <p class="view-desc">Historial de transacciones, cobros e ingresos de la clínica.</p>
+          <h2 class="view-title">Registro de Pagos y Comprobantes</h2>
+          <p class="view-desc">Historial de transacciones, cobros asociados a tratamientos y consulta de comprobantes.</p>
         </div>
-        <button class="btn-nuevo" type="button" @click="() => abrirModalRegistro()">
-          + Registrar Pago
-        </button>
+        <div class="header-actions">
+          <button class="btn-secundario" type="button" :disabled="cargando" @click="cargarDatos">
+            {{ cargando ? 'Actualizando...' : '↻ Actualizar' }}
+          </button>
+          <button
+            v-if="esAdmin"
+            class="btn-nuevo"
+            type="button"
+            :disabled="cargando"
+            @click="() => abrirModalRegistro()"
+          >
+            + Registrar Pago
+          </button>
+        </div>
+      </div>
+
+      <!-- Aviso de permisos si accede un perfil odontólogo (backend exige SYSTEM_ADMIN para POST /pagos) -->
+      <div v-if="!esAdmin" class="alert-info" role="status">
+        <span>ℹ️ Solo el perfil Administrador puede registrar nuevos pagos. Puedes consultar historial y comprobantes.</span>
+      </div>
+
+      <!-- Banner de éxito o error de acción -->
+      <div v-if="exitoAccion" class="alert-success" role="status">
+        <span>✅ {{ exitoAccion }}</span>
+        <button type="button" class="alert-close" @click="exitoAccion = null">✕</button>
+      </div>
+
+      <div v-if="errorAccion" class="alert-banner" role="alert">
+        <span>⚠️ {{ errorAccion }}</span>
+        <button type="button" class="alert-close" @click="errorAccion = null">✕</button>
       </div>
 
       <!-- ── Tarjetas de Estadísticas Reactivas ───────────────── -->
@@ -439,12 +451,12 @@ const formatFecha = (f: string): string => {
           <span class="stat-val text-emerald">{{ totalRecaudado }}</span>
         </div>
         <div class="stat-mini-card">
-          <span class="stat-label">Transacciones Completadas</span>
-          <span class="stat-val">{{ totalTransaccionesCompletadas }} Realizadas</span>
+          <span class="stat-label">Comprobantes Emitidos</span>
+          <span class="stat-val">{{ totalTransacciones }}</span>
         </div>
         <div class="stat-mini-card">
-          <span class="stat-label">Pagos Pendientes</span>
-          <span class="stat-val text-amber">{{ totalPendientes }} Pendiente(s)</span>
+          <span class="stat-label">Efectivo / Digital</span>
+          <span class="stat-val text-purple">{{ totalEfectivo }} / {{ totalDigital }}</span>
         </div>
         <div class="stat-mini-card">
           <span class="stat-label">Método Más Usado</span>
@@ -452,23 +464,62 @@ const formatFecha = (f: string): string => {
         </div>
       </div>
 
+      <!-- Estado de carga inicial -->
+      <div v-if="cargando && pagos.length === 0" class="estado-carga" role="status">
+        <div class="spinner"></div>
+        <p class="vacio-titulo">Cargando comprobantes de pago...</p>
+      </div>
+
+      <!-- Estado de error de carga -->
+      <div v-else-if="errorCarga && pagos.length === 0" class="estado-error" role="alert">
+        <p class="vacio-titulo">No se pudieron cargar los pagos</p>
+        <p class="vacio-desc">{{ errorCarga }}</p>
+        <button type="button" class="btn-primario" @click="cargarDatos">
+          Reintentar carga
+        </button>
+      </div>
+
       <!-- ── Tabla de Pagos ───────────────────────────────────── -->
-      <div class="table-card">
+      <div v-else class="table-card">
         <div class="filter-bar">
           <input
             v-model="busqueda"
             type="text"
-            placeholder="Buscar por DNI, paciente, tratamiento, recibo u observaciones..."
+            placeholder="Buscar por ID de comprobante, DNI, paciente o tratamiento..."
             class="search-input"
           />
-          <span class="resultado-count">{{ pagosFiltrados.length }} pago(s)</span>
+          <select v-model="filtroMetodo" class="filter-select">
+            <option value="TODOS">Todos los métodos</option>
+            <option value="efectivo">Efectivo</option>
+            <option value="digital">Digital</option>
+          </select>
+          <select
+            v-model="filtroTratamientoId"
+            class="filter-select"
+            :disabled="cargando"
+            @change="filtrarPorTratamiento"
+          >
+            <option value="TODOS">Todos los tratamientos</option>
+            <option
+              v-for="trat in tratamientos"
+              :key="trat.tratamiento_paciente_id"
+              :value="trat.tratamiento_paciente_id"
+            >
+              {{ trat.dni_paciente }} - {{ formatNombreTratamiento(trat.tratamiento) }}
+            </option>
+          </select>
+          <span class="resultado-count">{{ pagosFiltrados.length }} comprobante(s)</span>
         </div>
 
         <div v-if="pagosFiltrados.length === 0" class="estado-vacio">
           <span class="vacio-icono">💳</span>
           <p class="vacio-titulo">Sin pagos registrados</p>
           <p class="vacio-desc">
-            {{ busqueda ? 'No se encontraron pagos con el criterio buscado.' : 'Registra el primer pago haciendo clic en "+ Registrar Pago".' }}
+            {{
+              busqueda || filtroMetodo !== 'TODOS' || filtroTratamientoId !== 'TODOS'
+                ? 'No se encontraron comprobantes con el filtro aplicado.'
+                : 'Registra el primer pago haciendo clic en "+ Registrar Pago".'
+            }}
           </p>
         </div>
 
@@ -476,47 +527,44 @@ const formatFecha = (f: string): string => {
           <table class="data-table">
             <thead>
               <tr>
-                <th>N° Recibo / ID</th>
+                <th>N° Comprobante</th>
                 <th>DNI</th>
                 <th>Paciente</th>
-                <th>Tratamiento</th>
+                <th>Tratamiento Asociado</th>
                 <th>Monto</th>
                 <th>Método</th>
                 <th>Fecha</th>
-                <th>Estado</th>
-                <th class="text-right">Acciones</th>
+                <th class="text-right">Comprobante</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="pago in pagosFiltrados" :key="pago.id" class="tabla-fila">
-                <td class="font-mono">{{ pago.numeroComprobante || pago.id }}</td>
-                <td class="font-mono text-purple">{{ pago.pacienteDni || '—' }}</td>
-                <td class="font-semibold">{{ pago.pacienteNombre }}</td>
-                <td>{{ pago.tratamiento }}</td>
-                <td class="font-bold text-emerald">{{ formatPrecio(pago.monto) }}</td>
-                <td>
-                  <span class="badge-method">{{ pago.metodoPago }}</span>
+              <tr v-for="pago in pagosFiltrados" :key="pago.pago_id" class="tabla-fila">
+                <td class="font-mono" :title="pago.pago_id">
+                  #{{ pago.pago_id.slice(0, 8).toUpperCase() }}
                 </td>
-                <td>{{ formatFecha(pago.fecha) }}</td>
+                <td class="font-mono text-purple">
+                  {{ obtenerInfoPago(pago).dniPaciente || '—' }}
+                </td>
+                <td class="font-semibold">{{ obtenerInfoPago(pago).nombrePaciente }}</td>
+                <td>{{ obtenerInfoPago(pago).nombreTratamiento }}</td>
+                <td class="font-bold text-emerald">{{ formatPrecio(Number(pago.monto)) }}</td>
                 <td>
                   <span
-                    class="badge-status"
-                    :class="{
-                      completado: pago.estado === 'Completado',
-                      pendiente: pago.estado === 'Pendiente',
-                      anulado: pago.estado === 'Anulado',
-                    }"
+                    class="badge-method"
+                    :class="pago.metodo_pago === 'digital' ? 'digital' : 'efectivo'"
                   >
-                    {{ pago.estado }}
+                    {{ pago.metodo_pago === 'digital' ? 'Digital' : 'Efectivo' }}
                   </span>
                 </td>
+                <td>{{ formatFecha(pago.fecha_registro) }}</td>
                 <td class="td-acciones">
                   <button
-                    class="btn-action edit"
-                    title="Editar pago"
-                    @click="abrirEditarPago(pago)"
+                    class="btn-action view"
+                    title="Consultar comprobante"
+                    type="button"
+                    @click="verComprobante(pago)"
                   >
-                    ✏️
+                    🧾 Ver
                   </button>
                 </td>
               </tr>
@@ -527,112 +575,198 @@ const formatFecha = (f: string): string => {
 
     </div>
 
-    <!-- ── Modal para Registrar / Editar Pago ───────────────── -->
+    <!-- ── Modal para Registrar Pago / Consultar Comprobante ──── -->
     <div v-if="modoModal" class="modal-overlay" @click.self="cerrarModal">
       <div class="modal">
-        <div class="modal-header">
-          <h3>{{ modoModal === 'crear' ? 'Registrar Nuevo Pago' : 'Editar Pago' }}</h3>
-          <button class="modal-close" @click="cerrarModal">✕</button>
-        </div>
 
-        <form @submit.prevent="guardarPago" class="form-grid">
-
-          <!-- CAMBIO: Selector dinámico de Paciente mostrando [DNI] - Nombre Completo -->
-          <div class="form-group form-full">
-            <label>Paciente *</label>
-            <select
-              :value="form.pacienteDni"
-              required
-              class="form-select"
-              @change="alSeleccionarPaciente"
-            >
-              <option value="" disabled>Seleccione un paciente</option>
-              <option
-                v-for="pac in opcionesPacientes"
-                :key="pac.dni"
-                :value="pac.dni"
-              >
-                {{ pac.dni }} - {{ pac.nombreCompleto }}
-              </option>
-            </select>
+        <!-- Modo COMPROBANTE (GET /api/pagos/{pago_id}) -->
+        <template v-if="modoModal === 'comprobante' && comprobanteActual">
+          <div class="modal-header">
+            <h3>Detalle del Comprobante</h3>
+            <button class="modal-close" type="button" @click="cerrarModal">✕</button>
           </div>
 
-          <!-- CAMBIO: Selector dinámico de Tratamiento con autocompletado de precio -->
-          <div class="form-group form-full">
-            <label>Tratamiento o Servicio *</label>
-            <select
-              v-model="form.tratamiento"
-              required
-              class="form-select"
-              @change="alSeleccionarTratamiento"
-            >
-              <option value="" disabled>Seleccione un tratamiento</option>
-              <option
-                v-for="trat in opcionesTratamientos"
-                :key="trat.id"
-                :value="trat.nombre"
-              >
-                {{ trat.nombre }} (Ref: S/ {{ trat.precioReferencial }})
-              </option>
-            </select>
+          <div class="comprobante-body">
+            <div v-if="errorComprobante" class="modal-alerta-error" role="alert">
+              {{ errorComprobante }}
+            </div>
+
+            <div v-if="cargandoComprobante" class="comprobante-loading">
+              Consultando comprobante en el servidor...
+            </div>
+
+            <div class="comprobante-card">
+              <div class="comprobante-row">
+                <span class="detalle-label">ID Comprobante</span>
+                <span class="font-mono">{{ comprobanteActual.pago_id }}</span>
+              </div>
+              <div class="comprobante-row">
+                <span class="detalle-label">Fecha de Emisión</span>
+                <span>{{ formatFechaHora(comprobanteActual.fecha_registro) }}</span>
+              </div>
+              <div class="comprobante-row">
+                <span class="detalle-label">Paciente</span>
+                <span class="font-semibold">
+                  {{ obtenerInfoPago(comprobanteActual).nombrePaciente }}
+                  <template v-if="obtenerInfoPago(comprobanteActual).dniPaciente">
+                    (DNI: {{ obtenerInfoPago(comprobanteActual).dniPaciente }})
+                  </template>
+                </span>
+              </div>
+              <div class="comprobante-row">
+                <span class="detalle-label">Tratamiento</span>
+                <span>{{ obtenerInfoPago(comprobanteActual).nombreTratamiento }}</span>
+              </div>
+              <div class="comprobante-row">
+                <span class="detalle-label">Odontólogo Tratante</span>
+                <span>{{ obtenerInfoPago(comprobanteActual).nombreOdontologo }}</span>
+              </div>
+              <div class="comprobante-row">
+                <span class="detalle-label">Método de Pago</span>
+                <span class="badge-method">
+                  {{ METODO_LABELS[comprobanteActual.metodo_pago] || comprobanteActual.metodo_pago }}
+                </span>
+              </div>
+              <div class="comprobante-total">
+                <span>Monto Abonado</span>
+                <span class="text-emerald">{{ formatPrecio(Number(comprobanteActual.monto)) }}</span>
+              </div>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label>Monto (S/) *</label>
-            <input
-              v-model.number="form.monto"
-              type="number"
-              required
-              min="0.01"
-              step="0.01"
-              placeholder="0.00"
-            />
+          <div class="modal-footer">
+            <button type="button" class="btn-primario" @click="cerrarModal">Cerrar</button>
           </div>
+        </template>
 
-          <div class="form-group">
-            <label>Método de Pago *</label>
-            <select v-model="form.metodoPago" required class="form-select">
-              <option v-for="met in METODOS_OPCIONES" :key="met" :value="met">
-                {{ met }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Estado del Pago *</label>
-            <select v-model="form.estado" required class="form-select">
-              <option v-for="est in ESTADOS_OPCIONES" :key="est" :value="est">
-                {{ est }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>N° Comprobante / Recibo</label>
-            <input
-              v-model="form.numeroComprobante"
-              type="text"
-              placeholder="B001-0001093"
-            />
-          </div>
-
-          <!-- CAMBIO: Campo adicional de Observaciones clínicas/financieras -->
-          <div class="form-group form-full">
-            <label>Observaciones / Notas de Cobro</label>
-            <textarea
-              v-model="form.observaciones"
-              rows="2"
-              placeholder="Ej. Cuota 1 de 3, descuento de 10% aplicado..."
-            ></textarea>
-          </div>
-
-          <div class="modal-footer form-full">
-            <button type="button" class="btn-secundario" @click="cerrarModal">Cancelar</button>
-            <button type="submit" class="btn-primario">
-              {{ modoModal === 'crear' ? 'Guardar Pago' : 'Actualizar Pago' }}
+        <!-- Modo REGISTRAR PAGO (POST /api/pagos) -->
+        <template v-else-if="modoModal === 'crear'">
+          <div class="modal-header">
+            <h3>Registrar Nuevo Pago</h3>
+            <button class="modal-close" type="button" :disabled="guardando" @click="cerrarModal">
+              ✕
             </button>
           </div>
-        </form>
+
+          <form @submit.prevent="guardarPago" class="form-grid">
+            <div v-if="errorModal" class="modal-alerta-error form-full" role="alert">
+              {{ errorModal }}
+            </div>
+
+            <div class="form-group form-full">
+              <label>Filtrar por Paciente (opcional)</label>
+              <select
+                v-model="dniPacienteFiltro"
+                class="form-select"
+                @change="alCambiarPacienteModal"
+              >
+                <option value="">Todos los pacientes con tratamientos</option>
+                <option v-for="pac in pacientes" :key="pac.dni" :value="pac.dni">
+                  {{ pac.dni }} - {{ pac.nombres }} {{ pac.apellidos }}
+                </option>
+              </select>
+            </div>
+
+            <div v-if="tratamientosDisponiblesModal.length === 0" class="aviso-sin-tratamiento form-full">
+              <p>
+                No hay planes de tratamiento disponibles
+                <template v-if="dniPacienteFiltro">para el DNI {{ dniPacienteFiltro }}</template>.
+                Para registrar un cobro debes vincularlo a un tratamiento existente.
+              </p>
+              <div class="aviso-acciones">
+                <button
+                  v-if="dniPacienteFiltro"
+                  type="button"
+                  class="btn-secundario"
+                  @click="() => { dniPacienteFiltro = ''; alCambiarPacienteModal() }"
+                >
+                  Ver todos los tratamientos
+                </button>
+                <RouterLink to="/tratamientos" class="btn-primario link-btn">
+                  Ir a Tratamientos
+                </RouterLink>
+              </div>
+            </div>
+
+            <template v-else>
+              <div class="form-group form-full">
+                <label>Tratamiento del Paciente *</label>
+                <select
+                  v-model="form.id_tratamiento_paciente"
+                  required
+                  class="form-select"
+                  @change="aplicarSaldoSugerido"
+                >
+                  <option value="" disabled>Seleccione un tratamiento</option>
+                  <option
+                    v-for="trat in tratamientosDisponiblesModal"
+                    :key="trat.tratamiento_paciente_id"
+                    :value="trat.tratamiento_paciente_id"
+                  >
+                    {{ trat.dni_paciente }} - {{ formatNombreTratamiento(trat.tratamiento) }}
+                    ({{ formatPrecio(Number(trat.precio)) }} · {{ trat.estado }})
+                  </option>
+                </select>
+              </div>
+
+              <div v-if="resumenSaldoTratamiento" class="resumen-saldo form-full">
+                <div>
+                  <span class="detalle-label">Costo del Plan</span>
+                  <strong>{{ formatPrecio(resumenSaldoTratamiento.total) }}</strong>
+                </div>
+                <div>
+                  <span class="detalle-label">Total Abonado</span>
+                  <strong>{{ formatPrecio(resumenSaldoTratamiento.pagado) }}</strong>
+                </div>
+                <div>
+                  <span class="detalle-label">Saldo Pendiente</span>
+                  <strong class="text-emerald">
+                    {{ formatPrecio(resumenSaldoTratamiento.pendiente) }}
+                  </strong>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Monto a Pagar (S/) *</label>
+                <input
+                  v-model.number="form.monto"
+                  type="number"
+                  required
+                  min="0.01"
+                  step="0.01"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Método de Pago *</label>
+                <select v-model="form.metodo_pago" required class="form-select">
+                  <option value="efectivo">Efectivo</option>
+                  <option value="digital">Digital (Yape / Plin / Tarjeta)</option>
+                </select>
+              </div>
+            </template>
+
+            <div class="modal-footer form-full">
+              <button
+                type="button"
+                class="btn-secundario"
+                :disabled="guardando"
+                @click="cerrarModal"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                class="btn-primario"
+                :disabled="guardando || !form.id_tratamiento_paciente"
+              >
+                {{ guardando ? 'Registrando pago...' : 'Registrar Pago' }}
+              </button>
+            </div>
+          </form>
+        </template>
+
       </div>
     </div>
   </DashboardLayout>
@@ -682,6 +816,204 @@ const formatFecha = (f: string): string => {
 .btn-nuevo:hover {
   filter: brightness(1.08);
   transform: translateY(-1px);
+}
+.btn-nuevo:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.alert-info,
+.alert-success,
+.alert-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.alert-info {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  color: #0369a1;
+}
+
+.alert-success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+
+.alert-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.alert-close {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+}
+
+.estado-carga,
+.estado-error {
+  text-align: center;
+  padding: 3.5rem 2rem;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: 16px;
+}
+
+.estado-error {
+  border-color: #fecaca;
+  color: #b91c1c;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #00b4d8;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 0.9rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.filter-select {
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font-size: 0.88rem;
+  color: var(--text-main, #1e293b);
+  background: transparent;
+  outline: none;
+  max-width: 280px;
+}
+
+.modal-alerta-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.comprobante-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.comprobante-loading {
+  font-size: 0.86rem;
+  color: #0369a1;
+  font-weight: 600;
+}
+
+.comprobante-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.comprobante-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+
+.detalle-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.comprobante-total {
+  margin-top: 0.35rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed #cbd5e1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.aviso-sin-tratamiento {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.aviso-sin-tratamiento p {
+  margin: 0;
+}
+
+.aviso-acciones {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.link-btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.resumen-saldo {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.resumen-saldo > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
 }
 
 .stats-row {
@@ -812,6 +1144,9 @@ const formatFecha = (f: string): string => {
   font-weight: 700;
 }
 
+.badge-method.efectivo { background: #dcfce7; color: #15803d; }
+.badge-method.digital  { background: #e0f2fe; color: #0369a1; }
+
 .badge-status {
   display: inline-block;
   padding: 0.25rem 0.65rem;
@@ -843,6 +1178,7 @@ const formatFecha = (f: string): string => {
 }
 
 .btn-action:hover { opacity: 0.8; transform: translateY(-1px); }
+.btn-action.view   { background: #dbeafe; }
 .btn-action.edit   { background: #fef9c3; }
 .btn-action.delete { background: #fee2e2; }
 
@@ -975,6 +1311,8 @@ const formatFecha = (f: string): string => {
 }
 
 .btn-primario:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-primario:disabled,
+.btn-secundario:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
 
 .btn-secundario {
   padding: 0.55rem 1.2rem;
@@ -1017,6 +1355,19 @@ const formatFecha = (f: string): string => {
 :global(html.dark) .form-select option{ background: #131b2e; color: #f8fafc; }
 :global(html.dark) .btn-secundario    { background: #1e293b; color: #cbd5e1; border-color: #334155; }
 :global(html.dark) .btn-secundario:hover { background: #334155; color: #f8fafc; }
+:global(html.dark) .filter-select     { background: #1e293b; border-color: #334155; color: #f8fafc; }
+:global(html.dark) .filter-select option { background: #131b2e; color: #f8fafc; }
+:global(html.dark) .estado-carga,
+:global(html.dark) .estado-error      { background: #131b2e; border-color: #334155; color: #f8fafc; }
+:global(html.dark) .estado-error      { border-color: #7f1d1d; color: #fca5a5; }
+:global(html.dark) .spinner           { border-color: #334155; border-top-color: #38bdf8; }
+:global(html.dark) .alert-info        { background: rgba(3, 105, 161, 0.25); border-color: #0369a1; color: #bae6fd; }
+:global(html.dark) .alert-success     { background: rgba(21, 128, 61, 0.25); border-color: #15803d; color: #bbf7d0; }
+:global(html.dark) .alert-banner,
+:global(html.dark) .modal-alerta-error{ background: rgba(127, 29, 29, 0.35); border-color: #7f1d1d; color: #fca5a5; }
+:global(html.dark) .comprobante-card,
+:global(html.dark) .resumen-saldo     { background: #0f172a; border-color: #334155; }
+:global(html.dark) .btn-action.view   { background: rgba(59, 130, 246, 0.2); }
 
 @media (max-width: 600px) {
   .form-grid   { grid-template-columns: 1fr; }
