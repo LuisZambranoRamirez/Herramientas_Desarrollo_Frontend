@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { citasService } from '@/services/citas.service'
+import { pacientesService } from '@/services/pacientes.service'
+import type { CitaOdontologoResumen, CrearCitaDto, Paciente } from '@/types'
 import BookingStepper from '../components/BookingStepper.vue'
 import ServiceSelectionStep from '../components/ServiceSelectionStep.vue'
 import SpecialistSelectionStep from '../components/SpecialistSelectionStep.vue'
@@ -13,6 +17,14 @@ const authStore = useAuthStore()
 // Paso actual del flujo (1: Servicio, 2: Especialista, 3: Fecha y Hora, 4: Confirmación)
 const currentStep = ref<number>(1)
 const patientFormRef = ref<InstanceType<typeof PatientForm> | null>(null)
+
+// Estados de carga y comunicación con el backend
+const isLoadingData = ref<boolean>(false)
+const isSubmitting = ref<boolean>(false)
+const formErrorMessage = ref<string>('')
+const odontologosApi = ref<CitaOdontologoResumen[]>([])
+const pacientesApi = ref<Paciente[]>([])
+const dniPacienteManual = ref<string>('')
 
 // --- Paso 1: Selección de Servicio ---
 const selectedServiceId = ref<string>('limpieza-dental')
@@ -31,20 +43,38 @@ const specialistNamesMap: Record<string, string> = {
   'dra-marta-gonzalez': 'Dra. Marta González',
   'dra-carmen-rodriguez': 'Dra. Carmen Rodríguez',
 }
-const selectedSpecialistName = computed(
-  () => specialistNamesMap[selectedSpecialistId.value] || 'Dra. Marta González',
-)
+
+const odontologoSeleccionado = computed<CitaOdontologoResumen | undefined>(() => {
+  if (odontologosApi.value.length === 0) return undefined
+  if (selectedSpecialistId.value === 'dra-carmen-rodriguez') {
+    return odontologosApi.value[1] || odontologosApi.value[0]
+  }
+  return odontologosApi.value[0]
+})
+
+const selectedSpecialistName = computed(() => {
+  if (odontologoSeleccionado.value) {
+    return `Dr(a). ${odontologoSeleccionado.value.nombres} ${odontologoSeleccionado.value.apellidos}`.trim()
+  }
+  return specialistNamesMap[selectedSpecialistId.value] || 'Dra. Marta González'
+})
 
 // --- Paso 3: Fecha, Horario y Datos ---
 const selectedDayNumber = ref<number>(26)
 const selectedTime = ref<string>('10:00 AM')
 const selectedMonth = ref<string>('Agosto 2026')
 
-const patientData = ref<PatientData>({
+const buildInitialPatientData = (): PatientData => ({
   fullName: authStore.user?.nombre_completo || '',
   email: authStore.user?.correo || (authStore.user?.username.includes('@') ? authStore.user?.username : '') || '',
   phone: authStore.user?.telefono || '',
 })
+
+const patientData = ref<PatientData>(buildInitialPatientData())
+
+const selectedDateIso = computed(
+  () => `2026-08-${String(selectedDayNumber.value).padStart(2, '0')}`,
+)
 
 // Texto de fecha formateada
 const formattedDateText = computed(() => {
@@ -58,7 +88,46 @@ const formattedDateText = computed(() => {
   return daysMap[selectedDayNumber.value] || `${selectedDayNumber.value} de Agosto`
 })
 
-const formErrorMessage = ref<string>('')
+const esStaffClinico = computed(
+  () => authStore.isAuthenticated && authStore.userRole !== 'PACIENTE',
+)
+
+const cargarCatalogosReserva = async () => {
+  if (!authStore.isAuthenticated) return
+  isLoadingData.value = true
+  try {
+    odontologosApi.value = await citasService.getOdontologos()
+    if (authStore.userRole !== 'PACIENTE') {
+      pacientesApi.value = await pacientesService.getAll().catch(() => [])
+      const primero = pacientesApi.value[0]
+      if (primero && !dniPacienteManual.value) {
+        dniPacienteManual.value = primero.dni
+      }
+    }
+  } catch (err) {
+    formErrorMessage.value =
+      err instanceof Error ? err.message : 'No se pudo cargar la disponibilidad de especialistas.'
+  } finally {
+    isLoadingData.value = false
+  }
+}
+
+onMounted(cargarCatalogosReserva)
+
+function convertirHora24(time12h: string): string {
+  const parts = (time12h || '10:00 AM').split(':')
+  const rawH = parts[0] ? parseInt(parts[0], 10) : 10
+  const rawM = parts[1] ? parts[1].slice(0, 2) : '00'
+  let finalH = isNaN(rawH) ? 10 : rawH
+
+  if (time12h.includes('PM') && finalH < 12) {
+    finalH += 12
+  } else if (time12h.includes('AM') && finalH === 12) {
+    finalH = 0
+  }
+
+  return `${finalH.toString().padStart(2, '0')}:${rawM}:00`
+}
 
 // Navegación entre pasos
 function goToStep(stepNumber: number) {
@@ -82,9 +151,8 @@ function prevStep() {
   }
 }
 
-// Confirmar cita desde el Paso 3 ➔ Valida estrictamente y pasa al Paso 4
-function handleConfirmAppointment() {
-  // Ejecuta la validación interna del componente PatientForm
+// Confirmar cita desde el Paso 3 ➔ Envía POST /api/citas y pasa al Paso 4
+async function handleConfirmAppointment() {
   const isValid = patientFormRef.value ? patientFormRef.value.validateAll() : false
 
   if (!isValid) {
@@ -92,98 +160,56 @@ function handleConfirmAppointment() {
     return
   }
 
-  formErrorMessage.value = ''
-
-  // Guardar en localStorage para persistencia
-  try {
-    const bookingRecord = {
-      id: `SLD-${Math.floor(1000 + Math.random() * 9000)}`,
-      service: selectedServiceName.value,
-      specialist: selectedSpecialistName.value,
-      date: formattedDateText.value,
-      time: selectedTime.value,
-      patient: { ...patientData.value },
-      createdAt: new Date().toISOString(),
-    }
-    const existingBookings = JSON.parse(localStorage.getItem('solident_bookings') || '[]')
-    existingBookings.push(bookingRecord)
-    localStorage.setItem('solident_bookings', JSON.stringify(existingBookings))
-
-    // CAMBIO: Sincronización con la clave 'citas' de la intranet
-    const timeParts = (selectedTime.value || '10:00').split(':')
-    const rawH = timeParts[0] ? parseInt(timeParts[0], 10) : 10
-    const rawM = timeParts[1] ? timeParts[1].slice(0, 2) : '00'
-    let finalH = isNaN(rawH) ? 10 : rawH
-
-    if (selectedTime.value.includes('PM') && finalH < 12) {
-      finalH += 12
-    } else if (selectedTime.value.includes('AM') && finalH === 12) {
-      finalH = 0
-    }
-
-    const horaStr = `${finalH.toString().padStart(2, '0')}:${rawM}`
-
-    const dniPaciente = patientData.value.phone ? patientData.value.phone.replace(/\D/g, '') : `CLI-${Date.now().toString().slice(-6)}`
-    const dniOdontologo = selectedSpecialistId.value === 'dra-carmen-rodriguez' ? '47891234' : '45678912'
-
-    const nuevaCita = {
-      cita_id: `CIT-${Math.floor(1000 + Math.random() * 9000)}`,
-      dni_paciente: dniPaciente,
-      dni_odontologo: dniOdontologo,
-      fecha: '2026-08-26',
-      hora: horaStr,
-      motivo_consulta: selectedServiceName.value,
-      diagnostico: null,
-      estado: 'PROGRAMADA',
-      fecha_registro: new Date().toISOString(),
-      observaciones: `Reserva web. Email: ${patientData.value.email}, Tel: ${patientData.value.phone}`,
-    }
-
-    const citasExistentes = JSON.parse(localStorage.getItem('citas') || '[]')
-    citasExistentes.unshift(nuevaCita)
-    localStorage.setItem('citas', JSON.stringify(citasExistentes))
-
-    // CAMBIO: Alta automática del paciente en 'pacientes' si no existe
-    const pacientesExistentes = JSON.parse(localStorage.getItem('pacientes') || '[]')
-    const existePaciente = pacientesExistentes.some(
-      (p: Record<string, unknown>) =>
-        String(p.dni) === dniPaciente ||
-        String(p.nombreCompleto || `${p.nombres || ''} ${p.apellidos || ''}`).toLowerCase() === patientData.value.fullName.trim().toLowerCase()
-    )
-
-    if (!existePaciente) {
-      const partes = patientData.value.fullName.trim().split(' ')
-      const nombres = partes[0] || 'Paciente'
-      const apellidos = partes.slice(1).join(' ') || 'Web'
-
-      pacientesExistentes.push({
-        dni: dniPaciente,
-        username: patientData.value.email.split('@')[0] || `paciente.${dniPaciente}`,
-        nombres,
-        apellidos,
-        nombreCompleto: patientData.value.fullName.trim(),
-        telefono: patientData.value.phone,
-        correo: patientData.value.email,
-        direccion: 'Registrado vía Web Pública',
-        observaciones: 'Registrado automáticamente por reserva de cita web',
-        fecha_nacimiento: '1995-01-01',
-        fecha_registro: new Date().toISOString(),
-      })
-      localStorage.setItem('pacientes', JSON.stringify(pacientesExistentes))
-    }
-  } catch (e) {
-    console.warn('No se pudo guardar la cita en localStorage', e)
+  if (!authStore.isAuthenticated) {
+    formErrorMessage.value = 'Debes iniciar sesión con tu cuenta para agendar una cita médica.'
+    return
   }
 
-  currentStep.value = 4
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  if (odontologosApi.value.length === 0) {
+    await cargarCatalogosReserva()
+  }
+
+  const odontologoObjetivo = odontologoSeleccionado.value
+  if (!odontologoObjetivo) {
+    formErrorMessage.value = 'No hay especialistas activos disponibles en el sistema en este momento.'
+    return
+  }
+
+  const payload: CrearCitaDto = {
+    dni_odontologo: odontologoObjetivo.dni,
+    fecha: selectedDateIso.value,
+    hora: convertirHora24(selectedTime.value),
+    motivo_consulta: selectedServiceName.value,
+    diagnostico: null,
+  }
+
+  if (esStaffClinico.value) {
+    const dniLimpio = dniPacienteManual.value.trim()
+    if (!/^\d{8}$/.test(dniLimpio)) {
+      formErrorMessage.value = 'Debes seleccionar o ingresar un DNI de paciente válido (8 dígitos).'
+      return
+    }
+    payload.dni_paciente = dniLimpio
+  }
+
+  formErrorMessage.value = ''
+  isSubmitting.value = true
+
+  try {
+    await citasService.create(payload)
+    currentStep.value = 4
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  } catch (err) {
+    formErrorMessage.value =
+      err instanceof Error ? err.message : 'Ocurrió un error al registrar tu cita en el servidor.'
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 // Reiniciar flujo para agendar otra cita
 function handleNewBooking() {
-  patientData.value.fullName = ''
-  patientData.value.email = ''
-  patientData.value.phone = ''
+  patientData.value = buildInitialPatientData()
   selectedServiceId.value = 'limpieza-dental'
   selectedSpecialistId.value = 'dra-marta-gonzalez'
   selectedDayNumber.value = 26
@@ -227,7 +253,20 @@ function handleNewBooking() {
             <p class="subtitle">Elige tu momento ideal y completa tus datos de contacto</p>
           </div>
 
-          <!-- Alerta de validación si faltan campos -->
+          <!-- Aviso si no hay sesión iniciada -->
+          <div v-if="!authStore.isAuthenticated" class="alert-auth" role="status">
+            <span>
+              Para confirmar una reserva en el sistema necesitas
+              <RouterLink to="/login" class="auth-link">iniciar sesión</RouterLink>.
+            </span>
+          </div>
+
+          <!-- Alerta de carga -->
+          <div v-if="isLoadingData" class="alert-loading" role="status">
+            Cargando disponibilidad de especialistas...
+          </div>
+
+          <!-- Alerta de validación o fallo HTTP -->
           <div v-if="formErrorMessage" class="alert-error" role="alert">
             <svg class="alert-icon" viewBox="0 0 20 20" fill="currentColor">
               <path
@@ -255,6 +294,31 @@ function handleNewBooking() {
             <!-- Tarjeta Derecha: Datos del Paciente -->
             <section class="card-column" aria-label="Información del paciente">
               <PatientForm ref="patientFormRef" v-model="patientData" />
+              <div v-if="esStaffClinico" class="staff-dni-box">
+                <label for="dniPacienteStaff" class="staff-dni-label">
+                  DNI del Paciente a Agendar *
+                </label>
+                <select
+                  v-if="pacientesApi.length > 0"
+                  id="dniPacienteStaff"
+                  v-model="dniPacienteManual"
+                  class="staff-dni-input"
+                >
+                  <option value="" disabled>Seleccione un paciente registrado</option>
+                  <option v-for="pac in pacientesApi" :key="pac.dni" :value="pac.dni">
+                    {{ pac.dni }} - {{ pac.nombres }} {{ pac.apellidos }}
+                  </option>
+                </select>
+                <input
+                  v-else
+                  id="dniPacienteStaff"
+                  v-model="dniPacienteManual"
+                  type="text"
+                  maxlength="8"
+                  placeholder="Ingresa DNI de 8 dígitos"
+                  class="staff-dni-input"
+                />
+              </div>
             </section>
           </div>
 
@@ -263,6 +327,7 @@ function handleNewBooking() {
             <button
               type="button"
               class="btn-anterior"
+              :disabled="isSubmitting"
               @click="prevStep"
               aria-label="Regresar al paso anterior"
             >
@@ -279,6 +344,7 @@ function handleNewBooking() {
             <button
               type="button"
               class="btn-confirmar"
+              :disabled="isSubmitting || isLoadingData"
               @click="handleConfirmAppointment"
               aria-label="Confirmar y agendar cita"
             >
@@ -289,7 +355,7 @@ function handleNewBooking() {
                   clip-rule="evenodd"
                 />
               </svg>
-              <span>Confirmar Cita</span>
+              <span>{{ isSubmitting ? 'Agendando cita...' : 'Confirmar Cita' }}</span>
             </button>
           </div>
         </div>
@@ -370,6 +436,74 @@ function handleNewBooking() {
   animation: shake 0.3s ease;
 }
 
+.alert-auth {
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  padding: 0.85rem 1.25rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.auth-link {
+  color: #0e7490;
+  font-weight: 700;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.alert-loading {
+  background-color: #f0f9ff;
+  border: 1px solid #bae6fd;
+  color: #0369a1;
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.staff-dni-box {
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.staff-dni-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.staff-dni-input {
+  width: 100%;
+  max-width: 320px;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #0f172a;
+  background-color: #ffffff;
+}
+
+.staff-dni-input:focus {
+  outline: none;
+  border-color: #0e7490;
+  box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.14);
+}
+
 .alert-icon {
   width: 20px;
   height: 20px;
@@ -448,6 +582,14 @@ function handleNewBooking() {
 
 .btn-confirmar:active {
   transform: translateY(0);
+}
+
+.btn-anterior:disabled,
+.btn-confirmar:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .btn-check-icon {
