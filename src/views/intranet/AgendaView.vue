@@ -1,206 +1,85 @@
 <script setup lang="ts">
-// CAMBIO: Importaciones reactivas de Vue y Vue Router
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import DashboardLayout from '@/components/dashboard/DashboardLayout.vue'
-import type { Cita, EstadoCita } from '@/types'
+import { citasService } from '@/services/citas.service'
+import { pacientesService } from '@/services/pacientes.service'
+import type { Cita, CitaOdontologoResumen, EstadoCita, Paciente } from '@/types'
 
-// CAMBIO: Interfaz extendida de Cita para incluir observaciones opcionales
-export interface CitaDental extends Cita {
-  observaciones?: string
-}
-
-// Contrato formal para el formulario del modal de cita
 export interface FormCita {
   dni_paciente: string
   dni_odontologo: string
   fecha: string
   hora: string
   motivo_consulta: string
-  observaciones: string
+  diagnostico: string
   estado: EstadoCita
 }
 
-// CAMBIO: Vue Router para redirección rápida a pagos
-const router = useRouter()
-
-// CAMBIO: Clave de almacenamiento en localStorage
-const STORAGE_KEY = 'citas'
-
-// CAMBIO: Opciones de odontólogos tratantes de la clínica
-const ODONTOLOGOS_OPCIONES = [
-  { dni: '45678912', nombre: 'Dr. Roberto Sánchez - COP 45678' },
-  { dni: '47891234', nombre: 'Dra. Patricia Vega - COP 47891' },
-  { dni: '41234567', nombre: 'Dr. Carlos Mendoza - COP 38920' },
-  { dni: '48901234', nombre: 'Dra. Lucía Alva - COP 51203' },
-]
-
-// CAMBIO: Franjas horarias clínicas de 30 minutos
-const FRANJAS_HORARIAS = [
-  '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
-  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
-  '18:00', '18:30', '19:00',
-]
-
-// CAMBIO: Interfaces auxiliares para selectores dinámicos
 interface PacienteOption {
   dni: string
   nombreCompleto: string
 }
 
-interface TratamientoOption {
-  id: string | number
-  nombre: string
-}
+const router = useRouter()
 
-// CAMBIO: Seed Data inicial para agendamiento clínico
-const SEED_CITAS: CitaDental[] = [
-  {
-    cita_id: 'CIT-1001',
-    dni_paciente: '72845631',
-    dni_odontologo: '45678912',
-    fecha: '2026-09-12',
-    hora: '09:00',
-    motivo_consulta: 'Limpieza Dental Profunda',
-    diagnostico: null,
-    estado: 'PROGRAMADA',
-    fecha_registro: '2026-09-10T10:00:00',
-  },
-  {
-    cita_id: 'CIT-1002',
-    dni_paciente: '45678912',
-    dni_odontologo: '47891234',
-    fecha: '2026-09-12',
-    hora: '10:30',
-    motivo_consulta: 'Ortodoncia Control Mensual',
-    diagnostico: null,
-    estado: 'CONFIRMADA',
-    fecha_registro: '2026-09-09T14:30:00',
-  },
-  {
-    cita_id: 'CIT-1003',
-    dni_paciente: '12345678',
-    dni_odontologo: '45678912',
-    fecha: '2026-09-11',
-    hora: '15:00',
-    motivo_consulta: 'Implante Dental Primera Cuota',
-    diagnostico: 'Implante integrado exitosamente',
-    estado: 'ATENDIDA',
-    fecha_registro: '2026-09-08T11:20:00',
-  },
-  {
-    cita_id: 'CIT-1004',
-    dni_paciente: '87654321',
-    dni_odontologo: '41234567',
-    fecha: '2026-09-10',
-    hora: '11:00',
-    motivo_consulta: 'Evaluación y Diagnóstico',
-    diagnostico: null,
-    estado: 'CANCELADA',
-    fecha_registro: '2026-09-07T09:15:00',
-  },
+const FRANJAS_HORARIAS = [
+  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
+  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
+  '18:00', '18:30', '19:00',
 ]
 
-// CAMBIO: Carga inicial desde localStorage con fallback a Seed Data
-const cargarCitasIniciales = (): CitaDental[] => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
-    }
-  } catch (e) {
-    console.error('Error al leer citas de localStorage:', e)
-  }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_CITAS))
-  return [...SEED_CITAS]
-}
+const MOTIVOS_SUGERIDOS = [
+  'Consulta y examen clínico general',
+  'Limpieza Dental Profunda',
+  'Profilaxis dental (limpieza simple)',
+  'Restauración con resina simple',
+  'Ortodoncia Control Mensual',
+  'Implante Dental',
+  'Evaluación y Diagnóstico',
+]
 
-// CAMBIO: Lector dinámico de pacientes desde localStorage
-const cargarPacientesOpciones = (): PacienteOption[] => {
-  try {
-    const raw = localStorage.getItem('pacientes')
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((p: Record<string, unknown>, i: number) => {
-          const dni = String(p.dni || `DNI-${i + 1}`)
-          const nombres = (p.nombres as string) || ''
-          const apellidos = (p.apellidos as string) || ''
-          const nombreCompleto =
-            (p.nombreCompleto as string) ||
-            `${nombres} ${apellidos}`.trim() ||
-            (p.nombre as string) ||
-            'Paciente'
-          return { dni, nombreCompleto }
-        })
-      }
-    }
-  } catch (e) {
-    console.error('Error al leer pacientes:', e)
-  }
-  return [
-    { dni: '72845631', nombreCompleto: 'Carlos Mendoza Ramos' },
-    { dni: '45678912', nombreCompleto: 'Lucía Fernández Torres' },
-    { dni: '12345678', nombreCompleto: 'Jorge Morales Vega' },
-    { dni: '87654321', nombreCompleto: 'Ana Paula Gómez' },
-    { dni: '23456789', nombreCompleto: 'María Elena Suárez' },
-  ]
-}
+// Estado reactivo conectado a la API
+const citas = ref<Cita[]>([])
+const opcionesPacientes = ref<PacienteOption[]>([])
+const opcionesOdontologos = ref<CitaOdontologoResumen[]>([])
 
-// CAMBIO: Lector dinámico de tratamientos desde localStorage
-const cargarTratamientosOpciones = (): TratamientoOption[] => {
-  try {
-    const raw = localStorage.getItem('tratamientos')
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((t: Record<string, unknown>, i: number) => ({
-          id: (t.id || i + 1) as string | number,
-          nombre: (t.nombre || t.tratamiento || 'Consulta Odontológica') as string,
-        }))
-      }
-    }
-  } catch (e) {
-    console.error('Error al leer tratamientos:', e)
-  }
-  return [
-    { id: 1, nombre: 'Consulta y examen clínico general' },
-    { id: 2, nombre: 'Profilaxis dental (limpieza simple)' },
-    { id: 3, nombre: 'Restauración con resina simple' },
-    { id: 4, nombre: 'Ortodoncia Control Mensual' },
-    { id: 5, nombre: 'Implante Dental Primera Cuota' },
-    { id: 6, nombre: 'Evaluación y Diagnóstico' },
-  ]
-}
+const cargando = ref(false)
+const guardando = ref(false)
+const procesandoId = ref<string | null>(null)
+const errorCarga = ref<string | null>(null)
+const errorAccion = ref<string | null>(null)
+const errorModal = ref<string | null>(null)
 
-// Estado reactivo principal
-const citas = ref<CitaDental[]>(cargarCitasIniciales())
 const busqueda = ref('')
 const filtroEstado = ref<EstadoCita | 'TODOS'>('TODOS')
 
-const opcionesPacientes = ref<PacienteOption[]>(cargarPacientesOpciones())
-const opcionesTratamientos = ref<TratamientoOption[]>(cargarTratamientosOpciones())
-
-// CAMBIO: Auto-guardado en localStorage ante cualquier modificación
-watch(
-  citas,
-  (nuevasCitas) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevasCitas))
-  },
-  { deep: true }
-)
-
-// CAMBIO: Recargar selectores dinámicos al montar el componente
-onMounted(() => {
-  if (!localStorage.getItem(STORAGE_KEY)) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_CITAS))
+const cargarDatos = async () => {
+  cargando.value = true
+  errorCarga.value = null
+  try {
+    const [citasData, odontologosData, pacientesData] = await Promise.all([
+      citasService.getAll(),
+      citasService.getOdontologos(),
+      pacientesService.getAll().catch(() => [] as Paciente[]),
+    ])
+    citas.value = citasData
+    opcionesOdontologos.value = odontologosData
+    opcionesPacientes.value = pacientesData.map((p) => ({
+      dni: p.dni,
+      nombreCompleto: `${p.nombres} ${p.apellidos}`.trim(),
+    }))
+  } catch (err) {
+    errorCarga.value =
+      err instanceof Error ? err.message : 'No se pudieron cargar las citas desde el servidor.'
+  } finally {
+    cargando.value = false
   }
-  opcionesPacientes.value = cargarPacientesOpciones()
-  opcionesTratamientos.value = cargarTratamientosOpciones()
-})
+}
 
-// CAMBIO: Métricas computadas reactivamente por estado
+onMounted(cargarDatos)
+
+// Métricas computadas reactivamente por estado
 const totalPorEstado = computed(() => ({
   PROGRAMADA: citas.value.filter((c) => c.estado === 'PROGRAMADA').length,
   CONFIRMADA: citas.value.filter((c) => c.estado === 'CONFIRMADA').length,
@@ -208,22 +87,37 @@ const totalPorEstado = computed(() => ({
   CANCELADA: citas.value.filter((c) => c.estado === 'CANCELADA').length,
 }))
 
-// CAMBIO: Búsqueda reactiva por nombre, DNI, odontólogo o motivo
+const obtenerNombrePaciente = (cita: Cita): string => {
+  if (cita.paciente) {
+    const full = `${cita.paciente.nombres} ${cita.paciente.apellidos}`.trim()
+    if (full) return full
+  }
+  const enc = opcionesPacientes.value.find((p) => p.dni === cita.dni_paciente)
+  return enc ? enc.nombreCompleto : `Paciente (${cita.dni_paciente})`
+}
+
+const obtenerNombreOdontologo = (cita: Cita): string => {
+  if (cita.odontologo) {
+    const full = `${cita.odontologo.nombres} ${cita.odontologo.apellidos}`.trim()
+    if (full) return `Dr(a). ${full}`
+  }
+  const enc = opcionesOdontologos.value.find((doc) => doc.dni === cita.dni_odontologo)
+  return enc ? `Dr(a). ${enc.nombres} ${enc.apellidos}`.trim() : `Dr. (${cita.dni_odontologo})`
+}
+
+// Búsqueda reactiva por nombre, DNI, odontólogo o motivo
 const citasFiltradas = computed(() => {
   const q = busqueda.value.toLowerCase().trim()
 
   return citas.value.filter((cita) => {
-    // Filtro por estado
     if (filtroEstado.value !== 'TODOS' && cita.estado !== filtroEstado.value) {
       return false
     }
 
-    // Si no hay búsqueda de texto, incluir
     if (!q) return true
 
-    // Datos auxiliares del paciente y odontólogo
-    const nombrePac = obtenerNombrePaciente(cita.dni_paciente).toLowerCase()
-    const nombreDoc = obtenerNombreOdontologo(cita.dni_odontologo).toLowerCase()
+    const nombrePac = obtenerNombrePaciente(cita).toLowerCase()
+    const nombreDoc = obtenerNombreOdontologo(cita).toLowerCase()
 
     return (
       cita.dni_paciente.toLowerCase().includes(q) ||
@@ -236,7 +130,6 @@ const citasFiltradas = computed(() => {
   })
 })
 
-// CAMBIO: Configuración de estilos y etiquetas por estado de cita
 const estadoConfig: Record<EstadoCita, { label: string; clase: string }> = {
   PROGRAMADA:   { label: 'Programada',   clase: 'estado-programada' },
   CONFIRMADA:   { label: 'Confirmada',   clase: 'estado-confirmada' },
@@ -247,141 +140,169 @@ const estadoConfig: Record<EstadoCita, { label: string; clase: string }> = {
   EN_PROCESO:   { label: 'En Proceso',   clase: 'estado-confirmada' },
 }
 
-// CAMBIO: Auxiliares para obtener nombres legibles
-const obtenerNombrePaciente = (dni: string): string => {
-  const enc = opcionesPacientes.value.find((p) => p.dni === dni)
-  return enc ? enc.nombreCompleto : `Paciente (${dni})`
-}
-
-const obtenerNombreOdontologo = (dni: string): string => {
-  const enc = ODONTOLOGOS_OPCIONES.find((doc) => doc.dni === dni)
-  if (!enc || !enc.nombre) return `Dr. (${dni})`
-  const partes = enc.nombre.split('-')
-  const primerNombre = partes[0]
-  return primerNombre ? primerNombre.trim() : enc.nombre.trim()
-}
-
-// CAMBIO: Control de modo del modal (crear | editar | null)
+// Control de modal (crear | editar | null)
 type ModoModal = 'crear' | 'editar' | null
 const modoModal = ref<ModoModal>(null)
 const idSeleccionado = ref<string | null>(null)
+const citaEnEdicion = ref<Cita | null>(null)
 
 const formVacio = (): FormCita => {
   const hoy = new Date().toISOString().slice(0, 10)
   return {
-    dni_paciente: '',
-    dni_odontologo: ODONTOLOGOS_OPCIONES[0]?.dni || '45678912',
+    dni_paciente: opcionesPacientes.value[0]?.dni || '',
+    dni_odontologo: opcionesOdontologos.value[0]?.dni || '',
     fecha: hoy,
     hora: '09:00',
     motivo_consulta: '',
-    observaciones: '',
+    diagnostico: '',
     estado: 'PROGRAMADA',
   }
 }
 
 const form = ref<FormCita>(formVacio())
 
-// CAMBIO: Handler para abrir modal en modo creación re-consultando localStorage
-const abrirCrear = () => {
-  opcionesPacientes.value = cargarPacientesOpciones()
-  opcionesTratamientos.value = cargarTratamientosOpciones()
+const pacientesSelect = computed<PacienteOption[]>(() => {
+  const lista = [...opcionesPacientes.value]
+  const cita = citaEnEdicion.value
+  if (cita && !lista.some((p) => p.dni === cita.dni_paciente)) {
+    lista.unshift({
+      dni: cita.dni_paciente,
+      nombreCompleto: obtenerNombrePaciente(cita),
+    })
+  }
+  return lista
+})
 
+const odontologosSelect = computed<CitaOdontologoResumen[]>(() => {
+  const lista = [...opcionesOdontologos.value]
+  const cita = citaEnEdicion.value
+  if (cita && !lista.some((o) => o.dni === cita.dni_odontologo)) {
+    lista.unshift({
+      dni: cita.dni_odontologo,
+      nombres: cita.odontologo?.nombres || 'Odontólogo',
+      apellidos: cita.odontologo?.apellidos || `(${cita.dni_odontologo})`,
+      especialidad: cita.odontologo?.especialidad || '',
+      colegiatura: cita.odontologo?.colegiatura || '',
+    })
+  }
+  return lista
+})
+
+const franjasSelect = computed<string[]>(() => {
+  if (form.value.hora && !FRANJAS_HORARIAS.includes(form.value.hora)) {
+    return [form.value.hora, ...FRANJAS_HORARIAS]
+  }
+  return FRANJAS_HORARIAS
+})
+
+const abrirCrear = () => {
+  errorModal.value = null
+  citaEnEdicion.value = null
   modoModal.value = 'crear'
   idSeleccionado.value = null
   form.value = formVacio()
-
-  const primerPaciente = opcionesPacientes.value[0]
-  if (primerPaciente) {
-    form.value.dni_paciente = primerPaciente.dni
-  }
-
-  const primerTratamiento = opcionesTratamientos.value[0]
-  if (primerTratamiento) {
-    form.value.motivo_consulta = primerTratamiento.nombre
-  }
 }
 
-// CAMBIO: Handler para abrir modal en modo edición
-const abrirEditar = (cita: CitaDental) => {
-  opcionesPacientes.value = cargarPacientesOpciones()
-  opcionesTratamientos.value = cargarTratamientosOpciones()
-
+const abrirEditar = (cita: Cita) => {
+  errorModal.value = null
+  citaEnEdicion.value = cita
   modoModal.value = 'editar'
   idSeleccionado.value = cita.cita_id
   form.value = {
     dni_paciente: cita.dni_paciente,
     dni_odontologo: cita.dni_odontologo,
-    fecha: cita.fecha,
-    hora: cita.hora,
+    fecha: cita.fecha.slice(0, 10),
+    hora: cita.hora.slice(0, 5),
     motivo_consulta: cita.motivo_consulta,
-    observaciones: cita.observaciones || '',
+    diagnostico: cita.diagnostico || '',
     estado: cita.estado,
   }
 }
 
 const cerrarModal = () => {
+  if (guardando.value) return
   modoModal.value = null
   idSeleccionado.value = null
+  citaEnEdicion.value = null
+  errorModal.value = null
 }
 
-// CAMBIO: Guardar creación o actualización de cita
-const guardar = () => {
-  if (!form.value.dni_paciente || !form.value.motivo_consulta.trim()) {
+const guardar = async () => {
+  if (!form.value.dni_paciente || !form.value.dni_odontologo || !form.value.motivo_consulta.trim()) {
+    errorModal.value = 'Completa paciente, odontólogo y motivo de consulta.'
     return
   }
 
-  if (modoModal.value === 'crear') {
-    const nuevoId = `CIT-${Math.floor(1000 + Math.random() * 9000)}`
-    const nuevaCita: CitaDental = {
-      cita_id: nuevoId,
-      dni_paciente: form.value.dni_paciente,
-      dni_odontologo: form.value.dni_odontologo,
-      fecha: form.value.fecha,
-      hora: form.value.hora,
-      motivo_consulta: form.value.motivo_consulta.trim(),
-      diagnostico: null,
-      estado: 'PROGRAMADA',
-      fecha_registro: new Date().toISOString(),
-      observaciones: form.value.observaciones?.trim() || undefined,
-    }
-    citas.value.unshift(nuevaCita)
-  } else if (modoModal.value === 'editar' && idSeleccionado.value) {
-    const citaExistente = citas.value.find((c) => c.cita_id === idSeleccionado.value)
-    if (citaExistente) {
-      citaExistente.dni_paciente = form.value.dni_paciente
-      citaExistente.dni_odontologo = form.value.dni_odontologo
-      citaExistente.fecha = form.value.fecha
-      citaExistente.hora = form.value.hora
-      citaExistente.motivo_consulta = form.value.motivo_consulta.trim()
-      citaExistente.observaciones = form.value.observaciones?.trim() || undefined
-      citaExistente.estado = form.value.estado
-    }
-  }
+  guardando.value = true
+  errorModal.value = null
 
-  cerrarModal()
+  try {
+    if (modoModal.value === 'crear') {
+      const creada = await citasService.create({
+        dni_paciente: form.value.dni_paciente,
+        dni_odontologo: form.value.dni_odontologo,
+        fecha: form.value.fecha,
+        hora: form.value.hora,
+        motivo_consulta: form.value.motivo_consulta.trim(),
+        diagnostico: form.value.diagnostico.trim() || null,
+      })
+      citas.value.unshift(creada)
+    } else if (modoModal.value === 'editar' && idSeleccionado.value) {
+      const actualizada = await citasService.update(idSeleccionado.value, {
+        dni_paciente: form.value.dni_paciente,
+        dni_odontologo: form.value.dni_odontologo,
+        fecha: form.value.fecha,
+        hora: form.value.hora,
+        motivo_consulta: form.value.motivo_consulta.trim(),
+        diagnostico: form.value.diagnostico.trim() || null,
+        estado: form.value.estado,
+      })
+      const idx = citas.value.findIndex((c) => c.cita_id === idSeleccionado.value)
+      if (idx !== -1) {
+        citas.value[idx] = actualizada
+      }
+    }
+
+    guardando.value = false
+    cerrarModal()
+  } catch (err) {
+    errorModal.value =
+      err instanceof Error ? err.message : 'Ocurrió un error al guardar la cita en el servidor.'
+  } finally {
+    guardando.value = false
+  }
 }
 
+const cancelarCita = async (cita: Cita) => {
+  if (cita.estado === 'CANCELADA') return
+  if (!confirm('¿Estás seguro de cancelar esta cita en la agenda?')) return
 
-// CAMBIO: Eliminar cita con confirmación
-const eliminarCita = (citaId: string) => {
-  if (confirm('¿Estás seguro de eliminar esta cita de la agenda?')) {
-    citas.value = citas.value.filter((c) => c.cita_id !== citaId)
+  procesandoId.value = cita.cita_id
+  errorAccion.value = null
+  try {
+    const actualizada = await citasService.delete(cita.cita_id)
+    const idx = citas.value.findIndex((c) => c.cita_id === cita.cita_id)
+    if (idx !== -1) {
+      citas.value[idx] = actualizada
+    }
+  } catch (err) {
+    errorAccion.value =
+      err instanceof Error ? err.message : 'No se pudo cancelar la cita seleccionada.'
+  } finally {
+    procesandoId.value = null
   }
 }
 
-// CAMBIO: Acción rápida para cobro interconectada con el módulo de Pagos
-const irACobrar = (cita: CitaDental) => {
-  const nombrePac = obtenerNombrePaciente(cita.dni_paciente)
+const irACobrar = (cita: Cita) => {
   router.push({
     path: '/pagos',
     query: {
       dni: cita.dni_paciente,
-      nombre: nombrePac,
+      nombre: obtenerNombrePaciente(cita),
     },
   })
 }
 
-// CAMBIO: Formateadores auxiliares
 const formatFecha = (fecha: string) => {
   if (!fecha) return '—'
   const partes = fecha.slice(0, 10).split('-')
@@ -404,10 +325,15 @@ const formatHora = (hora: string) => hora.slice(0, 5)
           <h2 class="view-title">Agenda y Citas Médicas</h2>
           <p class="page-subtitle">Gestiona las citas agendadas, doctores tratantes y estados clínicos.</p>
         </div>
-        <!-- CAMBIO: Botón destacado + Nueva Cita -->
         <button class="btn-nuevo" type="button" @click="abrirCrear">
           + Nueva Cita
         </button>
+      </div>
+
+      <!-- ── Alerta de error en acciones rápidas ────────────────── -->
+      <div v-if="errorAccion" class="alert-banner" role="alert">
+        <span>⚠️ {{ errorAccion }}</span>
+        <button type="button" class="alert-close" @click="errorAccion = null">✕</button>
       </div>
 
       <!-- ── Tarjetas de Estadísticas Reactivas ───────────────── -->
@@ -451,12 +377,14 @@ const formatHora = (hora: string) => hora.slice(0, 5)
               <option value="TODOS">Todos los estados</option>
               <option value="PROGRAMADA">Programadas</option>
               <option value="CONFIRMADA">Confirmadas</option>
+              <option value="EN_PROCESO">En Proceso</option>
+              <option value="REPROGRAMADA">Reprogramadas</option>
               <option value="ATENDIDA">Atendidas</option>
               <option value="CANCELADA">Canceladas</option>
+              <option value="NO_ASISTIO">No Asistió</option>
             </select>
           </div>
 
-          <!-- CAMBIO: Búsqueda reactiva rápida -->
           <div class="search-group">
             <input
               v-model="busqueda"
@@ -476,8 +404,20 @@ const formatHora = (hora: string) => hora.slice(0, 5)
           <span class="resultado-count">{{ citasFiltradas.length }} cita(s)</span>
         </div>
 
+        <!-- ── Estado de Carga ──────────────────────────────────── -->
+        <div v-if="cargando" class="estado-carga">
+          <div class="spinner"></div>
+          <p>Cargando citas médicas...</p>
+        </div>
+
+        <!-- ── Error de Carga ───────────────────────────────────── -->
+        <div v-else-if="errorCarga" class="estado-error">
+          <p>⚠️ {{ errorCarga }}</p>
+          <button type="button" class="btn-primario" @click="cargarDatos">Reintentar</button>
+        </div>
+
         <!-- ── Estado Vacío ────────────────────────────────────── -->
-        <div v-if="citasFiltradas.length === 0" class="estado-vacio">
+        <div v-else-if="citasFiltradas.length === 0" class="estado-vacio">
           <span class="vacio-icono">📅</span>
           <p class="vacio-titulo">Sin citas registradas</p>
           <p class="vacio-desc">
@@ -507,30 +447,30 @@ const formatHora = (hora: string) => hora.slice(0, 5)
                   <div class="font-mono text-muted">⏰ {{ formatHora(cita.hora) }}</div>
                 </td>
 
-                <!-- CAMBIO: Columna Paciente con Nombre completo y DNI secundario -->
+                <!-- Paciente -->
                 <td>
-                  <div class="font-semibold text-main">{{ obtenerNombrePaciente(cita.dni_paciente) }}</div>
+                  <div class="font-semibold text-main">{{ obtenerNombrePaciente(cita) }}</div>
                   <div class="font-mono text-purple">DNI: {{ cita.dni_paciente }}</div>
                 </td>
 
-                <!-- CAMBIO: Columna Odontólogo con Nombre completo del doctor -->
+                <!-- Odontólogo -->
                 <td class="font-semibold text-main">
-                  {{ obtenerNombreOdontologo(cita.dni_odontologo) }}
+                  {{ obtenerNombreOdontologo(cita) }}
                 </td>
 
-                <!-- CAMBIO: Columna Motivo -->
+                <!-- Motivo -->
                 <td>
                   <span class="badge-motivo">{{ cita.motivo_consulta }}</span>
                 </td>
 
-                <!-- CAMBIO: Badges de Estado -->
+                <!-- Estado -->
                 <td>
                   <span class="badge" :class="estadoConfig[cita.estado]?.clase">
                     {{ estadoConfig[cita.estado]?.label ?? cita.estado }}
                   </span>
                 </td>
 
-                <!-- Acciones: Cobrar (solo ATENDIDA) + Editar + Eliminar siempre -->
+                <!-- Acciones -->
                 <td class="td-acciones">
                   <button
                     v-if="cita.estado === 'ATENDIDA'"
@@ -543,16 +483,18 @@ const formatHora = (hora: string) => hora.slice(0, 5)
                   <button
                     class="btn-accion btn-icon edit"
                     title="Editar cita"
+                    :disabled="procesandoId === cita.cita_id"
                     @click="abrirEditar(cita)"
                   >
                     ✏️
                   </button>
                   <button
                     class="btn-accion btn-icon delete"
-                    title="Eliminar cita"
-                    @click="eliminarCita(cita.cita_id)"
+                    title="Cancelar cita"
+                    :disabled="procesandoId === cita.cita_id || cita.estado === 'CANCELADA'"
+                    @click="cancelarCita(cita)"
                   >
-                    🗑️
+                    {{ procesandoId === cita.cita_id ? '⏳' : '🚫' }}
                   </button>
                 </td>
               </tr>
@@ -567,18 +509,20 @@ const formatHora = (hora: string) => hora.slice(0, 5)
       <div class="modal">
         <div class="modal-header">
           <h3>{{ modoModal === 'crear' ? 'Agendar Nueva Cita' : 'Editar Cita' }}</h3>
-          <button class="modal-close" @click="cerrarModal">✕</button>
+          <button class="modal-close" :disabled="guardando" @click="cerrarModal">✕</button>
         </div>
 
         <form @submit.prevent="guardar" class="form-grid">
+          <div v-if="errorModal" class="modal-alerta-error form-full" role="alert">
+            ⚠️ {{ errorModal }}
+          </div>
 
-          <!-- CAMBIO: Selector dinámico de Paciente mostrando [DNI] - Nombre Completo -->
           <div class="form-group form-full">
             <label>Paciente *</label>
             <select v-model="form.dni_paciente" required class="form-select">
               <option value="" disabled>Seleccione un paciente</option>
               <option
-                v-for="pac in opcionesPacientes"
+                v-for="pac in pacientesSelect"
                 :key="pac.dni"
                 :value="pac.dni"
               >
@@ -587,76 +531,76 @@ const formatHora = (hora: string) => hora.slice(0, 5)
             </select>
           </div>
 
-          <!-- CAMBIO: Selector de Odontólogo tratante -->
           <div class="form-group form-full">
             <label>Odontólogo Tratante *</label>
             <select v-model="form.dni_odontologo" required class="form-select">
+              <option value="" disabled>Seleccione un odontólogo</option>
               <option
-                v-for="doc in ODONTOLOGOS_OPCIONES"
+                v-for="doc in odontologosSelect"
                 :key="doc.dni"
                 :value="doc.dni"
               >
-                {{ doc.nombre }}
+                Dr(a). {{ doc.nombres }} {{ doc.apellidos }}{{ doc.colegiatura ? ` - COP ${doc.colegiatura}` : '' }}
               </option>
             </select>
           </div>
 
-          <!-- CAMBIO: Selector dinámico de Servicio / Motivo -->
           <div class="form-group form-full">
             <label>Servicio / Motivo de Consulta *</label>
-            <select v-model="form.motivo_consulta" required class="form-select">
-              <option value="" disabled>Seleccione el servicio o motivo</option>
-              <option
-                v-for="trat in opcionesTratamientos"
-                :key="trat.id"
-                :value="trat.nombre"
-              >
-                {{ trat.nombre }}
-              </option>
-            </select>
+            <input
+              v-model="form.motivo_consulta"
+              type="text"
+              list="motivos-consulta-opciones"
+              required
+              placeholder="Selecciona o escribe el motivo de la consulta..."
+            />
+            <datalist id="motivos-consulta-opciones">
+              <option v-for="motivo in MOTIVOS_SUGERIDOS" :key="motivo" :value="motivo" />
+            </datalist>
           </div>
 
-          <!-- CAMBIO: Campo de Fecha -->
           <div class="form-group">
             <label>Fecha de la Cita *</label>
             <input v-model="form.fecha" type="date" required />
           </div>
 
-          <!-- CAMBIO: Selector de Franja Horaria -->
           <div class="form-group">
             <label>Hora de la Cita *</label>
             <select v-model="form.hora" required class="form-select">
-              <option v-for="hora in FRANJAS_HORARIAS" :key="hora" :value="hora">
+              <option v-for="hora in franjasSelect" :key="hora" :value="hora">
                 ⏰ {{ hora }}
               </option>
             </select>
           </div>
 
-          <!-- Estado de la cita: solo visible en modo edición -->
           <div v-if="modoModal === 'editar'" class="form-group form-full">
             <label>Estado de la Cita *</label>
             <select v-model="form.estado" required class="form-select">
               <option value="PROGRAMADA">Programada</option>
               <option value="CONFIRMADA">Confirmada</option>
+              <option value="EN_PROCESO">En Proceso</option>
+              <option value="REPROGRAMADA">Reprogramada</option>
               <option value="ATENDIDA">Atendida</option>
               <option value="CANCELADA">Cancelada</option>
+              <option value="NO_ASISTIO">No Asistió</option>
             </select>
           </div>
 
-          <!-- CAMBIO: Observaciones / Notas clínicas -->
           <div class="form-group form-full">
-            <label>Notas / Observaciones Clínicas</label>
+            <label>Diagnóstico / Notas Clínicas</label>
             <textarea
-              v-model="form.observaciones"
+              v-model="form.diagnostico"
               rows="2"
-              placeholder="Notas sobre alergias, indicaciones previas o motivo específico..."
+              placeholder="Diagnóstico preliminar o indicaciones clínicas de la cita..."
             ></textarea>
           </div>
 
           <div class="modal-footer form-full">
-            <button type="button" class="btn-secundario" @click="cerrarModal">Cancelar</button>
-            <button type="submit" class="btn-primario">
-              {{ modoModal === 'crear' ? 'Agendar Cita' : 'Actualizar Cita' }}
+            <button type="button" class="btn-secundario" :disabled="guardando" @click="cerrarModal">
+              Cancelar
+            </button>
+            <button type="submit" class="btn-primario" :disabled="guardando">
+              {{ guardando ? 'Guardando...' : (modoModal === 'crear' ? 'Agendar Cita' : 'Actualizar Cita') }}
             </button>
           </div>
         </form>
@@ -916,6 +860,74 @@ const formatHora = (hora: string) => hora.slice(0, 5)
 
 .btn-icon.edit   { background: #fef9c3; }
 .btn-icon.delete { background: #fee2e2; }
+.btn-accion:disabled,
+.btn-icon:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.alert-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.alert-close {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+}
+.alert-close:hover { background: rgba(185, 28, 28, 0.12); }
+
+.estado-carga,
+.estado-error {
+  text-align: center;
+  padding: 3.5rem 2rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.estado-error {
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #2b758f;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 0.9rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.modal-alerta-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
 
 .estado-vacio {
   display: flex;
@@ -1046,6 +1058,8 @@ const formatHora = (hora: string) => hora.slice(0, 5)
 }
 
 .btn-primario:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-primario:disabled,
+.btn-secundario:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
 
 .btn-secundario {
   padding: 0.55rem 1.2rem;
@@ -1088,6 +1102,12 @@ const formatHora = (hora: string) => hora.slice(0, 5)
 :global(html.dark) .form-select option{ background: #131b2e; color: #f8fafc; }
 :global(html.dark) .btn-secundario    { background: #1e293b; color: #cbd5e1; border-color: #334155; }
 :global(html.dark) .btn-secundario:hover { background: #334155; color: #f8fafc; }
+:global(html.dark) .estado-carga,
+:global(html.dark) .estado-error     { background: #0f172a; border-color: #334155; color: #f8fafc; }
+:global(html.dark) .estado-error     { border-color: #7f1d1d; color: #fca5a5; }
+:global(html.dark) .spinner          { border-color: #334155; border-top-color: #38bdf8; }
+:global(html.dark) .alert-banner,
+:global(html.dark) .modal-alerta-error { background: rgba(127, 29, 29, 0.35); border-color: #7f1d1d; color: #fca5a5; }
 
 @media (max-width: 600px) {
   .form-grid   { grid-template-columns: 1fr; }

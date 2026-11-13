@@ -1,5 +1,6 @@
 import type {
   Cita,
+  CitaOdontologoResumen,
   CrearCitaDto,
   ActualizarCitaDto,
   EstadoCita,
@@ -13,6 +14,14 @@ import { api } from '@/services/api/client'
 export const citasService = {
   getAll(): Promise<Cita[]> {
     return api.get<Cita[]>('/citas')
+  },
+
+  getMisCitas(): Promise<Cita[]> {
+    return api.get<Cita[]>('/citas/mis-citas')
+  },
+
+  getOdontologos(): Promise<CitaOdontologoResumen[]> {
+    return api.get<CitaOdontologoResumen[]>('/citas/odontologos')
   },
 
   getById(id: string): Promise<Cita | undefined> {
@@ -39,7 +48,7 @@ export const citasService = {
     return api.put<Cita>(`/citas/${id}`, data)
   },
 
-  delete(id: string): Promise<void> {
-    return api.patch<void>(`/citas/${id}/cancelar`)
+  delete(id: string): Promise<Cita> {
+    return api.patch<Cita>(`/citas/${id}/cancelar`)
   },
 }

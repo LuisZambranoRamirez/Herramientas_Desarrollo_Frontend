@@ -663,7 +663,7 @@ export const citaApi = {
 
     const cita: Cita = {
       cita_id: generateId(),
-      dni_paciente: data.dni_paciente,
+      dni_paciente: data.dni_paciente || '',
       dni_odontologo: data.dni_odontologo,
       fecha: data.fecha,
       hora: data.hora,

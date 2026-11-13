@@ -6,6 +6,8 @@ import type {
   Usuario,
 } from '@/types'
 import { api } from '@/services/api/client'
+import { env } from '@/config/env'
+import { authApi } from '@/services/mock-api'
 
 // ============================================================
 // SERVICIO DE AUTENTICACIÓN
@@ -13,14 +15,23 @@ import { api } from '@/services/api/client'
 
 export const authService = {
   async login(data: LoginDto): Promise<LoginResponse> {
+    if (env.useMock) {
+      return authApi.login(data)
+    }
+
+    // Backend FastAPI: POST /auth/login
     const res = await api.post<any>('/auth/login', data)
 
-    const accessToken = res.accessToken || res.access_token
+    const accessToken = res.access_token || res.accessToken
+    
+    // Mapeo robusto: captura el user_role directamente de la raíz de la respuesta del backend
     const user: Usuario = res.user || res.usuario || {
-      username: data.username,
-      activo: true,
-      user_role: res.user_role || 'SYSTEM_ADMIN',
-      fecha_registro: new Date().toISOString(),
+      username: res.username || data.username,
+      activo: res.activo ?? true,
+      user_role: res.user_role || res.role || 'PACIENTE',
+      fecha_registro: res.fecha_registro || new Date().toISOString(),
+      odontologo: res.odontologo,
+      paciente: res.paciente,
     }
 
     return {
@@ -30,8 +41,21 @@ export const authService = {
   },
 
   async register(data: RegistroDto): Promise<RegistroResponse> {
+    if (env.useMock) {
+      return {
+        message: 'Cuenta registrada exitosamente',
+        accessToken: `mock-token-paciente-${Date.now()}`,
+        user: {
+          username: data.username,
+          activo: true,
+          user_role: 'PACIENTE',
+          fecha_registro: new Date().toISOString(),
+        },
+      }
+    }
+
     const res = await api.post<any>('/auth/register', data)
-    const accessToken = res.accessToken || res.access_token
+    const accessToken = res.access_token || res.accessToken
     const user = res.user || res.usuario
 
     return {
@@ -42,10 +66,19 @@ export const authService = {
   },
 
   async me(token?: string): Promise<Usuario | undefined> {
+    if (env.useMock) {
+      const username = (token || '').replace('mock-token-', '')
+      return authApi.me(username)
+    }
+
     return api.get<Usuario>('/auth/me', { token })
   },
 
   async logout(token?: string): Promise<void> {
+    if (env.useMock) {
+      return authApi.logout()
+    }
+
     try {
       await api.post<void>('/auth/logout', undefined, { token })
     } catch {

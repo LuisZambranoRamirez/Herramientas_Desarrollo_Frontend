@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 const apiUrl = (import.meta.env.VITE_API_URL as string | undefined) || 'https://herramientas-desarrollo-backend.vercel.app/api'
+=======
+const apiUrl = (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:8000/api'
+>>>>>>> dev
 
 export const env = {
   apiUrl: apiUrl.replace(/\/+$/, ''),
