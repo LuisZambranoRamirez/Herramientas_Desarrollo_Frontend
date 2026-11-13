@@ -8,6 +8,7 @@ import type {
 import { api } from '@/services/api/client'
 import { env } from '@/config/env'
 import { authApi } from '@/services/mock-api'
+import { extractUserRole } from '@/utils/navigation'
 
 // ============================================================
 // SERVICIO DE AUTENTICACIÓN
@@ -23,15 +24,21 @@ export const authService = {
     const res = await api.post<any>('/auth/login', data)
 
     const accessToken = res.access_token || res.accessToken
-    
-    // Mapeo robusto: captura el user_role directamente de la raíz de la respuesta del backend
-    const user: Usuario = res.user || res.usuario || {
-      username: res.username || data.username,
-      activo: res.activo ?? true,
-      user_role: res.user_role || res.role || 'PACIENTE',
-      fecha_registro: res.fecha_registro || new Date().toISOString(),
-      odontologo: res.odontologo,
-      paciente: res.paciente,
+    const rawUser = res.user || res.usuario || {}
+    const userRole = extractUserRole(res) || extractUserRole(rawUser) || 'PACIENTE'
+
+    const user: Usuario = {
+      ...rawUser,
+      username: rawUser.username || res.username || data.username,
+      nombre_completo: rawUser.nombre_completo || res.nombre_completo,
+      correo: rawUser.correo || res.correo,
+      telefono: rawUser.telefono || res.telefono,
+      activo: rawUser.activo ?? res.activo ?? true,
+      user_role: userRole as any,
+      fecha_registro: rawUser.fecha_registro || res.fecha_registro || new Date().toISOString(),
+      odontologo: rawUser.odontologo || res.odontologo,
+      paciente: rawUser.paciente || res.paciente,
+      role: userRole,
     }
 
     return {
@@ -56,7 +63,22 @@ export const authService = {
 
     const res = await api.post<any>('/auth/register', data)
     const accessToken = res.access_token || res.accessToken
-    const user = res.user || res.usuario
+    const rawUser = res.user || res.usuario || {}
+    const userRole = extractUserRole(res) || extractUserRole(rawUser) || 'PACIENTE'
+
+    const user: Usuario = {
+      ...rawUser,
+      username: rawUser.username || data.username,
+      nombre_completo: rawUser.nombre_completo || `${data.nombres} ${data.apellidos}`.trim(),
+      correo: rawUser.correo || data.correo,
+      telefono: rawUser.telefono || data.telefono,
+      activo: rawUser.activo ?? true,
+      user_role: userRole as any,
+      fecha_registro: rawUser.fecha_registro || new Date().toISOString(),
+      odontologo: rawUser.odontologo,
+      paciente: rawUser.paciente,
+      role: userRole,
+    }
 
     return {
       message: res.message || 'Registro exitoso',

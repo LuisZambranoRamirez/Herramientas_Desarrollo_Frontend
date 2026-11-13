@@ -136,8 +136,15 @@ async function registrarse() {
     if (resultado.success) {
       mensajeExito.value = '¡Tu cuenta ha sido creada exitosamente! Redirigiendo...'
       setTimeout(() => {
+        const role =
+          authStore.userRole ||
+          (authStore.user as any)?.role ||
+          (authStore.user as any)?.rol ||
+          'PACIENTE'
+        const targetRoute = getDefaultRouteByRole(role)
+
         if (authStore.isAuthenticated) {
-          router.push(getDefaultRouteByRole(authStore.userRole))
+          router.push(targetRoute)
         } else {
           router.push('/login')
         }

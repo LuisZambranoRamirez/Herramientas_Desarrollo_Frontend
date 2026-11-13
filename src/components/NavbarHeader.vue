@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
-import { getDefaultRouteByRole, getRoleLabel } from '@/utils/navigation'
+import { getDefaultRouteByRole, getRoleLabel, extractUserRole } from '@/utils/navigation'
 
 const route = useRoute()
 const router = useRouter()
@@ -10,21 +10,39 @@ const authStore = useAuthStore()
 const isMobileMenuOpen = ref(false)
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
-const isPaciente = computed(() => authStore.userRole === 'PACIENTE')
-
-const userDashboardRoute = computed(() => {
-  return getDefaultRouteByRole(authStore.userRole)
+const currentRole = computed(() => {
+  return extractUserRole(authStore.userRole) || extractUserRole(authStore.user) || 'PACIENTE'
 })
 
+const isPaciente = computed(() => {
+  const role = currentRole.value
+  return role === 'PACIENTE' || role === 'CLIENTE'
+})
+
+const isOdontologo = computed(() => {
+  const role = currentRole.value
+  return role === 'ODONTOLOGO' || role === 'DOCTOR'
+})
+
+const isSystemAdmin = computed(() => {
+  const role = currentRole.value
+  return role === 'SYSTEM_ADMIN' || role === 'ADMIN'
+})
+
+const defaultDashboardRoute = computed(() => {
+  return getDefaultRouteByRole(currentRole.value)
+})
+const userDashboardRoute = defaultDashboardRoute
+
 const dashboardButtonLabel = computed(() => {
-  const role = authStore.userRole?.toUpperCase()
+  const role = currentRole.value
   if (role === 'PACIENTE' || role === 'CLIENTE') return 'Mi Panel'
-  if (role === 'ODONTOLOGO') return 'Mi Panel'
-  return 'Intranet'
+  if (role === 'ODONTOLOGO' || role === 'DOCTOR') return 'Mi Panel'
+  return 'Dashboard'
 })
 
 const userRoleBadgeLabel = computed(() => {
-  return getRoleLabel(authStore.userRole)
+  return getRoleLabel(currentRole.value)
 })
 
 const displayNombre = computed(() => {
@@ -259,22 +277,28 @@ watch(
 
         <!-- Autenticado: Evidencia en la esquina derecha -->
         <div v-else class="user-corner-badge">
-          <div class="user-avatar" :title="authStore.user?.username">
-            {{ userInitial }}
-          </div>
-          <div class="user-info">
-            <span class="user-greeting">Hola, <strong>{{ displayNombre }}</strong></span>
-            <span class="user-role-pill" :class="{ 'role-paciente': isPaciente, 'role-admin': !isPaciente }">
-              {{ userRoleBadgeLabel }}
-            </span>
-          </div>
+          <RouterLink
+            :to="defaultDashboardRoute"
+            class="user-profile-link"
+            :title="`Ir a ${dashboardButtonLabel}`"
+          >
+            <div class="user-avatar" :title="authStore.user?.username">
+              {{ userInitial }}
+            </div>
+            <div class="user-info">
+              <span class="user-greeting">Hola, <strong>{{ displayNombre }}</strong></span>
+              <span class="user-role-pill" :class="{ 'role-paciente': isPaciente, 'role-odontologo': isOdontologo, 'role-admin': isSystemAdmin }">
+                {{ userRoleBadgeLabel }}
+              </span>
+            </div>
+          </RouterLink>
 
           <RouterLink
-            :to="userDashboardRoute"
+            :to="defaultDashboardRoute"
             class="nav-intranet-chip"
             :title="`Ir a ${dashboardButtonLabel}`"
           >
-            {{ dashboardButtonLabel }}
+            📊 {{ dashboardButtonLabel }}
           </RouterLink>
 
           <button
@@ -362,15 +386,20 @@ watch(
 
       <!-- Si está autenticado -->
       <template v-else>
-        <div class="mobile-user-profile">
+        <RouterLink
+          :to="defaultDashboardRoute"
+          class="mobile-user-profile mobile-user-profile-link"
+          :title="`Ir a ${dashboardButtonLabel}`"
+          @click="isMobileMenuOpen = false"
+        >
           <div class="user-avatar">{{ userInitial }}</div>
           <div class="user-info">
             <span class="user-greeting">Hola, <strong>{{ displayNombre }}</strong></span>
-            <span class="user-role-pill" :class="{ 'role-paciente': isPaciente, 'role-admin': !isPaciente }">
+            <span class="user-role-pill" :class="{ 'role-paciente': isPaciente, 'role-odontologo': isOdontologo, 'role-admin': isSystemAdmin }">
               {{ userRoleBadgeLabel }}
             </span>
           </div>
-        </div>
+        </RouterLink>
 
         <RouterLink
           to="/reservar"
@@ -382,7 +411,7 @@ watch(
         </RouterLink>
 
         <RouterLink
-          :to="userDashboardRoute"
+          :to="defaultDashboardRoute"
           class="mobile-nav-link"
           @click="isMobileMenuOpen = false"
         >
@@ -570,6 +599,29 @@ watch(
   border-color: rgba(99, 102, 241, 0.35);
 }
 
+.user-profile-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.user-profile-link:hover {
+  opacity: 0.85;
+}
+
+.mobile-user-profile-link {
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.mobile-user-profile-link:hover {
+  opacity: 0.9;
+}
+
 .user-avatar {
   width: 32px;
   height: 32px;
@@ -614,6 +666,11 @@ watch(
 .role-paciente {
   background: rgba(14, 165, 233, 0.15);
   color: #0284c7;
+}
+
+.role-odontologo {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
 }
 
 .role-admin {
