@@ -48,6 +48,14 @@ export const citasService = {
     return api.put<Cita>(`/citas/${id}`, data)
   },
 
+  actualizarEstado(id: string, data: { estado: string; diagnostico?: string | null }): Promise<Cita> {
+    return api.patch<Cita>(`/citas/${id}/estado`, data)
+  },
+
+  cancelar(id: string): Promise<Cita> {
+    return api.patch<Cita>(`/citas/${id}/cancelar`)
+  },
+
   delete(id: string): Promise<Cita> {
     return api.patch<Cita>(`/citas/${id}/cancelar`)
   },

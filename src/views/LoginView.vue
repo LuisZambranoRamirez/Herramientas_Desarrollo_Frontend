@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { getDefaultRouteByRole } from '@/utils/navigation'
+import { validarRequerido } from '@/utils/validators'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const email = ref('')
@@ -13,25 +16,25 @@ const mensajeError = ref('')
 const errorEmail = ref('')
 const errorPassword = ref('')
 
+function validarEmailField() {
+  errorEmail.value = validarRequerido(email.value, 'El usuario o correo')
+}
+
+function validarPasswordField() {
+  errorPassword.value = validarRequerido(password.value, 'La contraseña')
+}
+
 async function iniciarSesion() {
   mensajeError.value = ''
-  errorEmail.value = ''
-  errorPassword.value = ''
-
-  const usuarioNormalizado = email.value.trim().toLowerCase()
-
-  if (!usuarioNormalizado) {
-    errorEmail.value = 'El usuario o correo es obligatorio.'
-  }
-
-  if (!password.value) {
-    errorPassword.value = 'La contraseña es obligatoria.'
-  }
+  validarEmailField()
+  validarPasswordField()
 
   if (errorEmail.value || errorPassword.value) {
     mensajeError.value = 'Revisa los datos ingresados.'
     return
   }
+
+  const usuarioNormalizado = email.value.trim().toLowerCase()
 
   try {
     const exito = await authStore.login({
@@ -40,10 +43,17 @@ async function iniciarSesion() {
     })
 
     if (exito) {
-      if (authStore.userRole === 'PACIENTE') {
-        router.push('/')
+      const defaultRoute = getDefaultRouteByRole(authStore.userRole)
+      const redirectQuery = route.query.redirect
+      if (
+        typeof redirectQuery === 'string' &&
+        redirectQuery.startsWith('/') &&
+        !redirectQuery.startsWith('//') &&
+        redirectQuery !== '/login'
+      ) {
+        router.push(redirectQuery)
       } else {
-        router.push('/dashboard')
+        router.push(defaultRoute)
       }
     } else {
       mensajeError.value = 'Credenciales incorrectas. Verifica tus datos.'
@@ -109,6 +119,7 @@ async function iniciarSesion() {
               id="email"
               v-model="email"
               @input="errorEmail = ''"
+              @blur="validarEmailField"
               type="text"
               autocomplete="username"
               placeholder="admin o tu@correo.com"
@@ -132,6 +143,7 @@ async function iniciarSesion() {
               id="password"
               v-model="password"
               @input="errorPassword = ''"
+              @blur="validarPasswordField"
               :type="mostrarPassword ? 'text' : 'password'"
               placeholder="••••••••"
               :class="{ 'input-error': errorPassword }"

@@ -233,6 +233,12 @@ const guardar = async () => {
     return
   }
 
+  const hoyStr = new Date().toISOString().slice(0, 10)
+  if (modoModal.value === 'crear' && form.value.fecha < hoyStr) {
+    errorModal.value = 'No se pueden agendar citas en fechas pasadas.'
+    return
+  }
+
   guardando.value = true
   errorModal.value = null
 
