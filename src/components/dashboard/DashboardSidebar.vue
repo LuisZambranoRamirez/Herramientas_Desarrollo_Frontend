@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useAuthStore } from '@/stores/auth.store'
 
 const props = defineProps<{
   collapsed?: boolean
@@ -10,6 +12,22 @@ const emit = defineEmits<{
   (e: 'update:collapsed', value: boolean): void
   (e: 'update:mobileOpen', value: boolean): void
 }>()
+
+const authStore = useAuthStore()
+
+const isSystemAdmin = computed(() => {
+  const role = authStore.userRole?.toUpperCase()
+  return role === 'SYSTEM_ADMIN' || role === 'ADMIN'
+})
+
+const isOdontologo = computed(() => {
+  const role = authStore.userRole?.toUpperCase()
+  return role === 'ODONTOLOGO'
+})
+
+const homeRoute = computed(() => {
+  return isOdontologo.value ? '/odontologo/dashboard' : '/dashboard'
+})
 
 function toggleCollapse() {
   emit('update:collapsed', !props.collapsed)
@@ -38,7 +56,7 @@ function closeMobile() {
     >
       <!-- Cabecera del Sidebar con Logo y Botón Colapsar -->
       <div class="sidebar-header">
-        <RouterLink to="/dashboard" class="sidebar-brand" @click="closeMobile">
+        <RouterLink :to="homeRoute" class="sidebar-brand" @click="closeMobile">
           <div class="brand-logo-box">
             <span class="logo-letter">S</span>
           </div>
@@ -68,8 +86,29 @@ function closeMobile() {
 
       <!-- Menú de Navegación -->
       <nav class="sidebar-nav">
-        <!-- 1. Panel Principal -->
+        <!-- 1. Panel Principal: Odontólogo -->
         <RouterLink
+          v-if="isOdontologo"
+          to="/odontologo/dashboard"
+          class="nav-item"
+          active-class="active"
+          :title="collapsed ? 'Mi Panel' : ''"
+          @click="closeMobile"
+        >
+          <div class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="3" y="3" width="7" height="9" rx="1.5" stroke-width="2" />
+              <rect x="14" y="3" width="7" height="5" rx="1.5" stroke-width="2" />
+              <rect x="14" y="12" width="7" height="9" rx="1.5" stroke-width="2" />
+              <rect x="3" y="16" width="7" height="5" rx="1.5" stroke-width="2" />
+            </svg>
+          </div>
+          <span v-if="!collapsed" class="nav-text">Mi Panel</span>
+        </RouterLink>
+
+        <!-- 1. Panel Principal: Administrador -->
+        <RouterLink
+          v-else-if="isSystemAdmin"
           to="/dashboard"
           class="nav-item"
           active-class="active"
@@ -87,7 +126,7 @@ function closeMobile() {
           <span v-if="!collapsed" class="nav-text">Panel Principal</span>
         </RouterLink>
 
-        <!-- 2. Pacientes -->
+        <!-- 2. Pacientes (Compartido: Odontólogo y Administrador) -->
         <RouterLink
           to="/pacientes"
           class="nav-item"
@@ -103,23 +142,7 @@ function closeMobile() {
           <span v-if="!collapsed" class="nav-text">Pacientes</span>
         </RouterLink>
 
-        <!-- 3. Usuarios -->
-        <RouterLink
-          to="/usuarios"
-          class="nav-item"
-          active-class="active"
-          :title="collapsed ? 'Usuarios' : ''"
-          @click="closeMobile"
-        >
-          <div class="nav-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-          </div>
-          <span v-if="!collapsed" class="nav-text">Usuarios</span>
-        </RouterLink>
-
-        <!-- 3. Agenda y Citas -->
+        <!-- 3. Agenda y Citas (Compartido: Odontólogo y Administrador) -->
         <RouterLink
           to="/agenda"
           class="nav-item"
@@ -138,7 +161,7 @@ function closeMobile() {
           <span v-if="!collapsed" class="nav-text">Agenda y Citas</span>
         </RouterLink>
 
-        <!-- 4. Tratamientos -->
+        <!-- 4. Tratamientos (Compartido: Odontólogo y Administrador) -->
         <RouterLink
           to="/tratamientos"
           class="nav-item"
@@ -154,8 +177,26 @@ function closeMobile() {
           <span v-if="!collapsed" class="nav-text">Tratamientos</span>
         </RouterLink>
 
-        <!-- 5. Pagos -->
+        <!-- 5. Usuarios (Exclusivo: Administrador) -->
         <RouterLink
+          v-if="isSystemAdmin"
+          to="/usuarios"
+          class="nav-item"
+          active-class="active"
+          :title="collapsed ? 'Usuarios' : ''"
+          @click="closeMobile"
+        >
+          <div class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          </div>
+          <span v-if="!collapsed" class="nav-text">Usuarios</span>
+        </RouterLink>
+
+        <!-- 6. Pagos (Exclusivo: Administrador) -->
+        <RouterLink
+          v-if="isSystemAdmin"
           to="/pagos"
           class="nav-item"
           active-class="active"
@@ -171,8 +212,9 @@ function closeMobile() {
           <span v-if="!collapsed" class="nav-text">Pagos</span>
         </RouterLink>
 
-        <!-- 6. Inventario y Proveedores -->
+        <!-- 7. Inventario y Stock (Exclusivo: Administrador) -->
         <RouterLink
+          v-if="isSystemAdmin"
           to="/inventario"
           class="nav-item"
           active-class="active"
@@ -187,8 +229,9 @@ function closeMobile() {
           <span v-if="!collapsed" class="nav-text">Inventario y Stock</span>
         </RouterLink>
 
-        <!-- 7. Configuración -->
+        <!-- 8. Configuración (Exclusivo: Administrador) -->
         <RouterLink
+          v-if="isSystemAdmin"
           to="/configuracion"
           class="nav-item"
           active-class="active"

@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { useTheme } from '@/composables/useTheme'
+import { getRoleLabel } from '@/utils/navigation'
 
 const emit = defineEmits<{
   (e: 'toggleMobile'): void
@@ -15,6 +16,7 @@ const { isDark, toggleTheme } = useTheme()
 
 const titulosPorRuta: Record<string, string> = {
   '/dashboard': 'Panel Principal',
+  '/odontologo/dashboard': 'Panel del Especialista',
   '/pacientes': 'Gestión de Pacientes',
   '/usuarios': 'Gestión de Usuarios',
   '/agenda': 'Agenda y Citas Médicas',
@@ -32,6 +34,10 @@ const usuarioNombre = computed(() => {
 })
 
 const inicial = computed(() => usuarioNombre.value.charAt(0).toUpperCase() || 'U')
+
+const userRoleLabel = computed(() => {
+  return getRoleLabel(authStore.userRole)
+})
 
 const cerrarSesion = () => {
   authStore.logout()
@@ -73,7 +79,7 @@ const cerrarSesion = () => {
         </div>
         <div class="user-info">
           <span class="user-name">{{ usuarioNombre }}</span>
-          <span class="user-role">Administrador</span>
+          <span class="user-role">{{ userRoleLabel }}</span>
         </div>
       </div>
 

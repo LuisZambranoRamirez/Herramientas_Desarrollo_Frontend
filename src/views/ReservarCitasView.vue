@@ -72,9 +72,15 @@ const buildInitialPatientData = (): PatientData => ({
 
 const patientData = ref<PatientData>(buildInitialPatientData())
 
-const selectedDateIso = computed(
-  () => `2026-08-${String(selectedDayNumber.value).padStart(2, '0')}`,
-)
+const selectedDateIso = computed(() => {
+  const hoy = new Date()
+  const diaNum = selectedDayNumber.value || hoy.getDate()
+  // Usar año y mes actual o posterior para asegurar que no sea fecha pasada
+  const anio = hoy.getFullYear()
+  const mes = hoy.getMonth() + 1
+  const dia = String(Math.max(hoy.getDate(), diaNum)).padStart(2, '0')
+  return `${anio}-${String(mes).padStart(2, '0')}-${dia}`
+})
 
 // Texto de fecha formateada
 const formattedDateText = computed(() => {

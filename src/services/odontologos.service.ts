@@ -15,6 +15,10 @@ export const odontologosService = {
     return api.get<Odontologo[]>('/odontologos')
   },
 
+  getMe(): Promise<Odontologo> {
+    return api.get<Odontologo>('/odontologos/me')
+  },
+
   getByDni(dni: string): Promise<Odontologo | undefined> {
     return api.get<Odontologo>(`/odontologos/${dni}`)
   },

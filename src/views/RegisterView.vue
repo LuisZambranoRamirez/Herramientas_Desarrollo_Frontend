@@ -2,6 +2,16 @@
 import { ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { getDefaultRouteByRole } from '@/utils/navigation'
+import {
+  validarDni,
+  validarEmail,
+  validarTelefono,
+  validarNombre,
+  validarPassword,
+  validarConfirmPassword,
+  validarFechaNacimiento,
+} from '@/utils/validators'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -25,88 +35,80 @@ const mensajeError = ref('')
 const mensajeExito = ref('')
 
 // Errores por campo
-const errores = ref<Record<string, string>>({})
+const errores = ref<Record<string, string>>({
+  dni: '',
+  nombres: '',
+  apellidos: '',
+  telefono: '',
+  correo: '',
+  fechaNacimiento: '',
+  password: '',
+  confirmPassword: '',
+})
 
 function limpiarErrores() {
-  errores.value = {}
+  errores.value = {
+    dni: '',
+    nombres: '',
+    apellidos: '',
+    telefono: '',
+    correo: '',
+    fechaNacimiento: '',
+    password: '',
+    confirmPassword: '',
+  }
   mensajeError.value = ''
 }
 
+function validarCampo(campo: string) {
+  switch (campo) {
+    case 'dni':
+      errores.value.dni = validarDni(dni.value)
+      break
+    case 'nombres':
+      errores.value.nombres = validarNombre(nombres.value, 'Los nombres')
+      break
+    case 'apellidos':
+      errores.value.apellidos = validarNombre(apellidos.value, 'Los apellidos')
+      break
+    case 'telefono':
+      errores.value.telefono = validarTelefono(telefono.value)
+      break
+    case 'correo':
+      errores.value.correo = validarEmail(correo.value)
+      break
+    case 'fechaNacimiento':
+      errores.value.fechaNacimiento = validarFechaNacimiento(fechaNacimiento.value)
+      break
+    case 'password':
+      errores.value.password = validarPassword(password.value)
+      if (confirmPassword.value) {
+        errores.value.confirmPassword = validarConfirmPassword(password.value, confirmPassword.value)
+      }
+      break
+    case 'confirmPassword':
+      errores.value.confirmPassword = validarConfirmPassword(password.value, confirmPassword.value)
+      break
+  }
+}
+
 function validarFormulario(): boolean {
-  limpiarErrores()
-  let valido = true
+  validarCampo('dni')
+  validarCampo('nombres')
+  validarCampo('apellidos')
+  validarCampo('telefono')
+  validarCampo('correo')
+  validarCampo('fechaNacimiento')
+  validarCampo('password')
+  validarCampo('confirmPassword')
 
-  const dniLimpio = dni.value.trim()
-  if (!dniLimpio) {
-    errores.value.dni = 'El DNI es obligatorio.'
-    valido = false
-  } else if (!/^\d{8}$/.test(dniLimpio)) {
-    errores.value.dni = 'El DNI debe tener exactamente 8 dígitos numéricos.'
-    valido = false
+  const hayErrores = Object.values(errores.value).some((err) => err !== '')
+  if (hayErrores) {
+    mensajeError.value = 'Por favor corrige los campos señalados antes de continuar.'
+    return false
   }
-
-  const nombresLimpios = nombres.value.trim()
-  if (!nombresLimpios) {
-    errores.value.nombres = 'Los nombres son obligatorios.'
-    valido = false
-  } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(nombresLimpios)) {
-    errores.value.nombres = 'Solo se permiten letras.'
-    valido = false
-  }
-
-  const apellidosLimpios = apellidos.value.trim()
-  if (!apellidosLimpios) {
-    errores.value.apellidos = 'Los apellidos son obligatorios.'
-    valido = false
-  } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(apellidosLimpios)) {
-    errores.value.apellidos = 'Solo se permiten letras.'
-    valido = false
-  }
-
-  const telLimpio = telefono.value.trim().replace(/\D/g, '')
-  if (!telLimpio) {
-    errores.value.telefono = 'El teléfono es obligatorio.'
-    valido = false
-  } else if (telLimpio.length !== 9) {
-    errores.value.telefono = 'El teléfono debe tener 9 dígitos.'
-    valido = false
-  }
-
-  const correoLimpio = correo.value.trim().toLowerCase()
-  if (!correoLimpio) {
-    errores.value.correo = 'El correo electrónico es obligatorio.'
-    valido = false
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoLimpio)) {
-    errores.value.correo = 'Ingresa un correo electrónico válido.'
-    valido = false
-  }
-
-  if (!fechaNacimiento.value) {
-    errores.value.fechaNacimiento = 'La fecha de nacimiento es obligatoria.'
-    valido = false
-  }
-
-  if (!password.value) {
-    errores.value.password = 'La contraseña es obligatoria.'
-    valido = false
-  } else if (password.value.length < 6) {
-    errores.value.password = 'La contraseña debe tener al menos 6 caracteres.'
-    valido = false
-  }
-
-  if (!confirmPassword.value) {
-    errores.value.confirmPassword = 'Debes confirmar la contraseña.'
-    valido = false
-  } else if (password.value !== confirmPassword.value) {
-    errores.value.confirmPassword = 'Las contraseñas no coinciden.'
-    valido = false
-  }
-
-  if (!valido) {
-    mensajeError.value = 'Por favor corrige los campos señalados.'
-  }
-
-  return valido
+  mensajeError.value = ''
+  return true
 }
 
 async function registrarse() {
@@ -135,11 +137,7 @@ async function registrarse() {
       mensajeExito.value = '¡Tu cuenta ha sido creada exitosamente! Redirigiendo...'
       setTimeout(() => {
         if (authStore.isAuthenticated) {
-          if (authStore.userRole === 'PACIENTE') {
-            router.push('/')
-          } else {
-            router.push('/dashboard')
-          }
+          router.push(getDefaultRouteByRole(authStore.userRole))
         } else {
           router.push('/login')
         }
@@ -199,6 +197,7 @@ async function registrarse() {
                 id="dni"
                 v-model="dni"
                 @input="errores.dni = ''"
+                @blur="validarCampo('dni')"
                 type="text"
                 maxlength="8"
                 inputmode="numeric"
@@ -218,6 +217,7 @@ async function registrarse() {
                 id="telefono"
                 v-model="telefono"
                 @input="errores.telefono = ''"
+                @blur="validarCampo('telefono')"
                 type="tel"
                 maxlength="9"
                 inputmode="numeric"
@@ -237,6 +237,7 @@ async function registrarse() {
                 id="nombres"
                 v-model="nombres"
                 @input="errores.nombres = ''"
+                @blur="validarCampo('nombres')"
                 type="text"
                 placeholder="Ej. Juan Carlos"
                 :class="{ 'input-error': errores.nombres }"
@@ -254,6 +255,7 @@ async function registrarse() {
                 id="apellidos"
                 v-model="apellidos"
                 @input="errores.apellidos = ''"
+                @blur="validarCampo('apellidos')"
                 type="text"
                 placeholder="Ej. Pérez García"
                 :class="{ 'input-error': errores.apellidos }"
@@ -271,6 +273,7 @@ async function registrarse() {
                 id="correo"
                 v-model="correo"
                 @input="errores.correo = ''"
+                @blur="validarCampo('correo')"
                 type="email"
                 inputmode="email"
                 autocomplete="email"
@@ -290,6 +293,7 @@ async function registrarse() {
                 id="fechaNacimiento"
                 v-model="fechaNacimiento"
                 @input="errores.fechaNacimiento = ''"
+                @blur="validarCampo('fechaNacimiento')"
                 type="date"
                 :class="{ 'input-error': errores.fechaNacimiento }"
               />
@@ -320,8 +324,9 @@ async function registrarse() {
                 id="password"
                 v-model="password"
                 @input="errores.password = ''"
+                @blur="validarCampo('password')"
                 :type="mostrarPassword ? 'text' : 'password'"
-                placeholder="Mínimo 6 caracteres"
+                placeholder="Mínimo 8 caracteres (Mayús, minús, núm)"
                 :class="{ 'input-error': errores.password }"
               />
               <button
@@ -345,6 +350,7 @@ async function registrarse() {
                 id="confirmPassword"
                 v-model="confirmPassword"
                 @input="errores.confirmPassword = ''"
+                @blur="validarCampo('confirmPassword')"
                 :type="mostrarConfirmPassword ? 'text' : 'password'"
                 placeholder="Repite tu contraseña"
                 :class="{ 'input-error': errores.confirmPassword }"

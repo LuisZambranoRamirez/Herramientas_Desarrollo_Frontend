@@ -15,14 +15,14 @@ import NavbarHeader from '@/components/NavbarHeader.vue'
 
 const route = useRoute()
 
-const rutasInternas = ['/dashboard', '/inventario', '/pacientes', '/usuarios', '/agenda', '/tratamientos', '/pagos', '/configuracion']
+const rutasInternas = ['/dashboard', '/inventario', '/pacientes', '/usuarios', '/agenda', '/tratamientos', '/pagos', '/configuracion', '/odontologo']
 
 const isDashboardRoute = computed(() => {
 return rutasInternas.some(ruta => route.path.startsWith(ruta))
 })
 
 const isLoginRoute = computed(() => {
-  return route.path === '/login'
+  return route.path === '/login' || route.path === '/registro'
 })
 </script>
 
