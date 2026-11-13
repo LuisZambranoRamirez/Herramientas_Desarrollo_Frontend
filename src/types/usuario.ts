@@ -7,8 +7,11 @@ export interface Usuario {
   telefono?: string
   activo: boolean
   user_role: UserRole
+  role?: string
   fecha_registro: string
   ultimo_acceso?: string
+  odontologo?: any
+  paciente?: any
 }
 
 export interface CrearUsuarioDto {

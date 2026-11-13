@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
-import { getDefaultRouteByRole } from '@/utils/navigation'
+import { getDefaultRouteByRole, extractUserRole } from '@/utils/navigation'
 import { validarRequerido } from '@/utils/validators'
 
 const router = useRouter()
@@ -43,13 +43,21 @@ async function iniciarSesion() {
     })
 
     if (exito) {
-      const defaultRoute = getDefaultRouteByRole(authStore.userRole)
+      const role =
+        extractUserRole(authStore.userRole) ||
+        extractUserRole(authStore.user) ||
+        'PACIENTE'
+      const defaultRoute = getDefaultRouteByRole(role)
       const redirectQuery = route.query.redirect
+
+      // Redirigir a query.redirect solo si es una ruta interna válida y distinta a la home '/' o '/login'
       if (
         typeof redirectQuery === 'string' &&
         redirectQuery.startsWith('/') &&
         !redirectQuery.startsWith('//') &&
-        redirectQuery !== '/login'
+        redirectQuery !== '/' &&
+        redirectQuery !== '/login' &&
+        redirectQuery !== '/registro'
       ) {
         router.push(redirectQuery)
       } else {
