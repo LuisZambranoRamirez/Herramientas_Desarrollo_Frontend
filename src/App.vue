@@ -22,7 +22,7 @@ return rutasInternas.some(ruta => route.path.startsWith(ruta))
 })
 
 const isLoginRoute = computed(() => {
-  return route.path === '/login'
+  return route.path === '/login' || route.path === '/registro'
 })
 </script>
 

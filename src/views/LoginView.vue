@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { getDefaultRouteByRole } from '@/utils/navigation'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const email = ref('')
@@ -40,10 +42,17 @@ async function iniciarSesion() {
     })
 
     if (exito) {
-      if (authStore.userRole === 'PACIENTE') {
-        router.push('/')
+      const defaultRoute = getDefaultRouteByRole(authStore.userRole)
+      const redirectQuery = route.query.redirect
+      if (
+        typeof redirectQuery === 'string' &&
+        redirectQuery.startsWith('/') &&
+        !redirectQuery.startsWith('//') &&
+        redirectQuery !== '/login'
+      ) {
+        router.push(redirectQuery)
       } else {
-        router.push('/dashboard')
+        router.push(defaultRoute)
       }
     } else {
       mensajeError.value = 'Credenciales incorrectas. Verifica tus datos.'

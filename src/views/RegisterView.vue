@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { getDefaultRouteByRole } from '@/utils/navigation'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -135,11 +136,7 @@ async function registrarse() {
       mensajeExito.value = '¡Tu cuenta ha sido creada exitosamente! Redirigiendo...'
       setTimeout(() => {
         if (authStore.isAuthenticated) {
-          if (authStore.userRole === 'PACIENTE') {
-            router.push('/')
-          } else {
-            router.push('/dashboard')
-          }
+          router.push(getDefaultRouteByRole(authStore.userRole))
         } else {
           router.push('/login')
         }

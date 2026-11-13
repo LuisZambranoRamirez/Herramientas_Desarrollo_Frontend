@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { getDefaultRouteByRole, getRoleLabel } from '@/utils/navigation'
 
 const route = useRoute()
 const router = useRouter()
@@ -10,6 +11,21 @@ const isMobileMenuOpen = ref(false)
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isPaciente = computed(() => authStore.userRole === 'PACIENTE')
+
+const userDashboardRoute = computed(() => {
+  return getDefaultRouteByRole(authStore.userRole)
+})
+
+const dashboardButtonLabel = computed(() => {
+  const role = authStore.userRole?.toUpperCase()
+  if (role === 'PACIENTE' || role === 'CLIENTE') return 'Mi Panel'
+  if (role === 'ODONTOLOGO') return 'Mi Panel'
+  return 'Intranet'
+})
+
+const userRoleBadgeLabel = computed(() => {
+  return getRoleLabel(authStore.userRole)
+})
 
 const displayNombre = computed(() => {
   if (!authStore.user) return ''
@@ -249,17 +265,16 @@ watch(
           <div class="user-info">
             <span class="user-greeting">Hola, <strong>{{ displayNombre }}</strong></span>
             <span class="user-role-pill" :class="{ 'role-paciente': isPaciente, 'role-admin': !isPaciente }">
-              {{ isPaciente ? 'Paciente' : (authStore.userRole === 'ODONTOLOGO' ? 'Odontólogo' : 'Admin') }}
+              {{ userRoleBadgeLabel }}
             </span>
           </div>
 
           <RouterLink
-            v-if="!isPaciente"
-            to="/dashboard"
+            :to="userDashboardRoute"
             class="nav-intranet-chip"
-            title="Ir a la Intranet"
+            :title="`Ir a ${dashboardButtonLabel}`"
           >
-            Intranet
+            {{ dashboardButtonLabel }}
           </RouterLink>
 
           <button
@@ -352,7 +367,7 @@ watch(
           <div class="user-info">
             <span class="user-greeting">Hola, <strong>{{ displayNombre }}</strong></span>
             <span class="user-role-pill" :class="{ 'role-paciente': isPaciente, 'role-admin': !isPaciente }">
-              {{ isPaciente ? 'Paciente' : (authStore.userRole === 'ODONTOLOGO' ? 'Odontólogo' : 'Admin') }}
+              {{ userRoleBadgeLabel }}
             </span>
           </div>
         </div>
@@ -367,12 +382,11 @@ watch(
         </RouterLink>
 
         <RouterLink
-          v-if="!isPaciente"
-          to="/dashboard"
+          :to="userDashboardRoute"
           class="mobile-nav-link"
           @click="isMobileMenuOpen = false"
         >
-          📊 Panel Intranet
+          📊 {{ dashboardButtonLabel }}
         </RouterLink>
 
         <button
