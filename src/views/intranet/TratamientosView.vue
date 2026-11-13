@@ -360,8 +360,8 @@ const guardar = async () => {
     return
   }
 
-  if (Number.isNaN(precio) || precio < 0) {
-    errorModal.value = 'El precio del tratamiento no puede ser negativo.'
+  if (Number.isNaN(precio) || precio <= 0) {
+    errorModal.value = 'El precio del tratamiento debe ser mayor a cero.'
     return
   }
 

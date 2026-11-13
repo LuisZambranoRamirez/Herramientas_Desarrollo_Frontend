@@ -224,14 +224,27 @@
             <button class="modal-close" @click="mostrarModalAgendar = false">&times;</button>
           </div>
           <div class="modal-body">
+            <div v-if="errorCitaModal.general" class="alert-box error-alert mb-3">
+              ⚠️ {{ errorCitaModal.general }}
+            </div>
+
             <div class="form-group">
               <label>Selecciona un Especialista:</label>
-              <select v-model="nuevaCitaForm.dni_odontologo" class="form-control">
+              <select
+                v-model="nuevaCitaForm.dni_odontologo"
+                class="form-control"
+                :class="{ 'input-error': errorCitaModal.dni_odontologo }"
+                @change="errorCitaModal.dni_odontologo = ''"
+                @blur="validarCampoCita('dni_odontologo')"
+              >
                 <option disabled value="">Elige a tu odontólogo</option>
                 <option v-for="doc in odontologos" :key="doc.dni" :value="doc.dni">
                   Dr(a). {{ doc.nombres }} {{ doc.apellidos }} — {{ doc.especialidad }}
                 </option>
               </select>
+              <span v-if="errorCitaModal.dni_odontologo" class="field-error">
+                ⚠ {{ errorCitaModal.dni_odontologo }}
+              </span>
             </div>
 
             <div class="form-row">
@@ -242,7 +255,13 @@
                   type="date"
                   :min="fechaMinima"
                   class="form-control"
+                  :class="{ 'input-error': errorCitaModal.fecha }"
+                  @change="errorCitaModal.fecha = ''"
+                  @blur="validarCampoCita('fecha')"
                 />
+                <span v-if="errorCitaModal.fecha" class="field-error">
+                  ⚠ {{ errorCitaModal.fecha }}
+                </span>
               </div>
 
               <div class="form-group">
@@ -275,8 +294,14 @@
                 v-model="nuevaCitaForm.motivo_consulta"
                 rows="3"
                 class="form-control"
+                :class="{ 'input-error': errorCitaModal.motivo_consulta }"
                 placeholder="Describe brevemente tus síntomas o el servicio que necesitas..."
+                @input="errorCitaModal.motivo_consulta = ''"
+                @blur="validarCampoCita('motivo_consulta')"
               ></textarea>
+              <span v-if="errorCitaModal.motivo_consulta" class="field-error">
+                ⚠ {{ errorCitaModal.motivo_consulta }}
+              </span>
             </div>
           </div>
           <div class="modal-footer">
@@ -305,6 +330,7 @@ import { pacientesService } from '@/services/pacientes.service'
 import { citasService } from '@/services/citas.service'
 import { tratamientosService } from '@/services/tratamientos.service'
 import FooterSection from '@/components/FooterSection.vue'
+import { validarFechaNoPasada, validarRequerido } from '@/utils/validators'
 import type {
   Paciente,
   Cita,
@@ -493,28 +519,70 @@ async function cargarDatos() {
 }
 
 // Agendar Cita
+const errorCitaModal = ref<Record<string, string>>({
+  dni_odontologo: '',
+  fecha: '',
+  motivo_consulta: '',
+  general: '',
+})
+
+function validarCampoCita(campo: string) {
+  switch (campo) {
+    case 'dni_odontologo':
+      errorCitaModal.value.dni_odontologo = validarRequerido(
+        nuevaCitaForm.value.dni_odontologo,
+        'El odontólogo',
+      )
+      break
+    case 'fecha':
+      errorCitaModal.value.fecha = validarFechaNoPasada(nuevaCitaForm.value.fecha)
+      break
+    case 'motivo_consulta':
+      errorCitaModal.value.motivo_consulta = validarRequerido(
+        nuevaCitaForm.value.motivo_consulta,
+        'El motivo de consulta',
+      )
+      break
+  }
+}
+
+function validarCitaForm(): boolean {
+  validarCampoCita('dni_odontologo')
+  validarCampoCita('fecha')
+  validarCampoCita('motivo_consulta')
+
+  return (
+    !errorCitaModal.value.dni_odontologo &&
+    !errorCitaModal.value.fecha &&
+    !errorCitaModal.value.motivo_consulta
+  )
+}
+
 function abrirModalAgendar() {
   if (odontologos.value.length > 0 && odontologos.value[0] && !nuevaCitaForm.value.dni_odontologo) {
     nuevaCitaForm.value.dni_odontologo = odontologos.value[0].dni
   }
   nuevaCitaForm.value.motivo_consulta = ''
   motivoSeleccionadoRapido.value = ''
+  errorCitaModal.value = {
+    dni_odontologo: '',
+    fecha: '',
+    motivo_consulta: '',
+    general: '',
+  }
   mostrarModalAgendar.value = true
 }
 
 function seleccionarMotivoRapido() {
   if (motivoSeleccionadoRapido.value) {
     nuevaCitaForm.value.motivo_consulta = motivoSeleccionadoRapido.value
+    errorCitaModal.value.motivo_consulta = ''
   }
 }
 
 async function guardarNuevaCita() {
-  if (!nuevaCitaForm.value.dni_odontologo) {
-    alert('Por favor selecciona un odontólogo.')
-    return
-  }
-  if (!nuevaCitaForm.value.motivo_consulta.trim()) {
-    alert('Por favor indica el motivo de tu consulta.')
+  errorCitaModal.value.general = ''
+  if (!validarCitaForm()) {
     return
   }
 
@@ -531,9 +599,9 @@ async function guardarNuevaCita() {
     // Recargar citas
     misCitas.value = await citasService.getMisCitas()
     tabActiva.value = 'citas'
-    alert('¡Tu cita ha sido agendada con éxito!')
   } catch (error: any) {
-    alert(error.message || 'Error al agendar la cita. Verifica que el horario esté disponible.')
+    errorCitaModal.value.general =
+      error.message || 'Error al agendar la cita. Verifica que el horario esté disponible.'
   } finally {
     guardandoCita.value = false
   }
@@ -1124,5 +1192,18 @@ onMounted(cargarDatos)
   .form-row {
     grid-template-columns: 1fr;
   }
+}
+
+.input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15) !important;
+}
+
+.field-error {
+  color: #ef4444;
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: block;
+  margin-top: 4px;
 }
 </style>

@@ -343,6 +343,7 @@
                       :class="{ 'has-error': erroresForm.username }"
                       placeholder="ej. juan.perez"
                       @input="validarCampo('username')"
+                      @blur="validarCampo('username')"
                     />
                   </div>
                   <span v-if="erroresForm.username" class="error-text">{{ erroresForm.username }}</span>
@@ -357,8 +358,9 @@
                       :type="mostrarPassword ? 'text' : 'password'"
                       class="form-input"
                       :class="{ 'has-error': erroresForm.password }"
-                      placeholder="Mínimo 6 caracteres"
+                      placeholder="Mínimo 8 car. (Mayús, minús, núm)"
                       @input="validarCampo('password')"
+                      @blur="validarCampo('password')"
                     />
                     <button
                       type="button"
@@ -388,6 +390,7 @@
                     :class="{ 'has-error': erroresForm.nombre_completo }"
                     placeholder="ej. Juan Carlos Pérez Silva"
                     @input="validarCampo('nombre_completo')"
+                    @blur="validarCampo('nombre_completo')"
                   />
                   <span v-if="erroresForm.nombre_completo" class="error-text">{{ erroresForm.nombre_completo }}</span>
                 </div>
@@ -415,6 +418,7 @@
                     :class="{ 'has-error': erroresForm.correo }"
                     placeholder="ej. usuario@solident.com"
                     @input="validarCampo('correo')"
+                    @blur="validarCampo('correo')"
                   />
                   <span v-if="erroresForm.correo" class="error-text">{{ erroresForm.correo }}</span>
                 </div>
@@ -430,6 +434,7 @@
                     :class="{ 'has-error': erroresForm.telefono }"
                     placeholder="ej. 987654321"
                     @input="validarCampo('telefono')"
+                    @blur="validarCampo('telefono')"
                   />
                   <span v-if="erroresForm.telefono" class="error-text">{{ erroresForm.telefono }}</span>
                 </div>
@@ -627,6 +632,13 @@ import { ref, computed, onMounted } from 'vue'
 import DashboardLayout from '@/components/dashboard/DashboardLayout.vue'
 import { usuariosService } from '@/services/usuarios.service'
 import type { Usuario, UserRole } from '@/types'
+import {
+  validarUsername,
+  validarPassword,
+  validarNombre,
+  validarEmail,
+  validarTelefono,
+} from '@/utils/validators'
 
 // Estado reactivo
 const usuarios = ref<Usuario[]>([])
@@ -784,55 +796,27 @@ const validarCampo = (campo: string) => {
   switch (campo) {
     case 'username': {
       formCrear.value.username = (formCrear.value.username || '').replace(/[^a-zA-Z0-9._-]/g, '')
-      const u = formCrear.value.username.trim()
-      if (!u) {
-        erroresForm.value.username = 'El nombre de usuario es obligatorio.'
-      } else if (u.length < 3) {
-        erroresForm.value.username = 'Debe tener al menos 3 caracteres.'
-      } else {
-        erroresForm.value.username = ''
-      }
+      erroresForm.value.username = validarUsername(formCrear.value.username)
       break
     }
     case 'password': {
-      const p = formCrear.value.password
-      if (!p) {
-        erroresForm.value.password = 'La contraseña es obligatoria.'
-      } else if (p.length < 6) {
-        erroresForm.value.password = 'La contraseña debe tener al menos 6 caracteres.'
-      } else {
-        erroresForm.value.password = ''
-      }
+      erroresForm.value.password = validarPassword(formCrear.value.password)
       break
     }
     case 'nombre_completo': {
       const n = formCrear.value.nombre_completo.trim()
-      if (!n) {
-        erroresForm.value.nombre_completo = 'El nombre completo es obligatorio.'
-      } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(n)) {
-        erroresForm.value.nombre_completo = 'El nombre solo debe contener letras.'
-      } else {
-        erroresForm.value.nombre_completo = ''
-      }
+      erroresForm.value.nombre_completo = n ? validarNombre(n, 'El nombre completo') : ''
       break
     }
     case 'correo': {
       const c = formCrear.value.correo.trim()
-      if (c && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c)) {
-        erroresForm.value.correo = 'Formato de correo electrónico inválido.'
-      } else {
-        erroresForm.value.correo = ''
-      }
+      erroresForm.value.correo = c ? validarEmail(c) : ''
       break
     }
     case 'telefono': {
       formCrear.value.telefono = (formCrear.value.telefono || '').replace(/\D/g, '')
       const t = formCrear.value.telefono
-      if (t && t.length !== 9) {
-        erroresForm.value.telefono = 'El teléfono debe tener exactamente 9 dígitos.'
-      } else {
-        erroresForm.value.telefono = ''
-      }
+      erroresForm.value.telefono = t ? validarTelefono(t, false) : ''
       break
     }
   }

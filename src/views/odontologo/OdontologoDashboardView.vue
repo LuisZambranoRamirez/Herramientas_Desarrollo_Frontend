@@ -331,14 +331,27 @@
             <button class="modal-close" @click="mostrarModalTratamiento = false">&times;</button>
           </div>
           <div class="modal-body">
+            <div v-if="errorTratamientoModal.general" class="alert-box error-alert mb-3">
+              ⚠️ {{ errorTratamientoModal.general }}
+            </div>
+
             <div class="form-group">
               <label>Paciente:</label>
-              <select v-model="tratamientoForm.dni_paciente" class="form-control">
+              <select
+                v-model="tratamientoForm.dni_paciente"
+                class="form-control"
+                :class="{ 'input-error': errorTratamientoModal.dni_paciente }"
+                @change="errorTratamientoModal.dni_paciente = ''"
+                @blur="validarCampoTratamiento('dni_paciente')"
+              >
                 <option disabled value="">Seleccione un paciente</option>
                 <option v-for="p in pacientes" :key="p.dni" :value="p.dni">
                   {{ p.nombres }} {{ p.apellidos }} (DNI: {{ p.dni }})
                 </option>
               </select>
+              <span v-if="errorTratamientoModal.dni_paciente" class="field-error">
+                ⚠ {{ errorTratamientoModal.dni_paciente }}
+              </span>
             </div>
 
             <div class="form-group">
@@ -359,11 +372,17 @@
                 <input
                   v-model.number="tratamientoForm.precio"
                   type="number"
-                  min="0"
+                  min="1"
                   step="10"
                   class="form-control"
+                  :class="{ 'input-error': errorTratamientoModal.precio }"
                   placeholder="0.00"
+                  @input="errorTratamientoModal.precio = ''"
+                  @blur="validarCampoTratamiento('precio')"
                 />
+                <span v-if="errorTratamientoModal.precio" class="field-error">
+                  ⚠ {{ errorTratamientoModal.precio }}
+                </span>
               </div>
 
               <div class="form-group">
@@ -383,8 +402,14 @@
                 v-model="tratamientoForm.observaciones"
                 rows="3"
                 class="form-control"
+                :class="{ 'input-error': errorTratamientoModal.observaciones }"
                 placeholder="Detalles del procedimiento, piezas dentales involucradas, etc."
+                @input="errorTratamientoModal.observaciones = ''"
+                @blur="validarCampoTratamiento('observaciones')"
               ></textarea>
+              <span v-if="errorTratamientoModal.observaciones" class="field-error">
+                ⚠ {{ errorTratamientoModal.observaciones }}
+              </span>
             </div>
           </div>
           <div class="modal-footer">
@@ -411,6 +436,7 @@ import { odontologosService } from '@/services/odontologos.service'
 import { citasService } from '@/services/citas.service'
 import { pacientesService } from '@/services/pacientes.service'
 import { tratamientosService } from '@/services/tratamientos.service'
+import { validarDni, validarMontoPositivo, validarRequerido } from '@/utils/validators'
 import type {
   Odontologo,
   Cita,
@@ -666,6 +692,45 @@ async function guardarEstadoCita() {
 }
 
 // Registro de Nuevo Tratamiento
+const errorTratamientoModal = ref<Record<string, string>>({
+  dni_paciente: '',
+  precio: '',
+  observaciones: '',
+  general: '',
+})
+
+function validarCampoTratamiento(campo: string) {
+  switch (campo) {
+    case 'dni_paciente':
+      errorTratamientoModal.value.dni_paciente = validarDni(tratamientoForm.value.dni_paciente)
+      break
+    case 'precio':
+      errorTratamientoModal.value.precio = validarMontoPositivo(
+        tratamientoForm.value.precio,
+        'El precio',
+      )
+      break
+    case 'observaciones':
+      errorTratamientoModal.value.observaciones = validarRequerido(
+        tratamientoForm.value.observaciones,
+        'Las observaciones clínicas',
+      )
+      break
+  }
+}
+
+function validarTratamientoForm(): boolean {
+  validarCampoTratamiento('dni_paciente')
+  validarCampoTratamiento('precio')
+  validarCampoTratamiento('observaciones')
+
+  return (
+    !errorTratamientoModal.value.dni_paciente &&
+    !errorTratamientoModal.value.precio &&
+    !errorTratamientoModal.value.observaciones
+  )
+}
+
 function abrirModalTratamiento(paciente?: Paciente) {
   if (paciente) {
     tratamientoForm.value.dni_paciente = paciente.dni
@@ -677,12 +742,23 @@ function abrirModalTratamiento(paciente?: Paciente) {
   tratamientoForm.value.observaciones = ''
   tratamientoForm.value.precio = 120
   tratamientoForm.value.estado = 'INICIADO'
+  errorTratamientoModal.value = {
+    dni_paciente: '',
+    precio: '',
+    observaciones: '',
+    general: '',
+  }
   mostrarModalTratamiento.value = true
 }
 
 async function guardarNuevoTratamiento() {
+  errorTratamientoModal.value.general = ''
+  if (!validarTratamientoForm()) {
+    return
+  }
+
   if (!doctorPerfil.value?.dni && !authStore.currentUser) {
-    alert('No se pudo identificar el DNI del odontólogo en sesión.')
+    errorTratamientoModal.value.general = 'No se pudo identificar el DNI del odontólogo en sesión.'
     return
   }
 
@@ -696,7 +772,7 @@ async function guardarNuevoTratamiento() {
       tratamiento: tratamientoForm.value.tratamiento,
       precio: tratamientoForm.value.precio,
       estado: tratamientoForm.value.estado,
-      observaciones: tratamientoForm.value.observaciones,
+      observaciones: tratamientoForm.value.observaciones.trim(),
     })
 
     mostrarModalTratamiento.value = false
@@ -706,7 +782,7 @@ async function guardarNuevoTratamiento() {
       seleccionarPaciente(pacienteSeleccionado.value)
     }
   } catch (error: any) {
-    alert(error.message || 'Error al registrar el tratamiento.')
+    errorTratamientoModal.value.general = error.message || 'Error al registrar el tratamiento.'
   } finally {
     guardandoTratamiento.value = false
   }

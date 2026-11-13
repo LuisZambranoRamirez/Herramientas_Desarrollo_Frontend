@@ -4,6 +4,14 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import DashboardLayout from '@/components/dashboard/DashboardLayout.vue'
 import { pacientesService } from '@/services/pacientes.service'
+import {
+  validarDni,
+  validarEmail,
+  validarTelefono,
+  validarNombre,
+  validarUsername,
+  validarFechaNacimiento,
+} from '@/utils/validators'
 
 import type {
   Paciente,
@@ -38,67 +46,33 @@ const validarCampo = (campo: string) => {
   switch (campo) {
     case 'dni':
       form.value.dni = (form.value.dni || '').replace(/\D/g, '')
-      if (!form.value.dni) {
-        erroresForm.value.dni = 'El DNI es obligatorio.'
-      } else if (form.value.dni.length !== 8) {
-        erroresForm.value.dni = 'El DNI debe tener exactamente 8 dígitos.'
-      } else {
-        erroresForm.value.dni = ''
-      }
+      erroresForm.value.dni = validarDni(form.value.dni)
       break
 
     case 'telefono':
       form.value.telefono = (form.value.telefono || '').replace(/\D/g, '')
-      if (form.value.telefono && form.value.telefono.length !== 9) {
-        erroresForm.value.telefono = 'El teléfono debe tener 9 dígitos.'
-      } else {
-        erroresForm.value.telefono = ''
-      }
+      erroresForm.value.telefono = form.value.telefono ? validarTelefono(form.value.telefono, false) : ''
       break
 
-case 'username':
-      // Borra automáticamente cualquier número o símbolo, permitiendo solo letras
-      form.value.username = (form.value.username || '').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '')
-      erroresForm.value.username = !form.value.username.trim() ? 'El usuario es obligatorio.' : ''
+    case 'username':
+      form.value.username = (form.value.username || '').trim()
+      erroresForm.value.username = validarUsername(form.value.username)
       break
 
     case 'nombres':
-      form.value.nombres = (form.value.nombres || '').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')
-      erroresForm.value.nombres = !form.value.nombres.trim() ? 'El nombre es obligatorio.' : ''
+      erroresForm.value.nombres = validarNombre(form.value.nombres, 'Los nombres')
       break
 
     case 'apellidos':
-      form.value.apellidos = (form.value.apellidos || '').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')
-      erroresForm.value.apellidos = !form.value.apellidos.trim() ? 'Los apellidos son obligatorios.' : ''
+      erroresForm.value.apellidos = validarNombre(form.value.apellidos, 'Los apellidos')
       break
 
     case 'correo':
-      if (form.value.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.correo)) {
-        erroresForm.value.correo = 'Correo electrónico no válido.'
-      } else {
-        erroresForm.value.correo = ''
-      }
+      erroresForm.value.correo = form.value.correo ? validarEmail(form.value.correo) : ''
       break
 
     case 'fecha_nacimiento':
-      if (!form.value.fecha_nacimiento) {
-        erroresForm.value.fecha_nacimiento = 'La fecha es obligatoria.'
-      } else {
-        const fechaIngresada = new Date(form.value.fecha_nacimiento)
-        const hoy = new Date()
-        
-        // Calcular el límite de 130 años hacia atrás
-        const anioLimite = hoy.getFullYear() - 130
-        const fechaLimite = new Date(anioLimite, hoy.getMonth(), hoy.getDate())
-
-        if (fechaIngresada > hoy) {
-          erroresForm.value.fecha_nacimiento = 'La fecha no puede ser en el futuro.'
-        } else if (fechaIngresada < fechaLimite) {
-          erroresForm.value.fecha_nacimiento = 'La fecha no puede ser de hace más de 130 años.'
-        } else {
-          erroresForm.value.fecha_nacimiento = ''
-        }
-      }
+      erroresForm.value.fecha_nacimiento = validarFechaNacimiento(form.value.fecha_nacimiento)
       break
   }
 }
@@ -110,6 +84,9 @@ const validarFormularioCompleto = () => {
   validarCampo('apellidos')
   validarCampo('correo')
   validarCampo('fecha_nacimiento')
+  if (form.value.telefono) {
+    validarCampo('telefono')
+  }
   return !Object.values(erroresForm.value).some(err => err !== '')
 }
 
@@ -256,6 +233,11 @@ const fetchPacientes = async () => {
 watch(pacientes, (data) => persistirPacientes(data), { deep: true })
 
 const guardar = async () => {
+  if (!validarFormularioCompleto()) {
+    error.value = 'Por favor corrige los campos señalados en el formulario.'
+    return
+  }
+
   isLoading.value = true
   error.value = null
 
