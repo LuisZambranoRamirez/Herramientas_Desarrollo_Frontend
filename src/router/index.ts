@@ -12,6 +12,8 @@ import UsuariosView from '@/views/intranet/UsuariosView.vue'
 import TratamientosView from '@/views/intranet/TratamientosView.vue'
 import PagosView from '@/views/intranet/PagosView.vue'
 import ConfiguracionView from '@/views/intranet/ConfiguracionView.vue'
+import OdontologoDashboardView from '@/views/odontologo/OdontologoDashboardView.vue'
+import PacienteDashboardView from '@/views/paciente/PacienteDashboardView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -87,6 +89,22 @@ const router = createRouter({
       name: 'configuracion',
       component: ConfiguracionView,
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/odontologo/dashboard',
+      name: 'odontologo-dashboard',
+      component: OdontologoDashboardView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/paciente/dashboard',
+      name: 'paciente-dashboard',
+      component: PacienteDashboardView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/cliente/dashboard',
+      redirect: '/paciente/dashboard',
     },
   ],
   scrollBehavior(to, from, savedPosition) {

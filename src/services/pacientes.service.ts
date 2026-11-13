@@ -47,6 +47,10 @@ export const pacientesService = {
     return api.get<Paciente[]>('/pacientes')
   },
 
+  getMe(): Promise<Paciente> {
+    return api.get<Paciente>('/pacientes/me')
+  },
+
   getByDni(dni: string): Promise<Paciente | undefined> {
     return api.get<Paciente>(`/pacientes/${dni}`)
   },
