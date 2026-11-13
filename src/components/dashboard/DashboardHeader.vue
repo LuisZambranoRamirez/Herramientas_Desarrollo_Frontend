@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { useTheme } from '@/composables/useTheme'
-import { getRoleLabel } from '@/utils/navigation'
+import { getRoleLabel, getDefaultRouteByRole, extractUserRole } from '@/utils/navigation'
 
 const emit = defineEmits<{
   (e: 'toggleMobile'): void
@@ -13,6 +13,14 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const { isDark, toggleTheme } = useTheme()
+
+const currentRole = computed(() => {
+  return extractUserRole(authStore.userRole) || extractUserRole(authStore.user)
+})
+
+const defaultDashboardRoute = computed(() => {
+  return getDefaultRouteByRole(currentRole.value)
+})
 
 const titulosPorRuta: Record<string, string> = {
   '/dashboard': 'Panel Principal',
@@ -36,7 +44,7 @@ const usuarioNombre = computed(() => {
 const inicial = computed(() => usuarioNombre.value.charAt(0).toUpperCase() || 'U')
 
 const userRoleLabel = computed(() => {
-  return getRoleLabel(authStore.userRole)
+  return getRoleLabel(currentRole.value)
 })
 
 const cerrarSesion = () => {
@@ -73,7 +81,11 @@ const cerrarSesion = () => {
         <span v-else class="theme-icon" aria-label="Modo oscuro">🌙</span>
       </button>
 
-      <div class="user-badge">
+      <RouterLink
+        :to="defaultDashboardRoute"
+        class="user-badge user-badge-link"
+        :title="`Ir a ${userRoleLabel}`"
+      >
         <div class="user-avatar">
           <span>{{ inicial }}</span>
         </div>
@@ -81,7 +93,7 @@ const cerrarSesion = () => {
           <span class="user-name">{{ usuarioNombre }}</span>
           <span class="user-role">{{ userRoleLabel }}</span>
         </div>
-      </div>
+      </RouterLink>
 
       <button type="button" class="logout-btn" title="Cerrar sesión" @click="cerrarSesion">
         <svg class="logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -168,6 +180,17 @@ const cerrarSesion = () => {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+}
+
+.user-badge-link {
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.user-badge-link:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
 }
 
 .user-avatar {

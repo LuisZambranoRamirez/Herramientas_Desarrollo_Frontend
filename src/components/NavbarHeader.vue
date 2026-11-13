@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
-import { getDefaultRouteByRole, getRoleLabel } from '@/utils/navigation'
+import { getDefaultRouteByRole, getRoleLabel, extractUserRole } from '@/utils/navigation'
 
 const route = useRoute()
 const router = useRouter()
@@ -10,45 +10,39 @@ const authStore = useAuthStore()
 const isMobileMenuOpen = ref(false)
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
+const currentRole = computed(() => {
+  return extractUserRole(authStore.userRole) || extractUserRole(authStore.user) || 'PACIENTE'
+})
+
 const isPaciente = computed(() => {
-  const role = (
-    authStore.userRole ||
-    (authStore.user as any)?.role ||
-    (authStore.user as any)?.rol ||
-    'PACIENTE'
-  ).toUpperCase()
+  const role = currentRole.value
   return role === 'PACIENTE' || role === 'CLIENTE'
 })
 
+const isOdontologo = computed(() => {
+  const role = currentRole.value
+  return role === 'ODONTOLOGO' || role === 'DOCTOR'
+})
+
+const isSystemAdmin = computed(() => {
+  const role = currentRole.value
+  return role === 'SYSTEM_ADMIN' || role === 'ADMIN'
+})
+
 const defaultDashboardRoute = computed(() => {
-  const role =
-    authStore.userRole ||
-    (authStore.user as any)?.role ||
-    (authStore.user as any)?.rol ||
-    'PACIENTE'
-  return getDefaultRouteByRole(role)
+  return getDefaultRouteByRole(currentRole.value)
 })
 const userDashboardRoute = defaultDashboardRoute
 
 const dashboardButtonLabel = computed(() => {
-  const role = (
-    authStore.userRole ||
-    (authStore.user as any)?.role ||
-    (authStore.user as any)?.rol ||
-    'PACIENTE'
-  ).toUpperCase()
+  const role = currentRole.value
   if (role === 'PACIENTE' || role === 'CLIENTE') return 'Mi Panel'
-  if (role === 'ODONTOLOGO') return 'Mi Panel'
+  if (role === 'ODONTOLOGO' || role === 'DOCTOR') return 'Mi Panel'
   return 'Dashboard'
 })
 
 const userRoleBadgeLabel = computed(() => {
-  const role =
-    authStore.userRole ||
-    (authStore.user as any)?.role ||
-    (authStore.user as any)?.rol ||
-    'PACIENTE'
-  return getRoleLabel(role)
+  return getRoleLabel(currentRole.value)
 })
 
 const displayNombre = computed(() => {
@@ -293,7 +287,7 @@ watch(
             </div>
             <div class="user-info">
               <span class="user-greeting">Hola, <strong>{{ displayNombre }}</strong></span>
-              <span class="user-role-pill" :class="{ 'role-paciente': isPaciente, 'role-admin': !isPaciente }">
+              <span class="user-role-pill" :class="{ 'role-paciente': isPaciente, 'role-odontologo': isOdontologo, 'role-admin': isSystemAdmin }">
                 {{ userRoleBadgeLabel }}
               </span>
             </div>
@@ -401,7 +395,7 @@ watch(
           <div class="user-avatar">{{ userInitial }}</div>
           <div class="user-info">
             <span class="user-greeting">Hola, <strong>{{ displayNombre }}</strong></span>
-            <span class="user-role-pill" :class="{ 'role-paciente': isPaciente, 'role-admin': !isPaciente }">
+            <span class="user-role-pill" :class="{ 'role-paciente': isPaciente, 'role-odontologo': isOdontologo, 'role-admin': isSystemAdmin }">
               {{ userRoleBadgeLabel }}
             </span>
           </div>
@@ -672,6 +666,11 @@ watch(
 .role-paciente {
   background: rgba(14, 165, 233, 0.15);
   color: #0284c7;
+}
+
+.role-odontologo {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
 }
 
 .role-admin {

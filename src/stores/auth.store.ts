@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import type { Usuario, LoginDto, RegistroDto } from '@/types'
 import { authService } from '@/services/auth.service'
+import { extractUserRole } from '@/utils/navigation'
 
 interface AuthState {
   user: Usuario | null
@@ -13,9 +14,10 @@ function getStoredUser(): Usuario | null {
     if (!raw || raw === 'undefined' || raw === 'null') return null
     const parsed = JSON.parse(raw)
     if (parsed && typeof parsed === 'object') {
-      const role = parsed.user_role || parsed.role || parsed.rol
-      if (role && !parsed.user_role) {
-        parsed.user_role = String(role).toUpperCase().trim()
+      const role = extractUserRole(parsed)
+      if (role) {
+        parsed.user_role = role as any
+        parsed.role = role
       }
       return parsed
     }
@@ -35,10 +37,8 @@ export const useAuthStore = defineStore('auth', {
     isAuthenticated: (state) => !!state.token,
     currentUser: (state) => state.user,
     userRole: (state): string | null => {
-      const u = state.user as any
-      if (!u) return null
-      const raw = u.user_role || u.role || u.rol
-      return raw ? String(raw).toUpperCase().trim() : null
+      if (!state.user) return null
+      return extractUserRole(state.user)
     },
   },
 
@@ -48,14 +48,7 @@ export const useAuthStore = defineStore('auth', {
         const response = await authService.login(credentials)
         const token = response.accessToken || (response as any).access_token
         if (response && token) {
-          const rawRole =
-            (response.user as any)?.user_role ||
-            (response.user as any)?.role ||
-            (response.user as any)?.rol ||
-            (response as any)?.role ||
-            (response as any)?.user_role ||
-            'PACIENTE'
-          const normalizedRole = String(rawRole).toUpperCase().trim()
+          const normalizedRole = extractUserRole(response) || 'PACIENTE'
           const normalizedUser: Usuario = {
             ...response.user,
             user_role: normalizedRole as any,
@@ -95,13 +88,7 @@ export const useAuthStore = defineStore('auth', {
         }
 
         if (token && user) {
-          const rawRole =
-            (user as any)?.user_role ||
-            (user as any)?.role ||
-            (user as any)?.rol ||
-            (response as any)?.role ||
-            'PACIENTE'
-          const normalizedRole = String(rawRole).toUpperCase().trim()
+          const normalizedRole = extractUserRole(user) || extractUserRole(response) || 'PACIENTE'
           const normalizedUser: Usuario = {
             ...user,
             user_role: normalizedRole as any,

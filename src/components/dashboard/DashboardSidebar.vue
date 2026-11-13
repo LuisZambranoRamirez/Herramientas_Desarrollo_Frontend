@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { extractUserRole, getDefaultRouteByRole } from '@/utils/navigation'
 
 const props = defineProps<{
   collapsed?: boolean
@@ -15,18 +16,22 @@ const emit = defineEmits<{
 
 const authStore = useAuthStore()
 
+const currentRole = computed(() => {
+  return extractUserRole(authStore.userRole) || extractUserRole(authStore.user)
+})
+
 const isSystemAdmin = computed(() => {
-  const role = authStore.userRole?.toUpperCase()
+  const role = currentRole.value
   return role === 'SYSTEM_ADMIN' || role === 'ADMIN'
 })
 
 const isOdontologo = computed(() => {
-  const role = authStore.userRole?.toUpperCase()
-  return role === 'ODONTOLOGO'
+  const role = currentRole.value
+  return role === 'ODONTOLOGO' || role === 'DOCTOR'
 })
 
 const homeRoute = computed(() => {
-  return isOdontologo.value ? '/odontologo/dashboard' : '/dashboard'
+  return isOdontologo.value ? '/odontologo/dashboard' : getDefaultRouteByRole(currentRole.value)
 })
 
 function toggleCollapse() {

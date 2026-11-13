@@ -8,6 +8,7 @@ import type {
 import { api } from '@/services/api/client'
 import { env } from '@/config/env'
 import { authApi } from '@/services/mock-api'
+import { extractUserRole } from '@/utils/navigation'
 
 // ============================================================
 // SERVICIO DE AUTENTICACIÓN
@@ -24,10 +25,10 @@ export const authService = {
 
     const accessToken = res.access_token || res.accessToken
     const rawUser = res.user || res.usuario || {}
-    const rawRole = rawUser.user_role || rawUser.role || rawUser.rol || res.user_role || res.role || 'PACIENTE'
-    const userRole = String(rawRole).toUpperCase().trim()
+    const userRole = extractUserRole(res) || extractUserRole(rawUser) || 'PACIENTE'
 
     const user: Usuario = {
+      ...rawUser,
       username: rawUser.username || res.username || data.username,
       nombre_completo: rawUser.nombre_completo || res.nombre_completo,
       correo: rawUser.correo || res.correo,
@@ -37,8 +38,8 @@ export const authService = {
       fecha_registro: rawUser.fecha_registro || res.fecha_registro || new Date().toISOString(),
       odontologo: rawUser.odontologo || res.odontologo,
       paciente: rawUser.paciente || res.paciente,
+      role: userRole,
     }
-    ;(user as any).role = userRole
 
     return {
       accessToken,
@@ -63,10 +64,10 @@ export const authService = {
     const res = await api.post<any>('/auth/register', data)
     const accessToken = res.access_token || res.accessToken
     const rawUser = res.user || res.usuario || {}
-    const rawRole = rawUser.user_role || rawUser.role || rawUser.rol || res.role || res.user_role || 'PACIENTE'
-    const userRole = String(rawRole).toUpperCase().trim()
+    const userRole = extractUserRole(res) || extractUserRole(rawUser) || 'PACIENTE'
 
     const user: Usuario = {
+      ...rawUser,
       username: rawUser.username || data.username,
       nombre_completo: rawUser.nombre_completo || `${data.nombres} ${data.apellidos}`.trim(),
       correo: rawUser.correo || data.correo,
@@ -76,8 +77,8 @@ export const authService = {
       fecha_registro: rawUser.fecha_registro || new Date().toISOString(),
       odontologo: rawUser.odontologo,
       paciente: rawUser.paciente,
+      role: userRole,
     }
-    ;(user as any).role = userRole
 
     return {
       message: res.message || 'Registro exitoso',

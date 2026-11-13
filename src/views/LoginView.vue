@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
-import { getDefaultRouteByRole } from '@/utils/navigation'
+import { getDefaultRouteByRole, extractUserRole } from '@/utils/navigation'
 import { validarRequerido } from '@/utils/validators'
 
 const router = useRouter()
@@ -44,9 +44,8 @@ async function iniciarSesion() {
 
     if (exito) {
       const role =
-        authStore.userRole ||
-        (authStore.user as any)?.role ||
-        (authStore.user as any)?.rol ||
+        extractUserRole(authStore.userRole) ||
+        extractUserRole(authStore.user) ||
         'PACIENTE'
       const defaultRoute = getDefaultRouteByRole(role)
       const redirectQuery = route.query.redirect

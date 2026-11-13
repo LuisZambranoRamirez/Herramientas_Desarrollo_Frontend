@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
-import { getDefaultRouteByRole } from '@/utils/navigation'
+import { getDefaultRouteByRole, extractUserRole } from '@/utils/navigation'
 import HomeView from '../views/HomeView.vue'
 import ReservarCitasView from '../views/ReservarCitasView.vue'
 import LoginView from '../views/LoginView.vue'
@@ -141,22 +141,15 @@ router.beforeEach((to) => {
   // Resolver rol de forma ultra-defensiva para usuarios autenticados
   let resolvedRole: string | null = null
   if (authStore.isAuthenticated) {
-    const rawRole =
-      authStore.userRole ||
-      (authStore.user as any)?.role ||
-      (authStore.user as any)?.rol
+    resolvedRole =
+      extractUserRole(authStore.userRole) ||
+      extractUserRole(authStore.user)
 
-    if (rawRole) {
-      resolvedRole = String(rawRole).toUpperCase().trim()
-    } else {
+    if (!resolvedRole) {
       try {
         const stored = localStorage.getItem('user')
         if (stored) {
-          const parsed = JSON.parse(stored)
-          const fallbackRole = parsed?.user_role || parsed?.role || parsed?.rol
-          if (fallbackRole) {
-            resolvedRole = String(fallbackRole).toUpperCase().trim()
-          }
+          resolvedRole = extractUserRole(JSON.parse(stored))
         }
       } catch {
         // ignore
