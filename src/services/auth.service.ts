@@ -23,16 +23,22 @@ export const authService = {
     const res = await api.post<any>('/auth/login', data)
 
     const accessToken = res.access_token || res.accessToken
-    
-    // Mapeo robusto: captura el user_role directamente de la raíz de la respuesta del backend
-    const user: Usuario = res.user || res.usuario || {
-      username: res.username || data.username,
-      activo: res.activo ?? true,
-      user_role: res.user_role || res.role || 'PACIENTE',
-      fecha_registro: res.fecha_registro || new Date().toISOString(),
-      odontologo: res.odontologo,
-      paciente: res.paciente,
+    const rawUser = res.user || res.usuario || {}
+    const rawRole = rawUser.user_role || rawUser.role || rawUser.rol || res.user_role || res.role || 'PACIENTE'
+    const userRole = String(rawRole).toUpperCase().trim()
+
+    const user: Usuario = {
+      username: rawUser.username || res.username || data.username,
+      nombre_completo: rawUser.nombre_completo || res.nombre_completo,
+      correo: rawUser.correo || res.correo,
+      telefono: rawUser.telefono || res.telefono,
+      activo: rawUser.activo ?? res.activo ?? true,
+      user_role: userRole as any,
+      fecha_registro: rawUser.fecha_registro || res.fecha_registro || new Date().toISOString(),
+      odontologo: rawUser.odontologo || res.odontologo,
+      paciente: rawUser.paciente || res.paciente,
     }
+    ;(user as any).role = userRole
 
     return {
       accessToken,
@@ -56,7 +62,22 @@ export const authService = {
 
     const res = await api.post<any>('/auth/register', data)
     const accessToken = res.access_token || res.accessToken
-    const user = res.user || res.usuario
+    const rawUser = res.user || res.usuario || {}
+    const rawRole = rawUser.user_role || rawUser.role || rawUser.rol || res.role || res.user_role || 'PACIENTE'
+    const userRole = String(rawRole).toUpperCase().trim()
+
+    const user: Usuario = {
+      username: rawUser.username || data.username,
+      nombre_completo: rawUser.nombre_completo || `${data.nombres} ${data.apellidos}`.trim(),
+      correo: rawUser.correo || data.correo,
+      telefono: rawUser.telefono || data.telefono,
+      activo: rawUser.activo ?? true,
+      user_role: userRole as any,
+      fecha_registro: rawUser.fecha_registro || new Date().toISOString(),
+      odontologo: rawUser.odontologo,
+      paciente: rawUser.paciente,
+    }
+    ;(user as any).role = userRole
 
     return {
       message: res.message || 'Registro exitoso',

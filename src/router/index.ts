@@ -108,7 +108,7 @@ const router = createRouter({
       path: '/paciente/dashboard',
       name: 'paciente-dashboard',
       component: PacienteDashboardView,
-      meta: { requiresAuth: true, roles: ['PACIENTE'] },
+      meta: { requiresAuth: true, roles: ['PACIENTE', 'CLIENTE'] },
     },
     {
       path: '/cliente/dashboard',
@@ -132,32 +132,64 @@ const router = createRouter({
 // Revisa auth y permisos RBAC antes de cada navegación
 router.beforeEach((to) => {
   const authStore = useAuthStore()
-  const userRole = authStore.userRole
 
   // 1. Proteger rutas que requieren autenticación
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return { name: 'login', query: to.fullPath !== '/' ? { redirect: to.fullPath } : undefined }
   }
 
-  // 2. Si ya está autenticado e intenta ir a login o registro
+  // Resolver rol de forma ultra-defensiva para usuarios autenticados
+  let resolvedRole: string | null = null
+  if (authStore.isAuthenticated) {
+    const rawRole =
+      authStore.userRole ||
+      (authStore.user as any)?.role ||
+      (authStore.user as any)?.rol
+
+    if (rawRole) {
+      resolvedRole = String(rawRole).toUpperCase().trim()
+    } else {
+      try {
+        const stored = localStorage.getItem('user')
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          const fallbackRole = parsed?.user_role || parsed?.role || parsed?.rol
+          if (fallbackRole) {
+            resolvedRole = String(fallbackRole).toUpperCase().trim()
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // Si aún así no hay rol, asignar PACIENTE por defecto para cuentas del portal
+    if (!resolvedRole) {
+      resolvedRole = 'PACIENTE'
+    }
+  }
+
+  // 2. Si ya está autenticado e intenta ir a login o registro, redirigir a su dashboard correspondiente
   if ((to.name === 'login' || to.name === 'registro') && authStore.isAuthenticated) {
-    return getDefaultRouteByRole(userRole)
+    return getDefaultRouteByRole(resolvedRole)
   }
 
   // 3. Control de acceso por rol (RBAC)
   if (to.meta.requiresAuth && to.meta.roles && Array.isArray(to.meta.roles)) {
     const allowedRoles = to.meta.roles.map((r) => r.toUpperCase())
-    const currentRole = userRole ? userRole.toUpperCase() : null
+    const currentRole = resolvedRole ? resolvedRole.toUpperCase() : null
 
-    // También permitimos alias de administrador ('ADMIN' -> 'SYSTEM_ADMIN')
     const hasRole =
       currentRole &&
       (allowedRoles.includes(currentRole) ||
-        (currentRole === 'ADMIN' && allowedRoles.includes('SYSTEM_ADMIN')))
+        ((currentRole === 'ADMIN' || currentRole === 'SYSTEM_ADMIN') &&
+          (allowedRoles.includes('SYSTEM_ADMIN') || allowedRoles.includes('ADMIN'))) ||
+        ((currentRole === 'PACIENTE' || currentRole === 'CLIENTE') &&
+          (allowedRoles.includes('PACIENTE') || allowedRoles.includes('CLIENTE'))))
 
     if (!hasRole) {
-      // Redirigir al dashboard por defecto del usuario según su rol
-      return getDefaultRouteByRole(userRole)
+      // Redirigir al dashboard por defecto del usuario según su rol (nunca a '/' ni bucle)
+      return getDefaultRouteByRole(resolvedRole)
     }
   }
 

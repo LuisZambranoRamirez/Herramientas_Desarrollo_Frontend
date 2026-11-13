@@ -43,13 +43,22 @@ async function iniciarSesion() {
     })
 
     if (exito) {
-      const defaultRoute = getDefaultRouteByRole(authStore.userRole)
+      const role =
+        authStore.userRole ||
+        (authStore.user as any)?.role ||
+        (authStore.user as any)?.rol ||
+        'PACIENTE'
+      const defaultRoute = getDefaultRouteByRole(role)
       const redirectQuery = route.query.redirect
+
+      // Redirigir a query.redirect solo si es una ruta interna válida y distinta a la home '/' o '/login'
       if (
         typeof redirectQuery === 'string' &&
         redirectQuery.startsWith('/') &&
         !redirectQuery.startsWith('//') &&
-        redirectQuery !== '/login'
+        redirectQuery !== '/' &&
+        redirectQuery !== '/login' &&
+        redirectQuery !== '/registro'
       ) {
         router.push(redirectQuery)
       } else {
