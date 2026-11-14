@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { citasService } from '@/services/citas.service'
 import { pacientesService } from '@/services/pacientes.service'
-import type { CitaOdontologoResumen, CrearCitaDto, Paciente } from '@/types'
+import { odontologosService } from '@/services/odontologos.service'
+import type { CrearCitaDto, Paciente, OdontologoPublico } from '@/types'
 import BookingStepper from '../components/BookingStepper.vue'
 import ServiceSelectionStep from '../components/ServiceSelectionStep.vue'
 import SpecialistSelectionStep from '../components/SpecialistSelectionStep.vue'
@@ -13,6 +14,7 @@ import PatientForm, { type PatientData } from '../components/PatientForm.vue'
 import ConfirmationStep from '../components/ConfirmationStep.vue'
 
 const authStore = useAuthStore()
+const route = useRoute()
 
 // Paso actual del flujo (1: Servicio, 2: Especialista, 3: Fecha y Hora, 4: Confirmación)
 const currentStep = ref<number>(1)
@@ -22,7 +24,7 @@ const patientFormRef = ref<InstanceType<typeof PatientForm> | null>(null)
 const isLoadingData = ref<boolean>(false)
 const isSubmitting = ref<boolean>(false)
 const formErrorMessage = ref<string>('')
-const odontologosApi = ref<CitaOdontologoResumen[]>([])
+const odontologosActivos = ref<OdontologoPublico[]>([])
 const pacientesApi = ref<Paciente[]>([])
 const dniPacienteManual = ref<string>('')
 
@@ -37,26 +39,35 @@ const selectedServiceName = computed(
   () => serviceNamesMap[selectedServiceId.value] || 'Limpieza Dental',
 )
 
-// --- Paso 2: Selección de Especialista ---
-const selectedSpecialistId = ref<string>('dra-marta-gonzalez')
-const specialistNamesMap: Record<string, string> = {
-  'dra-marta-gonzalez': 'Dra. Marta González',
-  'dra-carmen-rodriguez': 'Dra. Carmen Rodríguez',
-}
+// --- Paso 2: Selección de Especialista Dinámico ---
+const selectedSpecialistId = ref<string>('')
 
-const odontologoSeleccionado = computed<CitaOdontologoResumen | undefined>(() => {
-  if (odontologosApi.value.length === 0) return undefined
-  if (selectedSpecialistId.value === 'dra-carmen-rodriguez') {
-    return odontologosApi.value[1] || odontologosApi.value[0]
-  }
-  return odontologosApi.value[0]
+const odontologoSeleccionado = computed<OdontologoPublico | undefined>(() => {
+  if (odontologosActivos.value.length === 0) return undefined
+  const target = selectedSpecialistId.value?.trim().toLowerCase()
+  if (!target) return odontologosActivos.value[0]
+  const found = odontologosActivos.value.find(
+    (d) =>
+      (d.dni && d.dni.toLowerCase() === target) ||
+      (d.id && d.id.toLowerCase() === target) ||
+      (d.username && d.username.toLowerCase() === target),
+  )
+  return found || odontologosActivos.value[0]
 })
 
 const selectedSpecialistName = computed(() => {
   if (odontologoSeleccionado.value) {
-    return `Dr(a). ${odontologoSeleccionado.value.nombres} ${odontologoSeleccionado.value.apellidos}`.trim()
+    const doc = odontologoSeleccionado.value
+    if (doc.nombre && doc.nombre.trim()) {
+      const trimmed = doc.nombre.trim()
+      return /^dr(\.|a\.|\(a\)\.)/i.test(trimmed) ? trimmed : `Dr(a). ${trimmed}`
+    }
+    if (doc.nombres || doc.apellidos) {
+      return `Dr(a). ${doc.nombres || ''} ${doc.apellidos || ''}`.trim()
+    }
+    return 'Dr(a). Especialista'
   }
-  return specialistNamesMap[selectedSpecialistId.value] || 'Dra. Marta González'
+  return 'Especialista Odontológico'
 })
 
 // --- Paso 3: Fecha, Horario y Datos ---
@@ -99,11 +110,35 @@ const esStaffClinico = computed(
 )
 
 const cargarCatalogosReserva = async () => {
-  if (!authStore.isAuthenticated) return
   isLoadingData.value = true
   try {
-    odontologosApi.value = await citasService.getOdontologos()
-    if (authStore.userRole !== 'PACIENTE') {
+    odontologosActivos.value = await odontologosService.getActiveDentists()
+
+    // Preseleccionar especialista si viene por query param (?especialista=...)
+    const paramEspecialista = route.query.especialista as string | undefined
+    if (paramEspecialista && odontologosActivos.value.length > 0) {
+      const target = paramEspecialista.trim().toLowerCase()
+      const found = odontologosActivos.value.find(
+        (d) =>
+          (d.dni && d.dni.toLowerCase() === target) ||
+          (d.id && d.id.toLowerCase() === target) ||
+          (d.username && d.username.toLowerCase() === target),
+      )
+      if (found) {
+        selectedSpecialistId.value = found.dni || found.id || found.username
+      }
+    }
+
+    // Si aún no hay especialista seleccionado, asignar por defecto el primero
+    if (!selectedSpecialistId.value && odontologosActivos.value.length > 0) {
+      const primero = odontologosActivos.value[0]
+      if (primero) {
+        selectedSpecialistId.value = primero.dni || primero.id || primero.username
+      }
+    }
+
+    // Si el usuario autenticado es staff administrativo o médico, cargar pacientes registrados
+    if (authStore.isAuthenticated && authStore.userRole !== 'PACIENTE') {
       pacientesApi.value = await pacientesService.getAll().catch(() => [])
       const primero = pacientesApi.value[0]
       if (primero && !dniPacienteManual.value) {
@@ -171,7 +206,7 @@ async function handleConfirmAppointment() {
     return
   }
 
-  if (odontologosApi.value.length === 0) {
+  if (odontologosActivos.value.length === 0) {
     await cargarCatalogosReserva()
   }
 
@@ -217,7 +252,16 @@ async function handleConfirmAppointment() {
 function handleNewBooking() {
   patientData.value = buildInitialPatientData()
   selectedServiceId.value = 'limpieza-dental'
-  selectedSpecialistId.value = 'dra-marta-gonzalez'
+  if (odontologosActivos.value.length > 0) {
+    const primero = odontologosActivos.value[0]
+    if (primero) {
+      selectedSpecialistId.value = primero.dni || primero.id || primero.username
+    } else {
+      selectedSpecialistId.value = ''
+    }
+  } else {
+    selectedSpecialistId.value = ''
+  }
   selectedDayNumber.value = 26
   selectedTime.value = '10:00 AM'
   formErrorMessage.value = ''
@@ -246,6 +290,8 @@ function handleNewBooking() {
         <div v-else-if="currentStep === 2" key="step-2" class="step-wrapper">
           <SpecialistSelectionStep
             v-model="selectedSpecialistId"
+            :specialists="odontologosActivos"
+            :loading="isLoadingData"
             @next="nextStep"
             @prev="prevStep"
           />
