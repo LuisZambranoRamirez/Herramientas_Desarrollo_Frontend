@@ -2,6 +2,7 @@ import type {
   Usuario,
   CrearUsuarioDto,
   ActualizarUsuarioDto,
+  OdontologoPublico,
 } from '@/types'
 import { api } from '@/services/api/client'
 import { env } from '@/config/env'
@@ -158,5 +159,51 @@ export const usuariosService = {
     } catch {
       // Si no estaba en memoria del mock, ya fue eliminado del storage
     }
+  },
+
+  /**
+   * Obtiene la lista de odontólogos activos directamente desde la fuente de datos
+   * de usuarios del sistema (sin requerir autenticación de administrador).
+   * Filtra estrictamente por:
+   *  - Rol: "ODONTOLOGO"
+   *  - Estado: Activo (activo === true)
+   */
+  async getActiveDentists(): Promise<OdontologoPublico[]> {
+    if (!env.useMock) {
+      try {
+        return await api.get<OdontologoPublico[]>('/usuarios/odontologos/activos')
+      } catch {
+        return await api.get<OdontologoPublico[]>('/odontologos/activos')
+      }
+    }
+
+    // Modo mock / storage local: consultar la misma fuente que "Gestión de Usuarios"
+    const todos = await this.getAll()
+    const activos = todos.filter((u) => {
+      const role = String((u as any).user_role || (u as any).role || '').toUpperCase().trim()
+      return role === 'ODONTOLOGO' && u.activo === true
+    })
+
+    return activos.map((u) => {
+      const parts = (u.nombre_completo || u.username).split(' ')
+      const nombres = parts[0] || u.username
+      const apellidos = parts.slice(1).join(' ') || ''
+      const especialidad = (u as any).especialidad || 'Ortodoncia'
+      const colegiatura = (u as any).colegiatura || 'COP-12345'
+      return {
+        id: (u as any).dni || u.username,
+        dni: (u as any).dni || u.username,
+        username: u.username,
+        nombre: u.nombre_completo || `Dr(a). ${nombres} ${apellidos}`.trim(),
+        nombres,
+        apellidos,
+        especialidad,
+        colegiatura,
+        correo: u.correo,
+        telefono: u.telefono,
+        descripcion: `Especialista en ${especialidad}. Colegiatura ${colegiatura}.`,
+        activo: true,
+      }
+    })
   },
 }

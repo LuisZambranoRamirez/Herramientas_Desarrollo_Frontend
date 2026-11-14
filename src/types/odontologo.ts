@@ -23,3 +23,18 @@ export interface CrearOdontologoDto {
 export interface ActualizarOdontologoDto {
   especialidad?: Especialidad
 }
+
+export interface OdontologoPublico {
+  id: string
+  dni: string
+  username: string
+  nombre: string
+  nombres: string
+  apellidos: string
+  especialidad: Especialidad | string
+  colegiatura?: string
+  correo?: string
+  telefono?: string
+  descripcion?: string
+  activo: boolean
+}
