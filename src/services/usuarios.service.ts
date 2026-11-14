@@ -92,17 +92,27 @@ export const usuariosService = {
   async create(data: CrearUsuarioDto): Promise<Usuario> {
     validarDatosUsuario(data)
 
+    const payload: CrearUsuarioDto = {
+      username: data.username.trim(),
+      password: data.password,
+      user_role: data.user_role,
+      activo: data.activo !== undefined ? data.activo : true,
+      nombre_completo: data.nombre_completo?.trim() || undefined,
+      correo: data.correo?.trim().toLowerCase() || undefined,
+      telefono: data.telefono?.trim() || undefined,
+    }
+
     if (!env.useMock) {
-      return api.post<Usuario>('/usuarios', data)
+      return api.post<Usuario>('/usuarios', payload)
     }
 
     const lista = await this.getAll()
-    const existe = lista.some(u => u.username.toLowerCase() === data.username.trim().toLowerCase())
+    const existe = lista.some(u => u.username.toLowerCase() === payload.username.toLowerCase())
     if (existe) {
-      throw new Error(`El nombre de usuario "${data.username.trim()}" ya existe en el sistema.`)
+      throw new Error(`El nombre de usuario "${payload.username}" ya existe en el sistema.`)
     }
 
-    const nuevo = await usuarioApi.create(data)
+    const nuevo = await usuarioApi.create(payload)
 
     // Sincronizar storage
     const actualizada = [nuevo, ...lista.filter(u => u.username !== nuevo.username)]
@@ -127,6 +137,41 @@ export const usuariosService = {
     lista[index] = actualizado
     guardarEnStorage(lista)
     return actualizado
+  },
+
+  async updateRole(
+    username: string,
+    rol: string,
+    especialidad?: string,
+    colegiatura?: string
+  ): Promise<Usuario> {
+    const payload: { user_role: string; especialidad?: string; colegiatura?: string } = {
+      user_role: rol.trim().toUpperCase(),
+    }
+    if (especialidad?.trim()) {
+      payload.especialidad = especialidad.trim()
+    }
+    if (colegiatura?.trim()) {
+      payload.colegiatura = colegiatura.trim()
+    }
+
+    if (!env.useMock) {
+      return api.patch<Usuario>(`/usuarios/${username}/rol`, payload)
+    }
+
+    const lista = await this.getAll()
+    const index = lista.findIndex(u => u.username.toLowerCase() === username.toLowerCase())
+    if (index === -1 || !lista[index]) {
+      throw new Error('Usuario no encontrado.')
+    }
+
+    const user = lista[index]!
+    user.user_role = payload.user_role as any
+    user.role = payload.user_role
+    if (payload.especialidad) (user as any).especialidad = payload.especialidad
+    if (payload.colegiatura) (user as any).colegiatura = payload.colegiatura
+    guardarEnStorage(lista)
+    return { ...user }
   },
 
   async toggleStatus(username: string): Promise<Usuario> {
@@ -159,6 +204,10 @@ export const usuariosService = {
     } catch {
       // Si no estaba en memoria del mock, ya fue eliminado del storage
     }
+  },
+
+  async deleteUser(username: string): Promise<void> {
+    return this.delete(username)
   },
 
   /**

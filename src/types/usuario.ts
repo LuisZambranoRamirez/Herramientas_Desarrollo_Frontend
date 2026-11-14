@@ -5,6 +5,9 @@ export interface Usuario {
   nombre_completo?: string
   correo?: string
   telefono?: string
+  especialidad?: string
+  colegiatura?: string
+  descripcion?: string
   activo: boolean
   user_role: UserRole
   role?: string
@@ -12,6 +15,12 @@ export interface Usuario {
   ultimo_acceso?: string
   odontologo?: any
   paciente?: any
+}
+
+export interface CambiarRolDto {
+  user_role: UserRole
+  especialidad?: string
+  colegiatura?: string
 }
 
 export interface CrearUsuarioDto {

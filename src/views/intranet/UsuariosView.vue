@@ -95,6 +95,18 @@
         </div>
       </transition>
 
+      <!-- Notificación flash de error -->
+      <transition name="fade">
+        <div v-if="mensajeError" class="toast-error">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="toast-icon toast-icon-error">
+            <circle cx="12" cy="12" r="10" stroke-width="2" />
+            <line x1="12" y1="8" x2="12" y2="12" stroke-width="2" />
+            <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2" />
+          </svg>
+          <span>{{ mensajeError }}</span>
+        </div>
+      </transition>
+
       <!-- Filtros y Barra de Búsqueda -->
       <div class="filters-card">
         <div class="search-input-wrapper">
@@ -215,12 +227,26 @@
                   </div>
                 </td>
 
-                <!-- Columna Rol con Badge temático -->
+                <!-- Columna Rol con Selector de Cambio Rápido -->
                 <td>
-                  <span class="role-badge" :class="getRoleBadgeClass(user.user_role)">
-                    <span class="role-icon">{{ getRoleIcon(user.user_role) }}</span>
-                    {{ getRoleLabel(user.user_role) }}
-                  </span>
+                  <div class="role-cell-wrapper">
+                    <span class="role-badge" :class="getRoleBadgeClass(user.user_role)">
+                      <span class="role-icon">{{ getRoleIcon(user.user_role) }}</span>
+                      {{ getRoleLabel(user.user_role) }}
+                    </span>
+                    <select
+                      :value="user.user_role"
+                      class="role-row-select"
+                      :disabled="cambiandoRol === user.username"
+                      :title="`Cambiar rol de @${user.username}`"
+                      @change="onRoleChange(user, ($event.target as HTMLSelectElement).value)"
+                    >
+                      <option value="SYSTEM_ADMIN">🛡️ Administrador</option>
+                      <option value="ODONTOLOGO">🩺 Odontólogo</option>
+                      <option value="PACIENTE">👤 Paciente</option>
+                    </select>
+                    <span v-if="cambiandoRol === user.username" class="role-inline-spinner" title="Actualizando rol..."></span>
+                  </div>
                 </td>
 
                 <!-- Columna Contacto: Correo y Teléfono -->
@@ -280,6 +306,17 @@
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                      </svg>
+                    </button>
+                    <button
+                      class="btn-action delete"
+                      :class="{ 'btn-disabled': esUsuarioActual(user) }"
+                      :disabled="esUsuarioActual(user)"
+                      :title="esUsuarioActual(user) ? 'No puedes eliminar tu propia cuenta en sesión' : 'Eliminar usuario'"
+                      @click="abrirModalEliminar(user)"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
                   </div>
@@ -576,8 +613,27 @@
                       <span class="detail-item-value text-muted" v-else>No especificado</span>
                     </div>
                     <div class="detail-item">
-                      <span class="detail-item-label">Tipo de Perfil:</span>
-                      <span class="detail-item-value font-medium">{{ getRoleLabel(usuarioSeleccionado.user_role) }}</span>
+                      <span class="detail-item-label">Rol del Usuario:</span>
+                      <div class="detail-role-editor">
+                        <select
+                          v-model="rolSeleccionadoModal"
+                          class="form-select-sm"
+                          :disabled="cambiandoRol === usuarioSeleccionado.username"
+                        >
+                          <option value="SYSTEM_ADMIN">🛡️ Administrador</option>
+                          <option value="ODONTOLOGO">🩺 Odontólogo</option>
+                          <option value="PACIENTE">👤 Paciente</option>
+                        </select>
+                        <button
+                          v-if="rolSeleccionadoModal !== usuarioSeleccionado.user_role"
+                          type="button"
+                          class="btn-save-role-sm"
+                          :disabled="cambiandoRol === usuarioSeleccionado.username"
+                          @click="guardarRolDesdeModal"
+                        >
+                          {{ cambiandoRol === usuarioSeleccionado.username ? 'Guardando...' : 'Guardar Cambio' }}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -623,6 +679,58 @@
           </div>
         </div>
       </transition>
+
+      <!-- Modal: Confirmar Eliminación de Usuario -->
+      <transition name="modal-fade">
+        <div v-if="mostrarModalEliminar && usuarioAEliminar" class="modal-overlay" @click.self="cerrarModalEliminar">
+          <div class="modal-card modal-delete-card">
+            <div class="modal-header delete-header">
+              <div class="delete-icon-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <div>
+                <h3>Eliminar Usuario</h3>
+                <p class="modal-subtitle">Confirmación de acción destructiva</p>
+              </div>
+              <button class="modal-close-btn" @click="cerrarModalEliminar" title="Cerrar">×</button>
+            </div>
+
+            <div class="modal-body">
+              <div class="delete-warning-box">
+                <p>
+                  ¿Estás seguro de que deseas eliminar permanentemente al usuario
+                  <strong>@{{ usuarioAEliminar.username }}</strong>
+                  <span v-if="usuarioAEliminar.nombre_completo"> ({{ usuarioAEliminar.nombre_completo }})</span>?
+                </p>
+                <p class="delete-warning-sub">
+                  Esta acción no se puede deshacer. Si el usuario cuenta con citas médicas activas o registros clínicos asociados, el sistema impedirá su eliminación para proteger los datos médicos.
+                </p>
+              </div>
+
+              <div v-if="errorEliminacion" class="error-banner">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <circle cx="12" cy="12" r="10" stroke-width="2" />
+                  <line x1="12" y1="8" x2="12" y2="12" stroke-width="2" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2" />
+                </svg>
+                <span>{{ errorEliminacion }}</span>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn-cancel" @click="cerrarModalEliminar" :disabled="eliminandoUsuario">
+                Cancelar
+              </button>
+              <button type="button" class="btn-danger-submit" :disabled="eliminandoUsuario" @click="confirmarEliminarUsuario">
+                <span v-if="eliminandoUsuario" class="btn-spinner"></span>
+                <span>{{ eliminandoUsuario ? 'Eliminando...' : 'Sí, Eliminar Usuario' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
     </div>
   </DashboardLayout>
 </template>
@@ -631,6 +739,7 @@
 import { ref, computed, onMounted } from 'vue'
 import DashboardLayout from '@/components/dashboard/DashboardLayout.vue'
 import { usuariosService } from '@/services/usuarios.service'
+import { useAuthStore } from '@/stores/auth.store'
 import type { Usuario, UserRole } from '@/types'
 import {
   validarUsername,
@@ -640,11 +749,32 @@ import {
   validarTelefono,
 } from '@/utils/validators'
 
-// Estado reactivo
+// Estado reactivo y autenticación
+const authStore = useAuthStore()
 const usuarios = ref<Usuario[]>([])
 const cargando = ref(true)
 const error = ref<string | null>(null)
 const mensajeExito = ref<string | null>(null)
+const mensajeError = ref<string | null>(null)
+
+// Usuario autenticado actual en sesión
+const currentUsername = computed(() => {
+  return (authStore.user?.username || '').toLowerCase()
+})
+
+const esUsuarioActual = (user: Usuario): boolean => {
+  return user.username.toLowerCase() === currentUsername.value
+}
+
+// Estado para cambio de rol
+const cambiandoRol = ref<string | null>(null)
+const rolSeleccionadoModal = ref<UserRole>('PACIENTE')
+
+// Estado para modal de confirmación de eliminación
+const mostrarModalEliminar = ref(false)
+const usuarioAEliminar = ref<Usuario | null>(null)
+const eliminandoUsuario = ref(false)
+const errorEliminacion = ref<string | null>(null)
 
 // Búsqueda y filtros
 const busqueda = ref('')
@@ -852,6 +982,7 @@ const guardarNuevoUsuario = async () => {
 
     usuarios.value.unshift(nuevo)
     cerrarModalCrear()
+    await cargarUsuarios()
     mostrarMensaje(`¡Usuario @${nuevo.username} creado exitosamente!`)
   } catch (err) {
     errorCreacion.value = err instanceof Error ? err.message : 'Error al registrar el usuario.'
@@ -865,6 +996,7 @@ const usuarioSeleccionado = ref<Usuario | null>(null)
 
 const verDetalle = (user: Usuario) => {
   usuarioSeleccionado.value = { ...user }
+  rolSeleccionadoModal.value = user.user_role
 }
 
 const cerrarDetalle = () => {
@@ -876,6 +1008,72 @@ const toggleEstadoModal = async (user: Usuario) => {
   const actualizado = usuarios.value.find(u => u.username === user.username)
   if (actualizado) {
     usuarioSeleccionado.value = { ...actualizado }
+  }
+}
+
+// Acciones de cambio de rol
+const onRoleChange = async (user: Usuario, nuevoRol: string) => {
+  if (user.user_role === nuevoRol) return
+
+  try {
+    cambiandoRol.value = user.username
+    const actualizado = await usuariosService.updateRole(user.username, nuevoRol)
+    const idx = usuarios.value.findIndex(u => u.username === user.username)
+    if (idx !== -1) {
+      usuarios.value[idx] = actualizado
+    }
+    if (usuarioSeleccionado.value && usuarioSeleccionado.value.username === user.username) {
+      usuarioSeleccionado.value = { ...actualizado }
+      rolSeleccionadoModal.value = actualizado.user_role
+    }
+    mostrarMensaje(`Rol de @${user.username} actualizado a ${getRoleLabel(actualizado.user_role)} exitosamente.`)
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Error al actualizar el rol del usuario.'
+    mostrarError(msg)
+    await cargarUsuarios()
+  } finally {
+    cambiandoRol.value = null
+  }
+}
+
+const guardarRolDesdeModal = async () => {
+  if (!usuarioSeleccionado.value) return
+  await onRoleChange(usuarioSeleccionado.value, rolSeleccionadoModal.value)
+}
+
+// Acciones de eliminación de usuario
+const abrirModalEliminar = (user: Usuario) => {
+  if (esUsuarioActual(user)) {
+    mostrarError('No puedes eliminar tu propia cuenta de administrador en sesión.')
+    return
+  }
+  usuarioAEliminar.value = user
+  errorEliminacion.value = null
+  mostrarModalEliminar.value = true
+}
+
+const cerrarModalEliminar = () => {
+  mostrarModalEliminar.value = false
+  usuarioAEliminar.value = null
+  errorEliminacion.value = null
+  eliminandoUsuario.value = false
+}
+
+const confirmarEliminarUsuario = async () => {
+  if (!usuarioAEliminar.value) return
+  const targetUsername = usuarioAEliminar.value.username
+
+  try {
+    eliminandoUsuario.value = true
+    errorEliminacion.value = null
+    await usuariosService.deleteUser(targetUsername)
+    cerrarModalEliminar()
+    await cargarUsuarios()
+    mostrarMensaje(`Usuario @${targetUsername} eliminado correctamente.`)
+  } catch (err) {
+    errorEliminacion.value = err instanceof Error ? err.message : 'Error al eliminar el usuario.'
+  } finally {
+    eliminandoUsuario.value = false
   }
 }
 
@@ -939,6 +1137,13 @@ const mostrarMensaje = (msg: string) => {
   setTimeout(() => {
     mensajeExito.value = null
   }, 3500)
+}
+
+const mostrarError = (msg: string) => {
+  mensajeError.value = msg
+  setTimeout(() => {
+    mensajeError.value = null
+  }, 4500)
 }
 
 // Helpers de formateo visual
@@ -2445,6 +2650,224 @@ html.dark .btn-activate-lg {
   background: rgba(22, 163, 74, 0.15);
   border-color: rgba(34, 197, 94, 0.3);
   color: #86efac;
+}
+
+/* Toast de error */
+.toast-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 12px 18px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.toast-icon-error {
+  color: #dc2626;
+}
+
+html.dark .toast-error {
+  background: rgba(153, 27, 27, 0.3);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+/* Selector de rol en la fila */
+.role-cell-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.role-row-select {
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid var(--border-light, #e2e8f0);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-main, #334155);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.role-row-select:focus {
+  border-color: var(--primary-purple, #4f46e5);
+}
+
+.role-inline-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #cbd5e1;
+  border-top-color: var(--primary-purple, #4f46e5);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+html.dark .role-row-select {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+/* Botón de eliminar en fila */
+.btn-action.delete {
+  padding: 6px 8px;
+}
+
+.btn-action.delete:hover:not(:disabled) {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.btn-action.btn-disabled,
+.btn-action:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: auto;
+}
+
+html.dark .btn-action.delete:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.2);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Editor de rol en modal de detalle */
+.detail-role-editor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.form-select-sm {
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light, #e2e8f0);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-main, #334155);
+}
+
+.btn-save-role-sm {
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 8px;
+  background: var(--primary-purple, #4f46e5);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-save-role-sm:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.btn-save-role-sm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+html.dark .form-select-sm {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+/* Modal de confirmación de eliminación */
+.modal-delete-card {
+  max-width: 480px;
+}
+
+.delete-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.delete-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.delete-icon-wrapper svg {
+  width: 22px;
+  height: 22px;
+}
+
+.delete-warning-box {
+  background: #fff7ed;
+  border: 1px solid #ffedd5;
+  border-radius: 10px;
+  padding: 16px;
+  color: #9a3412;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.delete-warning-sub {
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: #c2410c;
+}
+
+.btn-danger-submit {
+  padding: 10px 20px;
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-danger-submit:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.btn-danger-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+html.dark .delete-icon-wrapper {
+  background: rgba(220, 38, 38, 0.2);
+  color: #fca5a5;
+}
+
+html.dark .delete-warning-box {
+  background: rgba(154, 52, 18, 0.2);
+  border-color: rgba(234, 88, 12, 0.3);
+  color: #fed7aa;
+}
+
+html.dark .delete-warning-sub {
+  color: #fdba74;
 }
 
 /* Responsiveness */

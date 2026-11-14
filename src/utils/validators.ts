@@ -6,7 +6,7 @@
 export const REGEX_DNI = /^\d{8}$/
 export const REGEX_TELEFONO = /^\d{9}$/
 export const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-export const REGEX_SOLO_LETRAS = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/
+export const REGEX_SOLO_LETRAS = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s.]+$/
 export const REGEX_USERNAME = /^[a-zA-Z0-9._-]+$/
 
 /**
