@@ -33,6 +33,14 @@ export interface CrearUsuarioDto {
   activo?: boolean
 }
 
+export interface ActualizarPerfilDto {
+  nombre_completo?: string
+  correo?: string
+  telefono?: string
+  especialidad?: string
+  descripcion?: string
+}
+
 export interface ActualizarUsuarioDto {
   nombre_completo?: string
   correo?: string

@@ -32,6 +32,8 @@ const titulosPorRuta: Record<string, string> = {
   '/pagos': 'Registro de Pagos',
   '/inventario': 'Inventario y Proveedores',
   '/configuracion': 'Configuración General',
+  '/perfil': 'Mi Perfil',
+  '/intranet/perfil': 'Mi Perfil',
 }
 
 const titulo = computed(() => titulosPorRuta[route.path] ?? 'Intranet SoliDent')
@@ -82,9 +84,9 @@ const cerrarSesion = () => {
       </button>
 
       <RouterLink
-        :to="defaultDashboardRoute"
+        to="/perfil"
         class="user-badge user-badge-link"
-        :title="`Ir a ${userRoleLabel}`"
+        title="Ver y editar Mi Perfil"
       >
         <div class="user-avatar">
           <span>{{ inicial }}</span>

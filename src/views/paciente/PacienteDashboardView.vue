@@ -28,8 +28,16 @@
       <!-- Ficha de Datos Personales del Paciente -->
       <section class="patient-profile-card">
         <div class="profile-header">
-          <h3>Ficha del Paciente</h3>
-          <span class="user-role-badge">PACIENTE</span>
+          <div class="profile-title-group">
+            <h3>Ficha del Paciente</h3>
+            <span class="user-role-badge">PACIENTE</span>
+          </div>
+          <router-link to="/perfil" class="btn-edit-profile-action">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="edit-icon-sm">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+            <span>Editar Mi Perfil</span>
+          </router-link>
         </div>
         <div class="profile-grid">
           <div class="profile-item">
@@ -737,6 +745,39 @@ onMounted(cargarDatos)
   margin-bottom: 16px;
   border-bottom: 1px solid var(--border-light);
   padding-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.profile-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-edit-profile-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--primary-purple-light, #eef2ff);
+  color: var(--primary-purple, #4f46e5);
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.btn-edit-profile-action:hover {
+  background: var(--primary-purple, #4f46e5);
+  color: #ffffff;
+}
+
+.edit-icon-sm {
+  width: 14px;
+  height: 14px;
 }
 
 .profile-header h3 {

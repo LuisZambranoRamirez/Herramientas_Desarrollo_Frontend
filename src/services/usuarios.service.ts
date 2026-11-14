@@ -2,6 +2,7 @@ import type {
   Usuario,
   CrearUsuarioDto,
   ActualizarUsuarioDto,
+  ActualizarPerfilDto,
   OdontologoPublico,
 } from '@/types'
 import { api } from '@/services/api/client'
@@ -87,6 +88,75 @@ export const usuariosService = {
 
     const lista = await this.getAll()
     return lista.find(u => u.username.toLowerCase() === username.toLowerCase())
+  },
+
+  /**
+   * Obtiene el perfil propio del usuario actualmente autenticado (GET /usuarios/me).
+   * Funciona para todos los roles (PACIENTE, ODONTOLOGO, SYSTEM_ADMIN).
+   */
+  async getMyProfile(): Promise<Usuario> {
+    if (!env.useMock) {
+      return api.get<Usuario>('/usuarios/me')
+    }
+
+    const guardados = obtenerDeStorage() || (await this.getAll())
+    let authUser: any = null
+    try {
+      const raw = localStorage.getItem('user')
+      if (raw) authUser = JSON.parse(raw)
+    } catch {
+      // ignore
+    }
+    const targetUsername = authUser?.username || 'admin'
+    const found = guardados.find(u => u.username.toLowerCase() === targetUsername.toLowerCase())
+    if (found) {
+      return { ...found }
+    }
+    return guardados[0] || (await usuarioApi.getAll())[0]!
+  },
+
+  /**
+   * Actualiza los datos personales y de contacto del propio usuario autenticado (PUT /usuarios/me).
+   * Para odontólogos, permite además actualizar especialidad y descripción.
+   */
+  async updateMyProfile(data: ActualizarPerfilDto): Promise<Usuario> {
+    validarDatosUsuario(data)
+
+    const payload: ActualizarPerfilDto = {
+      nombre_completo: data.nombre_completo?.trim() || undefined,
+      correo: data.correo?.trim().toLowerCase() || undefined,
+      telefono: data.telefono?.trim() || undefined,
+      especialidad: data.especialidad?.trim() || undefined,
+      descripcion: data.descripcion?.trim() || undefined,
+    }
+
+    if (!env.useMock) {
+      return api.put<Usuario>('/usuarios/me', payload)
+    }
+
+    const lista = await this.getAll()
+    let authUser: any = null
+    try {
+      const raw = localStorage.getItem('user')
+      if (raw) authUser = JSON.parse(raw)
+    } catch {
+      // ignore
+    }
+    const targetUsername = authUser?.username || 'admin'
+    const index = lista.findIndex(u => u.username.toLowerCase() === targetUsername.toLowerCase())
+    if (index === -1 || !lista[index]) {
+      throw new Error('Usuario no encontrado.')
+    }
+
+    const user = lista[index]!
+    if (payload.nombre_completo !== undefined) user.nombre_completo = payload.nombre_completo
+    if (payload.correo !== undefined) user.correo = payload.correo
+    if (payload.telefono !== undefined) user.telefono = payload.telefono
+    if (payload.especialidad !== undefined) (user as any).especialidad = payload.especialidad
+    if (payload.descripcion !== undefined) (user as any).descripcion = payload.descripcion
+
+    guardarEnStorage(lista)
+    return { ...user }
   },
 
   async create(data: CrearUsuarioDto): Promise<Usuario> {

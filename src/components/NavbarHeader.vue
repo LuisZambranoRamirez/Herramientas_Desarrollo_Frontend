@@ -301,6 +301,14 @@ watch(
             📊 {{ dashboardButtonLabel }}
           </RouterLink>
 
+          <RouterLink
+            to="/perfil"
+            class="nav-intranet-chip nav-perfil-chip"
+            title="Ver y editar Mi Perfil"
+          >
+            👤 Mi Perfil
+          </RouterLink>
+
           <button
             type="button"
             class="logout-button"
@@ -416,6 +424,14 @@ watch(
           @click="isMobileMenuOpen = false"
         >
           📊 {{ dashboardButtonLabel }}
+        </RouterLink>
+
+        <RouterLink
+          to="/perfil"
+          class="mobile-nav-link"
+          @click="isMobileMenuOpen = false"
+        >
+          👤 Mi Perfil
         </RouterLink>
 
         <button

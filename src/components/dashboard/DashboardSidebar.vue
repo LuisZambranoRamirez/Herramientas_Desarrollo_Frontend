@@ -30,6 +30,11 @@ const isOdontologo = computed(() => {
   return role === 'ODONTOLOGO' || role === 'DOCTOR'
 })
 
+const isPaciente = computed(() => {
+  const role = currentRole.value
+  return role === 'PACIENTE' || role === 'CLIENTE'
+})
+
 const homeRoute = computed(() => {
   return isOdontologo.value ? '/odontologo/dashboard' : getDefaultRouteByRole(currentRole.value)
 })
@@ -91,9 +96,29 @@ function closeMobile() {
 
       <!-- Menú de Navegación -->
       <nav class="sidebar-nav">
+        <!-- 1. Panel Principal: Paciente -->
+        <RouterLink
+          v-if="isPaciente"
+          to="/paciente/dashboard"
+          class="nav-item"
+          active-class="active"
+          :title="collapsed ? 'Mi Portal' : ''"
+          @click="closeMobile"
+        >
+          <div class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="3" y="3" width="7" height="9" rx="1.5" stroke-width="2" />
+              <rect x="14" y="3" width="7" height="5" rx="1.5" stroke-width="2" />
+              <rect x="14" y="12" width="7" height="9" rx="1.5" stroke-width="2" />
+              <rect x="3" y="16" width="7" height="5" rx="1.5" stroke-width="2" />
+            </svg>
+          </div>
+          <span v-if="!collapsed" class="nav-text">Mi Portal</span>
+        </RouterLink>
+
         <!-- 1. Panel Principal: Odontólogo -->
         <RouterLink
-          v-if="isOdontologo"
+          v-else-if="isOdontologo"
           to="/odontologo/dashboard"
           class="nav-item"
           active-class="active"
@@ -250,6 +275,22 @@ function closeMobile() {
             </svg>
           </div>
           <span v-if="!collapsed" class="nav-text">Configuración</span>
+        </RouterLink>
+
+        <!-- 9. Mi Perfil (Accesible para todos los roles) -->
+        <RouterLink
+          to="/perfil"
+          class="nav-item"
+          active-class="active"
+          :title="collapsed ? 'Mi Perfil' : ''"
+          @click="closeMobile"
+        >
+          <div class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <span v-if="!collapsed" class="nav-text">Mi Perfil</span>
         </RouterLink>
       </nav>
 

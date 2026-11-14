@@ -107,6 +107,19 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    updateUserInSession(updated: Partial<Usuario>) {
+      if (!this.user) return
+      const merged: Usuario = {
+        ...this.user,
+        ...updated,
+      }
+      const role = extractUserRole(merged) || this.userRole || 'PACIENTE'
+      merged.user_role = role as any
+      ;(merged as any).role = role
+      this.user = merged
+      localStorage.setItem('user', JSON.stringify(merged))
+    },
+
     async logout() {
       if (this.token) {
         try {

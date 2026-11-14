@@ -13,6 +13,7 @@ import UsuariosView from '@/views/intranet/UsuariosView.vue'
 import TratamientosView from '@/views/intranet/TratamientosView.vue'
 import PagosView from '@/views/intranet/PagosView.vue'
 import ConfiguracionView from '@/views/intranet/ConfiguracionView.vue'
+import PerfilView from '@/views/intranet/PerfilView.vue'
 import OdontologoDashboardView from '@/views/odontologo/OdontologoDashboardView.vue'
 import PacienteDashboardView from '@/views/paciente/PacienteDashboardView.vue'
 
@@ -113,6 +114,16 @@ const router = createRouter({
     {
       path: '/cliente/dashboard',
       redirect: '/paciente/dashboard',
+    },
+    {
+      path: '/perfil',
+      name: 'perfil',
+      component: PerfilView,
+      meta: { requiresAuth: true, roles: ['SYSTEM_ADMIN', 'ODONTOLOGO', 'PACIENTE', 'CLIENTE'] },
+    },
+    {
+      path: '/intranet/perfil',
+      redirect: '/perfil',
     },
   ],
   scrollBehavior(to, from, savedPosition) {
