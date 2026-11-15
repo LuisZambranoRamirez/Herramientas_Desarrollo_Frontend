@@ -222,3 +222,29 @@ body {
   display: flex;
   flex-direction: column;
 }
+
+
+html.dark select {
+  background-color: var(--bg-input);
+  color: var(--text-main);
+  color-scheme: dark;
+}
+
+/* Opciones del desplegable en modo oscuro */
+html.dark select option,
+html.dark select optgroup {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+/* Select en modo claro */
+html:not(.dark) select {
+  color-scheme: light;
+}
+
+/* Opciones del desplegable en modo claro */
+html:not(.dark) select option,
+html:not(.dark) select optgroup {
+  background-color: #ffffff;
+  color: #1e293b;
+}
