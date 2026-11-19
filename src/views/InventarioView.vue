@@ -39,7 +39,6 @@
           <table class="data-table tabla tabla-generica">
             <thead>
               <tr>
-                <th>Código único</th>
                 <th>Nombre</th>
                 <th>Stock</th>
                 <th>Stock mínimo</th>
@@ -55,7 +54,6 @@
                 class="tabla-fila"
                 :class="{ 'fila-alerta': insumo.stock < insumo.stock_minimo }"
               >
-               <td>{{ insumo.codigo_unico }}</td>
                 <td>{{ insumo.nombre }}</td>
                 <td>{{ insumo.stock }}</td>
                 <td>{{ insumo.stock_minimo }}</td>
@@ -84,6 +82,12 @@
     </div>
 
     <div v-else>
+      <div class="acciones">
+        <button class="btn-primario" type="button" @click="abrirModalProveedor">
+          + Nuevo proveedor
+        </button>
+      </div>
+
       <div v-if="cargandoProveedores" class="estado-info">
         Cargando proveedores...
       </div>
@@ -114,27 +118,21 @@
       </div>
     </div>
 
+    <!-- Modal Crear / Editar Insumo -->
     <div v-if="mostrarModal" class="modal-overlay" @click.self="cerrarModal">
       <div class="modal-box">
-      <h3>{{ insumoEditandoId ? 'Editar insumo' : 'Nuevo insumo' }}</h3>
-
+        <h3>{{ insumoEditandoId ? 'Editar insumo' : 'Nuevo insumo' }}</h3>
 
         <form @submit.prevent="guardarInsumo">
-
           <div class="campo">
-    <label>Código único</label>
-    <input v-model="nuevoInsumo.codigo_unico" type="text" required placeholder="Ej. INS-001" />
-  </div>
-
-         <div class="campo">
-         <label>Nombre</label>
-         <input
-    v-model="nuevoInsumo.nombre"
-    type="text"
-    @keypress="(e) => { if (!/[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/.test(e.key)) e.preventDefault() }"
-    @paste.prevent
-    required
-  />
+            <label>Nombre</label>
+            <input
+              v-model="nuevoInsumo.nombre"
+              type="text"
+              @keypress="(e) => { if (!/[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/.test(e.key)) e.preventDefault() }"
+              @paste.prevent
+              required
+            />
           </div>
 
           <div class="campo">
@@ -156,8 +154,60 @@
 
           <div class="modal-acciones">
             <button type="button" class="btn-secundario" @click="cerrarModal">Cancelar</button>
-          <button type="submit" class="btn-primario" :disabled="guardando">
-           {{ guardando ? 'Guardando...' : (insumoEditandoId ? 'Actualizar' : 'Guardar') }}
+            <button type="submit" class="btn-primario" :disabled="guardando">
+              {{ guardando ? 'Guardando...' : (insumoEditandoId ? 'Actualizar' : 'Guardar') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Nuevo Proveedor -->
+    <div v-if="mostrarModalProveedor" class="modal-overlay" @click.self="cerrarModalProveedor">
+      <div class="modal-box">
+        <h3>Nuevo proveedor</h3>
+
+        <form @submit.prevent="guardarProveedor">
+          <div class="campo">
+            <label>RUC (11 dígitos)</label>
+            <input
+              v-model="nuevoProveedor.ruc"
+              type="text"
+              maxlength="11"
+              required
+              placeholder="Ej. 20123456789"
+            />
+          </div>
+
+          <div class="campo">
+            <label>Nombre</label>
+            <input
+              v-model="nuevoProveedor.nombre"
+              type="text"
+              required
+              placeholder="Nombre del proveedor"
+            />
+          </div>
+
+          <div class="campo">
+            <label>Teléfono (9 dígitos)</label>
+            <input
+              v-model="nuevoProveedor.telefono"
+              type="text"
+              maxlength="9"
+              required
+              placeholder="Ej. 987654321"
+            />
+          </div>
+
+          <p v-if="errorProveedor" class="estado-error">{{ errorProveedor }}</p>
+
+          <div class="modal-acciones">
+            <button type="button" class="btn-secundario" @click="cerrarModalProveedor">
+              Cancelar
+            </button>
+            <button type="submit" class="btn-primario" :disabled="guardandoProveedor">
+              {{ guardandoProveedor ? 'Guardando...' : 'Guardar' }}
             </button>
           </div>
         </form>
@@ -168,7 +218,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import type { Insumo, Proveedor, CrearInsumoDto } from '@/types'
+import type { Insumo, Proveedor, CrearInsumoDto, CrearProveedorDto } from '@/types'
 import DashboardLayout from '@/components/dashboard/DashboardLayout.vue'
 import { insumosService } from '@/services/insumos.service'
 import { proveedoresService } from '@/services/proveedores.service'
@@ -201,6 +251,7 @@ onMounted(async () => {
   }
 })
 
+// ── Estado modal Insumo ──────────────────────────────────────
 const mostrarModal = ref(false)
 const guardando = ref(false)
 const errorFormulario = ref('')
@@ -214,7 +265,6 @@ const insumoVacio = (): CrearInsumoDto => ({
 })
 
 const nuevoInsumo = ref<CrearInsumoDto>(insumoVacio())
-
 const insumoEditandoId = ref<string | null>(null)
 
 const abrirModalCrear = () => {
@@ -223,6 +273,7 @@ const abrirModalCrear = () => {
   errorFormulario.value = ''
   mostrarModal.value = true
 }
+
 const abrirModalEditar = (insumo: Insumo) => {
   insumoEditandoId.value = insumo.insumo_id
   nuevoInsumo.value = {
@@ -244,15 +295,23 @@ const guardarInsumo = async () => {
   guardando.value = true
   errorFormulario.value = ''
 
+  const payload: CrearInsumoDto = {
+  codigo_unico: nuevoInsumo.value.codigo_unico?.trim() || '',
+  nombre: nuevoInsumo.value.nombre.trim(),
+  stock: Number(nuevoInsumo.value.stock),
+  stock_minimo: Number(nuevoInsumo.value.stock_minimo),
+  fecha_vencimiento: nuevoInsumo.value.fecha_vencimiento || null,
+  }
+
   try {
     if (insumoEditandoId.value) {
-      const actualizado = await insumosService.update(insumoEditandoId.value, nuevoInsumo.value)
-      const index = insumos.value.findIndex(insumo => insumo.insumo_id === insumoEditandoId.value)
+      const actualizado = await insumosService.update(insumoEditandoId.value, payload)
+      const index = insumos.value.findIndex((insumo) => insumo.insumo_id === insumoEditandoId.value)
       if (index !== -1) {
         insumos.value[index] = actualizado
       }
     } else {
-      const creado = await insumosService.create(nuevoInsumo.value)
+      const creado = await insumosService.create(payload)
       insumos.value.push(creado)
     }
 
@@ -263,6 +322,7 @@ const guardarInsumo = async () => {
     guardando.value = false
   }
 }
+
 const eliminarInsumo = async (id: string) => {
   const confirmar = confirm('¿Seguro que quieres eliminar este insumo?')
 
@@ -272,9 +332,67 @@ const eliminarInsumo = async (id: string) => {
 
   try {
     await insumosService.delete(id)
-    insumos.value = insumos.value.filter(insumo => insumo.insumo_id !== id)
+    insumos.value = insumos.value.filter((insumo) => insumo.insumo_id !== id)
   } catch (e) {
     alert('No se pudo eliminar el insumo.')
+  }
+}
+
+// ── Estado modal Proveedor ────────────────────────────────────
+const mostrarModalProveedor = ref(false)
+const guardandoProveedor = ref(false)
+const errorProveedor = ref('')
+
+const proveedorVacio = (): CrearProveedorDto => ({
+  ruc: '',
+  nombre: '',
+  telefono: '',
+})
+
+const nuevoProveedor = ref<CrearProveedorDto>(proveedorVacio())
+
+const abrirModalProveedor = () => {
+  nuevoProveedor.value = proveedorVacio()
+  errorProveedor.value = ''
+  mostrarModalProveedor.value = true
+}
+
+const cerrarModalProveedor = () => {
+  mostrarModalProveedor.value = false
+}
+
+const guardarProveedor = async () => {
+  const ruc = nuevoProveedor.value.ruc.trim()
+  const nombre = nuevoProveedor.value.nombre.trim()
+  const telefono = nuevoProveedor.value.telefono.trim()
+
+  if (!/^\d{11}$/.test(ruc)) {
+    errorProveedor.value = 'El RUC debe contener exactamente 11 dígitos numéricos.'
+    return
+  }
+
+  if (!nombre) {
+    errorProveedor.value = 'El nombre del proveedor es obligatorio.'
+    return
+  }
+
+  if (!/^\d{9}$/.test(telefono)) {
+    errorProveedor.value = 'El teléfono debe contener exactamente 9 dígitos numéricos.'
+    return
+  }
+
+  guardandoProveedor.value = true
+  errorProveedor.value = ''
+
+  try {
+    const creado = await proveedoresService.create({ ruc, nombre, telefono })
+    proveedores.value.push(creado)
+    mostrarModalProveedor.value = false
+  } catch (e) {
+    errorProveedor.value =
+      e instanceof Error ? e.message : 'No se pudo registrar el proveedor.'
+  } finally {
+    guardandoProveedor.value = false
   }
 }
 </script>
@@ -627,3 +745,6 @@ const eliminarInsumo = async (id: string) => {
   box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2) !important;
 }
 </style>
+```[cite: 7]
+
+Pruébalo en tu rama y dime qué tal queda o qué otro detalle quieres revisar[cite: 7].
