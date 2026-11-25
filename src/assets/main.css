@@ -248,3 +248,36 @@ html:not(.dark) select optgroup {
   background-color: #ffffff;
   color: #1e293b;
 }
+
+
+/* Fondo de la tarjeta del comprobante */
+html.dark .comprobante-card {
+  background-color: var(--bg-input) !important;
+  color: var(--text-main) !important;
+  border: 1px solid #334155 !important;
+}
+
+/* Filas de información */
+html.dark .comprobante-card .comprobante-row {
+  color: var(--text-main) !important;
+}
+
+/* Etiquetas: ID, fecha, paciente, etc. */
+html.dark .comprobante-card .detalle-label {
+  color: var(--text-muted) !important;
+}
+
+/* Valores del comprobante */
+html.dark .comprobante-card .comprobante-row > span:not(.detalle-label) {
+  color: #f8fafc !important;
+}
+
+/* Identificador del comprobante */
+html.dark .comprobante-card .font-mono {
+  color: #cbd5e1 !important;
+}
+
+/* Líneas divisorias */
+html.dark .comprobante-card hr {
+  border-color: #475569 !important;
+}
