@@ -281,3 +281,156 @@ html.dark .comprobante-card .font-mono {
 html.dark .comprobante-card hr {
   border-color: #475569 !important;
 }
+
+
+/* Panel principal del modal */
+html.dark .modal,
+html.dark .modal-content,
+html.dark .modal-container,
+html.dark .modal-body {
+  color: var(--text-main) !important;
+}
+
+/* Tarjetas o cajas internas dentro del modal */
+html.dark .modal .card,
+html.dark .modal .detail-card,
+html.dark .modal .details-card,
+html.dark .modal .summary-card,
+html.dark .modal .resumen-card,
+html.dark .modal .info-card,
+html.dark .modal .comprobante-card {
+  background-color: var(--bg-input) !important;
+  color: var(--text-main) !important;
+  border: 1px solid #334155 !important;
+}
+
+/* Etiquetas o títulos secundarios */
+html.dark .modal .label,
+html.dark .modal .detalle-label,
+html.dark .modal .field-label,
+html.dark .modal .info-label,
+html.dark .modal .summary-label {
+  color: var(--text-muted) !important;
+}
+
+/* Valores */
+html.dark .modal .value,
+html.dark .modal .detalle-value,
+html.dark .modal .field-value,
+html.dark .modal .info-value {
+  color: var(--text-main) !important;
+}
+
+/* Textos normales dentro del modal */
+html.dark .modal p,
+html.dark .modal span,
+html.dark .modal strong,
+html.dark .modal h1,
+html.dark .modal h2,
+html.dark .modal h3,
+html.dark .modal h4,
+html.dark .modal h5,
+html.dark .modal h6 {
+  color: inherit;
+}
+
+/* Badges / pills / chips */
+html.dark .modal .badge,
+html.dark .modal .pill,
+html.dark .modal .chip,
+html.dark .modal .metodo-pago,
+html.dark .modal .detalle-metodo {
+  background-color: #334155 !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #475569 !important;
+}
+
+/* Bloques de resumen tipo costo / total / saldo */
+html.dark .modal .payment-summary,
+html.dark .modal .summary-box,
+html.dark .modal .resumen-pago,
+html.dark .modal .resumen-totales,
+html.dark .modal .totales-box {
+  background-color: var(--bg-input) !important;
+  color: var(--text-main) !important;
+  border: 1px solid #334155 !important;
+}
+
+/* Separadores */
+html.dark .modal hr {
+  border-color: #475569 !important;
+}
+
+
+/* ==========================================
+   MODAL DETALLE DEL PACIENTE - MODO OSCURO
+   ========================================== */
+
+html.dark .modal-paciente {
+  background-color: var(--bg-card) !important;
+  color: var(--text-main) !important;
+  border: 1px solid #334155 !important;
+}
+
+/* Encabezado y pie del modal */
+html.dark .modal-paciente .modal-header,
+html.dark .modal-paciente .modal-footer {
+  background-color: var(--bg-card) !important;
+  border-color: #334155 !important;
+}
+
+/* Título */
+html.dark .modal-paciente .modal-header h3 {
+  color: #f8fafc !important;
+}
+
+/* Contenedor de información */
+html.dark .modal-paciente .detalle-grid,
+html.dark .modal-paciente .detalle-item {
+  background-color: transparent !important;
+}
+
+/* Etiquetas */
+html.dark .modal-paciente .detalle-label {
+  color: #94a3b8 !important;
+}
+
+/* Valores: nombre, DNI, correo, etc. */
+html.dark .modal-paciente .detalle-item > span:not(.detalle-label) {
+  color: #f8fafc !important;
+}
+
+
+/* Resumen de pagos: costo, abonado y saldo */
+html.dark .modal .resumen-saldo {
+  background-color: var(--bg-input) !important;
+  border: 1px solid #334155 !important;
+  color: var(--text-main) !important;
+}
+
+/* Etiquetas del resumen */
+html.dark .modal .resumen-saldo .detalle-label {
+  color: #94a3b8 !important;
+}
+
+/* Valores monetarios del resumen */
+html.dark .modal .resumen-saldo strong {
+  color: #f8fafc !important;
+}
+
+/* Saldo pendiente resaltado en verde */
+html.dark .modal .resumen-saldo strong.text-emerald {
+  color: #34d399 !important;
+}
+
+/* Método de pago del comprobante */
+html.dark .comprobante-card .badge-method {
+  background-color: #334155 !important;
+  color: #f8fafc !important;
+  border: 1px solid #475569 !important;
+}
+
+/* Etiquetas del comprobante */
+html.dark .comprobante-card .detalle-label {
+  color: #94a3b8 !important;
+}

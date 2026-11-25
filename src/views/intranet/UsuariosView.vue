@@ -2885,4 +2885,28 @@ html.dark .delete-warning-sub {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+html.dark .modal-detail-card .link-contact {
+  color: #a5b4fc;
+}
+
+/* Botón para cambiar el estado de la cuenta */
+html.dark .modal-detail-card .btn-text-action {
+  color: #a5b4fc;
+}
+
+/* Selector de rol */
+html.dark .modal-detail-card .form-select-sm {
+  background-color: #1e293b;
+  color: #f8fafc;
+  border-color: #334155;
+  color-scheme: dark;
+}
+
+/* Opciones del selector */
+html.dark .modal-detail-card .form-select-sm option {
+  background-color: #1e293b;
+  color: #f8fafc;
+}
+
 </style>

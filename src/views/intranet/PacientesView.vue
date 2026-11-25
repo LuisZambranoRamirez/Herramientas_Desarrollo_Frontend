@@ -385,7 +385,7 @@ onMounted(fetchPacientes)
 
     <!-- ====== MODAL ====== -->
     <div v-if="modoModal" class="modal-overlay" @click.self="cerrarModal">
-      <div class="modal">
+      <div class="modal modal-paciente">
 
         <!-- VER -->
         <template v-if="modoModal === 'ver' && pacienteSeleccionado">
