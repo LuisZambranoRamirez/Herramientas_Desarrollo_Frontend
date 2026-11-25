@@ -2,8 +2,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import DashboardLayout from '@/components/dashboard/DashboardLayout.vue'
+import { useAuthStore } from '@/stores/auth.store'
 import { citasService } from '@/services/citas.service'
 import { pacientesService } from '@/services/pacientes.service'
+import { extractUserRole } from '@/utils/navigation'
 import type { Cita, CitaOdontologoResumen, EstadoCita, Paciente } from '@/types'
 
 export interface FormCita {
@@ -22,6 +24,10 @@ interface PacienteOption {
 }
 
 const router = useRouter()
+const authStore = useAuthStore()
+const esAdministrador = computed(() =>
+  ['SYSTEM_ADMIN', 'ADMIN', 'ADMINISTRADOR'].includes(extractUserRole(authStore.userRole) ?? ''),
+)
 
 const FRANJAS_HORARIAS = [
   '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
@@ -196,6 +202,11 @@ const franjasSelect = computed<string[]>(() => {
 })
 
 const abrirCrear = () => {
+  if (esAdministrador.value) {
+    errorAccion.value = 'El administrador no puede agendar citas desde esta vista.'
+    return
+  }
+
   errorModal.value = null
   citaEnEdicion.value = null
   modoModal.value = 'crear'
@@ -228,6 +239,11 @@ const cerrarModal = () => {
 }
 
 const guardar = async () => {
+  if (modoModal.value === 'crear' && esAdministrador.value) {
+    errorModal.value = 'El administrador no puede agendar citas desde esta vista.'
+    return
+  }
+
   if (!form.value.dni_paciente || !form.value.dni_odontologo || !form.value.motivo_consulta.trim()) {
     errorModal.value = 'Completa paciente, odontólogo y motivo de consulta.'
     return
@@ -331,7 +347,7 @@ const formatHora = (hora: string) => hora.slice(0, 5)
           <h2 class="view-title">Agenda y Citas Médicas</h2>
           <p class="page-subtitle">Gestiona las citas agendadas, doctores tratantes y estados clínicos.</p>
         </div>
-        <button class="btn-nuevo" type="button" @click="abrirCrear">
+        <button v-if="!esAdministrador" class="btn-nuevo" type="button" @click="abrirCrear">
           + Nueva Cita
         </button>
       </div>
@@ -427,7 +443,7 @@ const formatHora = (hora: string) => hora.slice(0, 5)
           <span class="vacio-icono">📅</span>
           <p class="vacio-titulo">Sin citas registradas</p>
           <p class="vacio-desc">
-            {{ busqueda || filtroEstado !== 'TODOS' ? 'No se encontraron citas con los criterios seleccionados.' : 'Agenda la primera cita con el botón "+ Nueva Cita".' }}
+            {{ busqueda || filtroEstado !== 'TODOS' ? 'No se encontraron citas con los criterios seleccionados.' : (esAdministrador ? 'No hay citas registradas.' : 'Agenda la primera cita con el botón "+ Nueva Cita".') }}
           </p>
         </div>
 
