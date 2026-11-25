@@ -82,6 +82,7 @@ html.dark .low-stock-card,
 html.dark .stock-container,
 html.dark .table-card,
 html.dark .tabla-card,
+html.dark .tabla-container,
 html.dark .config-card,
 html.dark .stat-mini-card {
   background-color: var(--bg-card) !important;
@@ -115,22 +116,53 @@ html.dark .page-subtitle {
 }
 
 html.dark .data-table th,
-html.dark .tabla th {
+html.dark .tabla th,
+html.dark .tabla-generica th {
   background-color: #0f172a !important;
   color: #94a3b8 !important;
   border-bottom-color: #1f2937 !important;
 }
 
 html.dark .data-table td,
-html.dark .tabla td {
+html.dark .tabla td,
+html.dark .tabla-generica td {
   border-bottom-color: #1f2937 !important;
   color: #e2e8f0 !important;
 }
 
 html.dark .data-table tbody tr:hover,
 html.dark .tabla tbody tr:hover,
+html.dark .tabla-generica tbody tr:hover,
 html.dark .tabla-fila:hover {
   background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* Filas de alerta y badges de Inventario en Modo Oscuro */
+html.dark .fila-alerta {
+  background-color: rgba(239, 68, 68, 0.12) !important;
+}
+
+html.dark .fila-alerta:hover {
+  background-color: rgba(239, 68, 68, 0.18) !important;
+}
+
+html.dark .badge-ok {
+  background-color: rgba(34, 197, 94, 0.15) !important;
+  color: #4ade80 !important;
+}
+
+html.dark .badge-bajo {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+
+html.dark .btn-eliminar {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+
+html.dark .btn-eliminar:hover {
+  background-color: rgba(239, 68, 68, 0.25) !important;
 }
 
 html.dark .filter-bar {
@@ -189,4 +221,63 @@ body {
   padding: 0;
   display: flex;
   flex-direction: column;
+}
+
+
+html.dark select {
+  background-color: var(--bg-input);
+  color: var(--text-main);
+  color-scheme: dark;
+}
+
+/* Opciones del desplegable en modo oscuro */
+html.dark select option,
+html.dark select optgroup {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+/* Select en modo claro */
+html:not(.dark) select {
+  color-scheme: light;
+}
+
+/* Opciones del desplegable en modo claro */
+html:not(.dark) select option,
+html:not(.dark) select optgroup {
+  background-color: #ffffff;
+  color: #1e293b;
+}
+
+
+/* Fondo de la tarjeta del comprobante */
+html.dark .comprobante-card {
+  background-color: var(--bg-input) !important;
+  color: var(--text-main) !important;
+  border: 1px solid #334155 !important;
+}
+
+/* Filas de información */
+html.dark .comprobante-card .comprobante-row {
+  color: var(--text-main) !important;
+}
+
+/* Etiquetas: ID, fecha, paciente, etc. */
+html.dark .comprobante-card .detalle-label {
+  color: var(--text-muted) !important;
+}
+
+/* Valores del comprobante */
+html.dark .comprobante-card .comprobante-row > span:not(.detalle-label) {
+  color: #f8fafc !important;
+}
+
+/* Identificador del comprobante */
+html.dark .comprobante-card .font-mono {
+  color: #cbd5e1 !important;
+}
+
+/* Líneas divisorias */
+html.dark .comprobante-card hr {
+  border-color: #475569 !important;
 }

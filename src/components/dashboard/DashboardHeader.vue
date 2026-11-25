@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { useTheme } from '@/composables/useTheme'
+import { getRoleLabel, getDefaultRouteByRole, extractUserRole } from '@/utils/navigation'
 
 const emit = defineEmits<{
   (e: 'toggleMobile'): void
@@ -13,14 +14,26 @@ const router = useRouter()
 const authStore = useAuthStore()
 const { isDark, toggleTheme } = useTheme()
 
+const currentRole = computed(() => {
+  return extractUserRole(authStore.userRole) || extractUserRole(authStore.user)
+})
+
+const defaultDashboardRoute = computed(() => {
+  return getDefaultRouteByRole(currentRole.value)
+})
+
 const titulosPorRuta: Record<string, string> = {
   '/dashboard': 'Panel Principal',
-  '/usuarios': 'Gestión de Pacientes',
+  '/odontologo/dashboard': 'Panel del Especialista',
+  '/pacientes': 'Gestión de Pacientes',
+  '/usuarios': 'Gestión de Usuarios',
   '/agenda': 'Agenda y Citas Médicas',
   '/tratamientos': 'Catálogo de Tratamientos',
   '/pagos': 'Registro de Pagos',
   '/inventario': 'Inventario y Proveedores',
   '/configuracion': 'Configuración General',
+  '/perfil': 'Mi Perfil',
+  '/intranet/perfil': 'Mi Perfil',
 }
 
 const titulo = computed(() => titulosPorRuta[route.path] ?? 'Intranet SoliDent')
@@ -31,6 +44,10 @@ const usuarioNombre = computed(() => {
 })
 
 const inicial = computed(() => usuarioNombre.value.charAt(0).toUpperCase() || 'U')
+
+const userRoleLabel = computed(() => {
+  return getRoleLabel(currentRole.value)
+})
 
 const cerrarSesion = () => {
   authStore.logout()
@@ -66,15 +83,19 @@ const cerrarSesion = () => {
         <span v-else class="theme-icon" aria-label="Modo oscuro">🌙</span>
       </button>
 
-      <div class="user-badge">
+      <RouterLink
+        to="/perfil"
+        class="user-badge user-badge-link"
+        title="Ver y editar Mi Perfil"
+      >
         <div class="user-avatar">
           <span>{{ inicial }}</span>
         </div>
         <div class="user-info">
           <span class="user-name">{{ usuarioNombre }}</span>
-          <span class="user-role">Administrador</span>
+          <span class="user-role">{{ userRoleLabel }}</span>
         </div>
-      </div>
+      </RouterLink>
 
       <button type="button" class="logout-btn" title="Cerrar sesión" @click="cerrarSesion">
         <svg class="logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -161,6 +182,17 @@ const cerrarSesion = () => {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+}
+
+.user-badge-link {
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.user-badge-link:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
 }
 
 .user-avatar {

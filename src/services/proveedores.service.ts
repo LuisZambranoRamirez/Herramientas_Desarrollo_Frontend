@@ -1,75 +1,32 @@
 import type {
-Proveedor,
-CrearProveedorDto,
-ActualizarProveedorDto,
+  Proveedor,
+  CrearProveedorDto,
+  ActualizarProveedorDto,
 } from '@/types'
-
-// ============================================================
-// MOCKS
-// ============================================================
-
-import { proveedorApi } from '@/services/mock-api'
+import { api } from '@/services/api/client'
 
 // ============================================================
 // SERVICIO DE PROVEEDORES
 // ============================================================
 
 export const proveedoresService = {
-getAll(): Promise<Proveedor[]> {
-// Backend:
-// return api.get<Proveedor[]>(
-// '/proveedores',
-// )
+  getAll(): Promise<Proveedor[]> {
+    return api.get<Proveedor[]>('/proveedores')
+  },
 
-    return proveedorApi.getAll()
-},
+  getByRuc(ruc: string): Promise<Proveedor | undefined> {
+    return api.get<Proveedor>(`/proveedores/${ruc}`)
+  },
 
-getByRuc(
-    ruc: string,
-): Promise<Proveedor | undefined> {
-    // Backend:
-    // return api.get<Proveedor>(
-    //     `/proveedores/${ruc}`,
-    // )
+  create(data: CrearProveedorDto): Promise<Proveedor> {
+    return api.post<Proveedor>('/proveedores', data)
+  },
 
-    return proveedorApi.getByRuc(ruc)
-},
+  update(ruc: string, data: ActualizarProveedorDto): Promise<Proveedor> {
+    return api.patch<Proveedor>(`/proveedores/${ruc}`, data)
+  },
 
-create(
-    data: CrearProveedorDto,
-): Promise<Proveedor> {
-    // Backend:
-    // return api.post<Proveedor>(
-    //     '/proveedores',
-    //     data,
-    // )
-
-    return proveedorApi.create(data)
-},
-
-update(
-    ruc: string,
-    data: ActualizarProveedorDto,
-): Promise<Proveedor> {
-    // Backend:
-    // return api.patch<Proveedor>(
-    //     `/proveedores/${ruc}`,
-    //     data,
-    // )
-
-    return proveedorApi.update(ruc, data)
-},
-
-delete(
-    ruc: string,
-): Promise<void> {
-    // Backend:
-    // return api.delete<void>(
-    //     `/proveedores/${ruc}`,
-    // )
-
-    return proveedorApi.delete(ruc)
-},
-
-
+  delete(ruc: string): Promise<void> {
+    return api.delete<void>(`/proveedores/${ruc}`)
+  },
 }

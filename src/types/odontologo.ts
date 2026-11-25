@@ -5,6 +5,12 @@ export interface Odontologo {
   colegiatura: string
   especialidad: Especialidad
   username: string
+  nombres?: string
+  apellidos?: string
+  telefono?: string
+  correo?: string
+  activo?: boolean
+  fecha_registro?: string
 }
 
 export interface CrearOdontologoDto {
@@ -16,4 +22,19 @@ export interface CrearOdontologoDto {
 
 export interface ActualizarOdontologoDto {
   especialidad?: Especialidad
+}
+
+export interface OdontologoPublico {
+  id: string
+  dni: string
+  username: string
+  nombre: string
+  nombres: string
+  apellidos: string
+  especialidad: Especialidad | string
+  colegiatura?: string
+  correo?: string
+  telefono?: string
+  descripcion?: string
+  activo: boolean
 }

@@ -17,6 +17,45 @@
       />
     </div>
 
+    <!-- Nombre Completo -->
+    <div class="campo">
+      <label for="nombre_completo">Nombre Completo</label>
+
+      <input
+        id="nombre_completo"
+        v-model="form.nombre_completo"
+        type="text"
+        maxlength="100"
+        placeholder="Ingrese el nombre completo"
+      />
+    </div>
+
+    <!-- Correo Electrónico -->
+    <div class="campo">
+      <label for="correo">Correo Electrónico</label>
+
+      <input
+        id="correo"
+        v-model="form.correo"
+        type="email"
+        maxlength="100"
+        placeholder="ejemplo@solident.com"
+      />
+    </div>
+
+    <!-- Teléfono -->
+    <div class="campo">
+      <label for="telefono">Teléfono (9 dígitos)</label>
+
+      <input
+        id="telefono"
+        v-model="form.telefono"
+        type="tel"
+        maxlength="9"
+        placeholder="987654321"
+      />
+    </div>
+
     <!-- Password -->
     <div class="campo">
       <label for="password">Contraseña</label>
@@ -110,6 +149,9 @@ const editando = computed(() => {
 const form = reactive({
   username: props.usuario?.username ?? '',
   password: '',
+  nombre_completo: props.usuario?.nombre_completo ?? '',
+  correo: props.usuario?.correo ?? '',
+  telefono: props.usuario?.telefono ?? '',
   activo: props.usuario?.activo ?? true,
   user_role: props.usuario?.user_role ?? ''
 })
@@ -117,6 +159,9 @@ const form = reactive({
 const guardar = () => {
   const datos = {
     username: form.username,
+    nombre_completo: form.nombre_completo?.trim() || undefined,
+    correo: form.correo?.trim() || undefined,
+    telefono: form.telefono?.trim() || undefined,
     activo: form.activo,
     user_role: form.user_role
   }

@@ -34,51 +34,60 @@
         {{ errorInsumos }}
       </div>
 
-      <div v-else class="tabla-container">
-        <table class="tabla-generica">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Stock</th>
-              <th>Stock mínimo</th>
-              <th>Estado</th>
-              <th>Vencimiento</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="insumo in insumos"
-              :key="insumo.insumo_id"
-              :class="{ 'fila-alerta': insumo.stock < insumo.stock_minimo }"
-            >
-              <td>{{ insumo.nombre }}</td>
-              <td>{{ insumo.stock }}</td>
-              <td>{{ insumo.stock_minimo }}</td>
-              <td>
-                <span
-                  class="badge"
-                  :class="insumo.stock < insumo.stock_minimo ? 'badge-bajo' : 'badge-ok'"
-                >
-                  {{ insumo.stock < insumo.stock_minimo ? 'Stock bajo' : 'OK' }}
-                </span>
-              </td>
-              <td>{{ insumo.fecha_vencimiento ?? '—' }}</td>
-              <td>
-            <button class="btn-secundario btn-accion" @click="abrirModalEditar(insumo)">
-             Editar
-            </button>
-              <button class="btn-eliminar" @click="eliminarInsumo(insumo.insumo_id)">
-               Eliminar
-             </button>
-            </td>
-            </tr>
-          </tbody>
-        </table>
+      <div v-else class="table-card tabla-card tabla-container">
+        <div class="table-responsive">
+          <table class="data-table tabla tabla-generica">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Stock</th>
+                <th>Stock mínimo</th>
+                <th>Estado</th>
+                <th>Vencimiento</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="insumo in insumos"
+                :key="insumo.insumo_id"
+                class="tabla-fila"
+                :class="{ 'fila-alerta': insumo.stock < insumo.stock_minimo }"
+              >
+                <td>{{ insumo.nombre }}</td>
+                <td>{{ insumo.stock }}</td>
+                <td>{{ insumo.stock_minimo }}</td>
+                <td>
+                  <span
+                    class="badge"
+                    :class="insumo.stock < insumo.stock_minimo ? 'badge-bajo' : 'badge-ok'"
+                  >
+                    {{ insumo.stock < insumo.stock_minimo ? 'Stock bajo' : 'OK' }}
+                  </span>
+                </td>
+                <td>{{ insumo.fecha_vencimiento ?? '—' }}</td>
+                <td>
+                  <button class="btn-secundario btn-accion" @click="abrirModalEditar(insumo)">
+                    Editar
+                  </button>
+                  <button class="btn-eliminar" @click="eliminarInsumo(insumo.insumo_id)">
+                    Eliminar
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
     <div v-else>
+      <div class="acciones">
+        <button class="btn-primario" type="button" @click="abrirModalProveedor">
+          + Nuevo proveedor
+        </button>
+      </div>
+
       <div v-if="cargandoProveedores" class="estado-info">
         Cargando proveedores...
       </div>
@@ -87,34 +96,43 @@
         {{ errorProveedores }}
       </div>
 
-      <div v-else class="tabla-container">
-        <table class="tabla-generica">
-          <thead>
-            <tr>
-              <th>RUC</th>
-              <th>Nombre</th>
-              <th>Teléfono</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="proveedor in proveedores" :key="proveedor.ruc">
-              <td>{{ proveedor.ruc }}</td>
-              <td>{{ proveedor.nombre }}</td>
-              <td>{{ proveedor.telefono }}</td>
-            </tr>
-          </tbody>
-        </table>
+      <div v-else class="table-card tabla-card tabla-container">
+        <div class="table-responsive">
+          <table class="data-table tabla tabla-generica">
+            <thead>
+              <tr>
+                <th>RUC</th>
+                <th>Nombre</th>
+                <th>Teléfono</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="proveedor in proveedores" :key="proveedor.ruc" class="tabla-fila">
+                <td>{{ proveedor.ruc }}</td>
+                <td>{{ proveedor.nombre }}</td>
+                <td>{{ proveedor.telefono }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
+    <!-- Modal Crear / Editar Insumo -->
     <div v-if="mostrarModal" class="modal-overlay" @click.self="cerrarModal">
       <div class="modal-box">
-      <h3>{{ insumoEditandoId ? 'Editar insumo' : 'Nuevo insumo' }}</h3>
+        <h3>{{ insumoEditandoId ? 'Editar insumo' : 'Nuevo insumo' }}</h3>
 
         <form @submit.prevent="guardarInsumo">
           <div class="campo">
             <label>Nombre</label>
-            <input v-model="nuevoInsumo.nombre" type="text" required />
+            <input
+              v-model="nuevoInsumo.nombre"
+              type="text"
+              @keypress="(e) => { if (!/[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/.test(e.key)) e.preventDefault() }"
+              @paste.prevent
+              required
+            />
           </div>
 
           <div class="campo">
@@ -136,8 +154,60 @@
 
           <div class="modal-acciones">
             <button type="button" class="btn-secundario" @click="cerrarModal">Cancelar</button>
-          <button type="submit" class="btn-primario" :disabled="guardando">
-           {{ guardando ? 'Guardando...' : (insumoEditandoId ? 'Actualizar' : 'Guardar') }}
+            <button type="submit" class="btn-primario" :disabled="guardando">
+              {{ guardando ? 'Guardando...' : (insumoEditandoId ? 'Actualizar' : 'Guardar') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Nuevo Proveedor -->
+    <div v-if="mostrarModalProveedor" class="modal-overlay" @click.self="cerrarModalProveedor">
+      <div class="modal-box">
+        <h3>Nuevo proveedor</h3>
+
+        <form @submit.prevent="guardarProveedor">
+          <div class="campo">
+            <label>RUC (11 dígitos)</label>
+            <input
+              v-model="nuevoProveedor.ruc"
+              type="text"
+              maxlength="11"
+              required
+              placeholder="Ej. 20123456789"
+            />
+          </div>
+
+          <div class="campo">
+            <label>Nombre</label>
+            <input
+              v-model="nuevoProveedor.nombre"
+              type="text"
+              required
+              placeholder="Nombre del proveedor"
+            />
+          </div>
+
+          <div class="campo">
+            <label>Teléfono (9 dígitos)</label>
+            <input
+              v-model="nuevoProveedor.telefono"
+              type="text"
+              maxlength="9"
+              required
+              placeholder="Ej. 987654321"
+            />
+          </div>
+
+          <p v-if="errorProveedor" class="estado-error">{{ errorProveedor }}</p>
+
+          <div class="modal-acciones">
+            <button type="button" class="btn-secundario" @click="cerrarModalProveedor">
+              Cancelar
+            </button>
+            <button type="submit" class="btn-primario" :disabled="guardandoProveedor">
+              {{ guardandoProveedor ? 'Guardando...' : 'Guardar' }}
             </button>
           </div>
         </form>
@@ -148,9 +218,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import type { Insumo, Proveedor, CrearInsumoDto } from '@/types'
+import type { Insumo, Proveedor, CrearInsumoDto, CrearProveedorDto } from '@/types'
 import DashboardLayout from '@/components/dashboard/DashboardLayout.vue'
-import { insumoApi, proveedorApi } from '@/services/mock-api'
+import { insumosService } from '@/services/insumos.service'
+import { proveedoresService } from '@/services/proveedores.service'
 
 const tabActiva = ref<'insumos' | 'proveedores'>('insumos')
 
@@ -164,7 +235,7 @@ const errorProveedores = ref('')
 
 onMounted(async () => {
   try {
-    insumos.value = await insumoApi.getAll()
+    insumos.value = await insumosService.getAll()
   } catch (e) {
     errorInsumos.value = 'No se pudo cargar el inventario.'
   } finally {
@@ -172,7 +243,7 @@ onMounted(async () => {
   }
 
   try {
-    proveedores.value = await proveedorApi.getAll()
+    proveedores.value = await proveedoresService.getAll()
   } catch (e) {
     errorProveedores.value = 'No se pudo cargar los proveedores.'
   } finally {
@@ -180,11 +251,13 @@ onMounted(async () => {
   }
 })
 
+// ── Estado modal Insumo ──────────────────────────────────────
 const mostrarModal = ref(false)
 const guardando = ref(false)
 const errorFormulario = ref('')
 
 const insumoVacio = (): CrearInsumoDto => ({
+  codigo_unico: '',
   nombre: '',
   stock: 0,
   stock_minimo: 0,
@@ -192,7 +265,6 @@ const insumoVacio = (): CrearInsumoDto => ({
 })
 
 const nuevoInsumo = ref<CrearInsumoDto>(insumoVacio())
-
 const insumoEditandoId = ref<string | null>(null)
 
 const abrirModalCrear = () => {
@@ -201,9 +273,11 @@ const abrirModalCrear = () => {
   errorFormulario.value = ''
   mostrarModal.value = true
 }
+
 const abrirModalEditar = (insumo: Insumo) => {
   insumoEditandoId.value = insumo.insumo_id
   nuevoInsumo.value = {
+    codigo_unico: insumo.codigo_unico ?? '',
     nombre: insumo.nombre,
     stock: insumo.stock,
     stock_minimo: insumo.stock_minimo,
@@ -221,15 +295,23 @@ const guardarInsumo = async () => {
   guardando.value = true
   errorFormulario.value = ''
 
+  const payload: CrearInsumoDto = {
+  codigo_unico: nuevoInsumo.value.codigo_unico?.trim() || '',
+  nombre: nuevoInsumo.value.nombre.trim(),
+  stock: Number(nuevoInsumo.value.stock),
+  stock_minimo: Number(nuevoInsumo.value.stock_minimo),
+  fecha_vencimiento: nuevoInsumo.value.fecha_vencimiento || null,
+  }
+
   try {
     if (insumoEditandoId.value) {
-      const actualizado = await insumoApi.update(insumoEditandoId.value, nuevoInsumo.value)
-      const index = insumos.value.findIndex(insumo => insumo.insumo_id === insumoEditandoId.value)
+      const actualizado = await insumosService.update(insumoEditandoId.value, payload)
+      const index = insumos.value.findIndex((insumo) => insumo.insumo_id === insumoEditandoId.value)
       if (index !== -1) {
         insumos.value[index] = actualizado
       }
     } else {
-      const creado = await insumoApi.create(nuevoInsumo.value)
+      const creado = await insumosService.create(payload)
       insumos.value.push(creado)
     }
 
@@ -240,6 +322,7 @@ const guardarInsumo = async () => {
     guardando.value = false
   }
 }
+
 const eliminarInsumo = async (id: string) => {
   const confirmar = confirm('¿Seguro que quieres eliminar este insumo?')
 
@@ -248,10 +331,68 @@ const eliminarInsumo = async (id: string) => {
   }
 
   try {
-    await insumoApi.delete(id)
-    insumos.value = insumos.value.filter(insumo => insumo.insumo_id !== id)
+    await insumosService.delete(id)
+    insumos.value = insumos.value.filter((insumo) => insumo.insumo_id !== id)
   } catch (e) {
     alert('No se pudo eliminar el insumo.')
+  }
+}
+
+// ── Estado modal Proveedor ────────────────────────────────────
+const mostrarModalProveedor = ref(false)
+const guardandoProveedor = ref(false)
+const errorProveedor = ref('')
+
+const proveedorVacio = (): CrearProveedorDto => ({
+  ruc: '',
+  nombre: '',
+  telefono: '',
+})
+
+const nuevoProveedor = ref<CrearProveedorDto>(proveedorVacio())
+
+const abrirModalProveedor = () => {
+  nuevoProveedor.value = proveedorVacio()
+  errorProveedor.value = ''
+  mostrarModalProveedor.value = true
+}
+
+const cerrarModalProveedor = () => {
+  mostrarModalProveedor.value = false
+}
+
+const guardarProveedor = async () => {
+  const ruc = nuevoProveedor.value.ruc.trim()
+  const nombre = nuevoProveedor.value.nombre.trim()
+  const telefono = nuevoProveedor.value.telefono.trim()
+
+  if (!/^\d{11}$/.test(ruc)) {
+    errorProveedor.value = 'El RUC debe contener exactamente 11 dígitos numéricos.'
+    return
+  }
+
+  if (!nombre) {
+    errorProveedor.value = 'El nombre del proveedor es obligatorio.'
+    return
+  }
+
+  if (!/^\d{9}$/.test(telefono)) {
+    errorProveedor.value = 'El teléfono debe contener exactamente 9 dígitos numéricos.'
+    return
+  }
+
+  guardandoProveedor.value = true
+  errorProveedor.value = ''
+
+  try {
+    const creado = await proveedoresService.create({ ruc, nombre, telefono })
+    proveedores.value.push(creado)
+    mostrarModalProveedor.value = false
+  } catch (e) {
+    errorProveedor.value =
+      e instanceof Error ? e.message : 'No se pudo registrar el proveedor.'
+  } finally {
+    guardandoProveedor.value = false
   }
 }
 </script>
@@ -263,21 +404,24 @@ const eliminarInsumo = async (id: string) => {
 
 .inventario-header h2 {
   font-size: 24px;
-  color: #1a2b3c;
+  color: var(--text-main);
   margin: 0 0 6px 0;
+  transition: color 0.2s ease;
 }
 
 .subtitle {
-  color: #7f8c8d;
+  color: var(--text-muted);
   margin: 0;
   font-size: 15px;
+  transition: color 0.2s ease;
 }
 
 .tabs {
   display: flex;
   gap: 8px;
   margin-bottom: 20px;
-  border-bottom: 1px solid #e8edf3;
+  border-bottom: 1px solid var(--border-light);
+  transition: border-color 0.2s ease;
 }
 
 .tab-btn {
@@ -286,26 +430,29 @@ const eliminarInsumo = async (id: string) => {
   padding: 10px 18px;
   font-size: 14px;
   font-weight: 600;
-  color: #7f8c8d;
+  color: var(--text-muted);
   cursor: pointer;
   border-bottom: 2px solid transparent;
+  transition: color 0.2s ease;
 }
 
 .tab-btn:hover {
-  color: #2c3e50;
+  color: var(--text-main);
 }
 
 .tab-btn-active {
-  color: #3498db;
-  border-bottom-color: #3498db;
+  color: var(--primary-purple, #4f46e5);
+  border-bottom-color: var(--primary-purple, #4f46e5);
 }
 
 .estado-info,
 .estado-error {
-  background: white;
+  background: var(--bg-card);
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
+  color: var(--text-main);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .estado-error {
@@ -313,10 +460,17 @@ const eliminarInsumo = async (id: string) => {
 }
 
 .tabla-container {
-  background: white;
+  background: var(--bg-card);
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
+  border: 1px solid var(--border-light);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
 }
 
 .tabla-generica {
@@ -327,18 +481,24 @@ const eliminarInsumo = async (id: string) => {
 .tabla-generica th {
   text-align: left;
   padding: 14px 20px;
-  background: #f5f7fa;
-  color: #2c3e50;
+  background: var(--bg-disabled);
+  color: var(--text-muted);
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .tabla-generica td {
   padding: 14px 20px;
-  border-top: 1px solid #f0f0f0;
-  color: #2c3e50;
+  border-top: 1px solid var(--border-light);
+  color: var(--text-main);
   font-size: 14px;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.tabla-generica tbody tr:hover {
+  background-color: var(--bg-disabled);
 }
 
 .fila-alerta {
@@ -369,7 +529,7 @@ const eliminarInsumo = async (id: string) => {
 }
 
 .btn-primario {
-  background: #3498db;
+  background: var(--primary-purple, #4f46e5);
   color: white;
   border: none;
   padding: 10px 18px;
@@ -377,30 +537,32 @@ const eliminarInsumo = async (id: string) => {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: filter 0.2s ease;
 }
 
 .btn-primario:hover {
-  background: #2d84c2;
+  filter: brightness(1.1);
 }
 
 .btn-primario:disabled {
-  background: #a9c6d8;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .btn-secundario {
-  background: #ecf0f1;
-  color: #2c3e50;
+  background: var(--bg-disabled);
+  color: var(--text-main);
   border: none;
   padding: 10px 18px;
   border-radius: 6px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .btn-secundario:hover {
-  background: #dfe4e6;
+  filter: brightness(0.95);
 }
 
 .btn-eliminar {
@@ -423,10 +585,11 @@ const eliminarInsumo = async (id: string) => {
   padding: 6px 12px;
   font-size: 13px;
 }
+
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -434,16 +597,20 @@ const eliminarInsumo = async (id: string) => {
 }
 
 .modal-box {
-  background: white;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 24px;
   width: 100%;
   max-width: 400px;
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-lg);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .modal-box h3 {
   margin: 0 0 16px 0;
-  color: #1a2b3c;
+  color: var(--text-main);
+  transition: color 0.2s ease;
 }
 
 .campo {
@@ -455,15 +622,25 @@ const eliminarInsumo = async (id: string) => {
 
 .campo label {
   font-size: 13px;
-  color: #7f8c8d;
+  color: var(--text-muted);
   font-weight: 600;
+  transition: color 0.2s ease;
 }
 
 .campo input {
   padding: 8px 10px;
-  border: 1px solid #dfe4e6;
+  border: 1px solid var(--border-light);
   border-radius: 6px;
   font-size: 14px;
+  background: var(--bg-input);
+  color: var(--text-main);
+  outline: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.campo input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 .modal-acciones {
@@ -472,4 +649,102 @@ const eliminarInsumo = async (id: string) => {
   gap: 10px;
   margin-top: 20px;
 }
+
+/* ── Modo Oscuro ─────────────────────────────── */
+:global(html.dark .tabla-container) {
+  background: var(--bg-card) !important;
+  border-color: var(--border-light) !important;
+}
+
+:global(html.dark .tabla-generica th) {
+  background-color: #0f172a !important;
+  color: #94a3b8 !important;
+  border-bottom-color: #1f2937 !important;
+}
+
+:global(html.dark .tabla-generica td) {
+  color: #e2e8f0 !important;
+  border-top-color: #1f2937 !important;
+}
+
+:global(html.dark .tabla-generica tbody tr:hover),
+:global(html.dark .tabla-fila:hover) {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+:global(html.dark .fila-alerta) {
+  background: rgba(239, 68, 68, 0.12) !important;
+}
+
+:global(html.dark .fila-alerta:hover) {
+  background: rgba(239, 68, 68, 0.18) !important;
+}
+
+:global(html.dark .badge-ok) {
+  background: rgba(34, 197, 94, 0.15) !important;
+  color: #4ade80 !important;
+}
+
+:global(html.dark .badge-bajo) {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+
+:global(html.dark .btn-eliminar) {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+
+:global(html.dark .btn-eliminar:hover) {
+  background: rgba(239, 68, 68, 0.25) !important;
+}
+
+:global(html.dark .btn-secundario) {
+  background: #1e293b !important;
+  color: #cbd5e1 !important;
+  border: 1px solid #334155 !important;
+}
+
+:global(html.dark .btn-secundario:hover) {
+  background: #334155 !important;
+  color: #f8fafc !important;
+}
+
+:global(html.dark .tab-btn-active) {
+  color: #818cf8 !important;
+  border-bottom-color: #818cf8 !important;
+}
+
+:global(html.dark .modal-overlay) {
+  background: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(4px);
+}
+
+:global(html.dark .modal-box) {
+  background: #131b2e !important;
+  border-color: #1e293b !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+}
+
+:global(html.dark .modal-box h3) {
+  color: #f8fafc !important;
+}
+
+:global(html.dark .campo label) {
+  color: #cbd5e1 !important;
+}
+
+:global(html.dark .campo input) {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+:global(html.dark .campo input:focus) {
+  border-color: #818cf8 !important;
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2) !important;
+}
 </style>
+```[cite: 7]
+
+Pruébalo en tu rama y dime qué tal queda o qué otro detalle quieres revisar[cite: 7].

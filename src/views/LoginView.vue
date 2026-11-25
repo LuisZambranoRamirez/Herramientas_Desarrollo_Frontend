@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { getDefaultRouteByRole, extractUserRole } from '@/utils/navigation'
+import { validarRequerido } from '@/utils/validators'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const email = ref('')
@@ -13,37 +16,58 @@ const mensajeError = ref('')
 const errorEmail = ref('')
 const errorPassword = ref('')
 
+function validarEmailField() {
+  errorEmail.value = validarRequerido(email.value, 'El usuario o correo')
+}
+
+function validarPasswordField() {
+  errorPassword.value = validarRequerido(password.value, 'La contraseña')
+}
+
 async function iniciarSesion() {
-    mensajeError.value = ''
-    errorEmail.value = ''
-    errorPassword.value = ''
-
-    const emailNormalizado = email.value.trim().toLowerCase()
-
-  if (!email.value.trim()) {
-    errorEmail.value = 'El correo es obligatorio.'
-    } else if (!emailNormalizado.includes('@')) {
-    errorEmail.value = 'Ingresa un correo electrónico válido.'
-  }
-
-  if (!password.value) {
-    errorPassword.value = 'La contraseña es obligatoria.'
-  }
+  mensajeError.value = ''
+  validarEmailField()
+  validarPasswordField()
 
   if (errorEmail.value || errorPassword.value) {
     mensajeError.value = 'Revisa los datos ingresados.'
     return
   }
 
-  const exito = await authStore.login({
-    username: emailNormalizado,
-    password: password.value
-  })
+  const usuarioNormalizado = email.value.trim().toLowerCase()
 
-  if (exito) {
-    router.push('/dashboard')
-  } else {
-    mensajeError.value = 'Credenciales incorrectas. Verifica tu correo y contraseña.'
+  try {
+    const exito = await authStore.login({
+      username: usuarioNormalizado,
+      password: password.value,
+    })
+
+    if (exito) {
+      const role =
+        extractUserRole(authStore.userRole) ||
+        extractUserRole(authStore.user) ||
+        'PACIENTE'
+      const defaultRoute = getDefaultRouteByRole(role)
+      const redirectQuery = route.query.redirect
+
+      // Redirigir a query.redirect solo si es una ruta interna válida y distinta a la home '/' o '/login'
+      if (
+        typeof redirectQuery === 'string' &&
+        redirectQuery.startsWith('/') &&
+        !redirectQuery.startsWith('//') &&
+        redirectQuery !== '/' &&
+        redirectQuery !== '/login' &&
+        redirectQuery !== '/registro'
+      ) {
+        router.push(redirectQuery)
+      } else {
+        router.push(defaultRoute)
+      }
+    } else {
+      mensajeError.value = 'Credenciales incorrectas. Verifica tus datos.'
+    }
+  } catch (error: any) {
+    mensajeError.value = error.message || 'Error de conexión con el servidor.'
   }
 }
 </script>
@@ -94,22 +118,21 @@ async function iniciarSesion() {
       <form @submit.prevent="iniciarSesion" novalidate>
 
         <div class="form-group">
-          <label for="email">Correo electrónico</label>
+          <label for="email">Usuario o correo electrónico</label>
 
           <div class="input-wrapper">
-            <span class="input-icon">✉</span>
+            <span class="input-icon">👤</span>
 
-          
-              <input
-                id="email"
-                v-model="email"
-                @input="errorEmail = ''"
-                type="text"
-                inputmode="email"
-                autocomplete="username"
-                placeholder="admin@solident.com"
-                :class="{ 'input-error': errorEmail }"
-              />
+            <input
+              id="email"
+              v-model="email"
+              @input="errorEmail = ''"
+              @blur="validarEmailField"
+              type="text"
+              autocomplete="username"
+              placeholder="admin o tu@correo.com"
+              :class="{ 'input-error': errorEmail }"
+            />
           </div>
 
           <span v-if="errorEmail" class="field-error">
@@ -128,6 +151,7 @@ async function iniciarSesion() {
               id="password"
               v-model="password"
               @input="errorPassword = ''"
+              @blur="validarPasswordField"
               :type="mostrarPassword ? 'text' : 'password'"
               placeholder="••••••••"
               :class="{ 'input-error': errorPassword }"
@@ -155,6 +179,11 @@ async function iniciarSesion() {
         </button>
 
       </form>
+
+      <div class="register-prompt">
+        <span>¿No tienes una cuenta aún?</span>
+        <RouterLink to="/registro" class="register-link">Regístrate como paciente</RouterLink>
+      </div>
 
       <div class="security-info">
         <span class="security-icon">◈</span>
@@ -516,6 +545,30 @@ async function iniciarSesion() {
   50% {
     transform: translateY(-4px);
   }
+}
+
+.register-prompt {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.register-link {
+  color: #38bdf8;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.register-link:hover {
+  color: #7dd3fc;
+  text-decoration: underline;
 }
 
 /* Responsive */

@@ -1,15 +1,11 @@
 import type {
   Cita,
+  CitaOdontologoResumen,
   CrearCitaDto,
   ActualizarCitaDto,
   EstadoCita,
 } from '@/types'
-
-// ============================================================
-// MOCKS
-// ============================================================
-
-import { citaApi } from '@/services/mock-api'
+import { api } from '@/services/api/client'
 
 // ============================================================
 // SERVICIO DE CITAS
@@ -17,87 +13,50 @@ import { citaApi } from '@/services/mock-api'
 
 export const citasService = {
   getAll(): Promise<Cita[]> {
-    // Backend:
-    // return api.get<Cita[]>('/citas')
-
-    return citaApi.getAll()
+    return api.get<Cita[]>('/citas')
   },
 
-  getById(
-    id: string,
-  ): Promise<Cita | undefined> {
-    // Backend:
-    // return api.get<Cita>(`/citas/${id}`)
-
-    return citaApi.getById(id)
+  getMisCitas(): Promise<Cita[]> {
+    return api.get<Cita[]>('/citas/mis-citas')
   },
 
-  getByPaciente(
-    dniPaciente: string,
-  ): Promise<Cita[]> {
-    // Backend:
-    // return api.get<Cita[]>(
-    //   `/citas/paciente/${dniPaciente}`,
-    // )
-
-    return citaApi.getByPaciente(dniPaciente)
+  getOdontologos(): Promise<CitaOdontologoResumen[]> {
+    return api.get<CitaOdontologoResumen[]>('/citas/odontologos')
   },
 
-  getByOdontologo(
-    dniOdontologo: string,
-  ): Promise<Cita[]> {
-    // Backend:
-    // return api.get<Cita[]>(
-    //   `/citas/odontologo/${dniOdontologo}`,
-    // )
-
-    return citaApi.getByOdontologo(dniOdontologo)
+  getById(id: string): Promise<Cita | undefined> {
+    return api.get<Cita>(`/citas/${id}`)
   },
 
-  getByEstado(
-    estado: EstadoCita,
-  ): Promise<Cita[]> {
-    // Backend:
-    // return api.get<Cita[]>(
-    //   `/citas/estado/${estado}`,
-    // )
-
-    return citaApi.getByEstado(estado)
+  getByPaciente(dniPaciente: string): Promise<Cita[]> {
+    return api.get<Cita[]>(`/citas?dni_paciente=${dniPaciente}`)
   },
 
-  create(
-    data: CrearCitaDto,
-  ): Promise<Cita> {
-    // Backend:
-    // return api.post<Cita>(
-    //   '/citas',
-    //   data,
-    // )
-
-    return citaApi.create(data)
+  getByOdontologo(dniOdontologo: string): Promise<Cita[]> {
+    return api.get<Cita[]>(`/citas?dni_odontologo=${dniOdontologo}`)
   },
 
-  update(
-    id: string,
-    data: ActualizarCitaDto,
-  ): Promise<Cita> {
-    // Backend:
-    // return api.patch<Cita>(
-    //   `/citas/${id}`,
-    //   data,
-    // )
-
-    return citaApi.update(id, data)
+  getByEstado(estado: EstadoCita): Promise<Cita[]> {
+    return api.get<Cita[]>(`/citas?estado=${estado}`)
   },
 
-  delete(
-    id: string,
-  ): Promise<void> {
-    // Backend:
-    // return api.delete<void>(
-    //   `/citas/${id}`,
-    // )
+  create(data: CrearCitaDto): Promise<Cita> {
+    return api.post<Cita>('/citas', data)
+  },
 
-    return citaApi.delete(id)
+  update(id: string, data: ActualizarCitaDto): Promise<Cita> {
+    return api.put<Cita>(`/citas/${id}`, data)
+  },
+
+  actualizarEstado(id: string, data: { estado: string; diagnostico?: string | null }): Promise<Cita> {
+    return api.patch<Cita>(`/citas/${id}/estado`, data)
+  },
+
+  cancelar(id: string): Promise<Cita> {
+    return api.patch<Cita>(`/citas/${id}/cancelar`)
+  },
+
+  delete(id: string): Promise<Cita> {
+    return api.patch<Cita>(`/citas/${id}/cancelar`)
   },
 }

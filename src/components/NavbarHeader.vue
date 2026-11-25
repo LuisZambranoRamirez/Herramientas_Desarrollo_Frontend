@@ -1,37 +1,221 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth.store'
+import { getDefaultRouteByRole, getRoleLabel, extractUserRole } from '@/utils/navigation'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const isMobileMenuOpen = ref(false)
 
-// ✅ Detectar si estamos en la página de inicio
-const isHome = () => route.path === '/'
+const isAuthenticated = computed(() => authStore.isAuthenticated)
+const currentRole = computed(() => {
+  return extractUserRole(authStore.userRole) || extractUserRole(authStore.user) || 'PACIENTE'
+})
 
-// ✅ Detectar si una sección está activa
-const isSectionActive = (sectionId: string) => {
-  return route.path === '/' && route.hash === `#${sectionId}`
+const isPaciente = computed(() => {
+  const role = currentRole.value
+  return role === 'PACIENTE' || role === 'CLIENTE'
+})
+
+const isOdontologo = computed(() => {
+  const role = currentRole.value
+  return role === 'ODONTOLOGO' || role === 'DOCTOR'
+})
+
+const isSystemAdmin = computed(() => {
+  const role = currentRole.value
+  return role === 'SYSTEM_ADMIN' || role === 'ADMIN'
+})
+
+const defaultDashboardRoute = computed(() => {
+  return getDefaultRouteByRole(currentRole.value)
+})
+const userDashboardRoute = defaultDashboardRoute
+
+const dashboardButtonLabel = computed(() => {
+  const role = currentRole.value
+  if (role === 'PACIENTE' || role === 'CLIENTE') return 'Mi Panel'
+  if (role === 'ODONTOLOGO' || role === 'DOCTOR') return 'Mi Panel'
+  return 'Dashboard'
+})
+
+const userRoleBadgeLabel = computed(() => {
+  return getRoleLabel(currentRole.value)
+})
+
+const displayNombre = computed(() => {
+  if (!authStore.user) return ''
+  if (authStore.user.nombre_completo) {
+    const parts = authStore.user.nombre_completo.trim().split(' ')
+    return parts[0] || authStore.user.nombre_completo
+  }
+  const cleanUsername = authStore.user.username.split('@')[0] || authStore.user.username
+  return cleanUsername.charAt(0).toUpperCase() + cleanUsername.slice(1)
+})
+
+const userInitial = computed(() => {
+  if (!displayNombre.value) return 'P'
+  return displayNombre.value.charAt(0).toUpperCase()
+})
+
+function cerrarSesion() {
+  authStore.logout()
+  isMobileMenuOpen.value = false
+  if (route.meta.requiresAuth) {
+    router.push('/')
+  }
+}
+
+const sectionIds = ['inicio', 'nosotros', 'servicios', 'especialistas']
+const activeSection = ref<string>('inicio')
+
+let isManualScrolling = false
+let scrollTimeout: ReturnType<typeof setTimeout> | null = null
+let ticking = false
+
+function updateActiveSectionOnScroll() {
+  if (route.path !== '/') return
+  if (isManualScrolling) return
+
+  const scrollY = window.scrollY
+  if (scrollY < 120) {
+    activeSection.value = 'inicio'
+    return
+  }
+
+  const windowHeight = window.innerHeight
+  const docHeight = document.documentElement.scrollHeight
+  if (windowHeight + scrollY >= docHeight - 60) {
+    activeSection.value = 'especialistas'
+    return
+  }
+
+  const navOffset = 130
+  let current = 'inicio'
+  for (const id of sectionIds) {
+    const el = document.getElementById(id)
+    if (el) {
+      const rect = el.getBoundingClientRect()
+      if (rect.top <= navOffset) {
+        current = id
+      }
+    }
+  }
+  activeSection.value = current
+}
+
+function handleScroll() {
+  if (!ticking) {
+    window.requestAnimationFrame(() => {
+      updateActiveSectionOnScroll()
+      ticking = false
+    })
+    ticking = true
+  }
 }
 
 function scrollToSection(sectionId: string) {
   isMobileMenuOpen.value = false
+
   if (route.path !== '/') {
-    router.push(`/#${sectionId}`).then(() => {
-      const el = document.getElementById(sectionId)
-      if (el) el.scrollIntoView({ behavior: 'smooth' })
+    router.push({ path: '/', hash: sectionId === 'inicio' ? undefined : `#${sectionId}` }).then(() => {
+      nextTick(() => {
+        scrollToElement(sectionId)
+      })
     })
-  } else {
-    const el = document.getElementById(sectionId)
-    if (el) el.scrollIntoView({ behavior: 'smooth' })
+    return
+  }
+
+  scrollToElement(sectionId)
+}
+
+function scrollToElement(sectionId: string) {
+  isManualScrolling = true
+  activeSection.value = sectionId
+
+  if (scrollTimeout) clearTimeout(scrollTimeout)
+  scrollTimeout = setTimeout(() => {
+    isManualScrolling = false
+  }, 800)
+
+  if (sectionId === 'inicio') {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    if (window.location.hash) {
+      history.replaceState(null, '', window.location.pathname)
+    }
+    return
+  }
+
+  const el = document.getElementById(sectionId)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth' })
+    history.pushState(null, '', `#${sectionId}`)
   }
 }
+
+const isSectionActive = (id: string) => {
+  return route.path === '/' && activeSection.value === id
+}
+
+const isRouteActive = (path: string) => {
+  return route.path === path
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll, { passive: true })
+
+  if (route.path === '/') {
+    if (route.hash) {
+      const targetId = route.hash.replace('#', '')
+      if (sectionIds.includes(targetId)) {
+        activeSection.value = targetId
+        setTimeout(() => {
+          scrollToElement(targetId)
+        }, 150)
+        return
+      }
+    }
+    updateActiveSectionOnScroll()
+  }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+  if (scrollTimeout) clearTimeout(scrollTimeout)
+})
+
+watch(
+  () => route.hash,
+  (newHash) => {
+    if (route.path === '/') {
+      const targetId = newHash.replace('#', '')
+      if (sectionIds.includes(targetId)) {
+        activeSection.value = targetId
+      } else if (!newHash) {
+        activeSection.value = 'inicio'
+      }
+    }
+  }
+)
+
+watch(
+  () => route.path,
+  (newPath) => {
+    if (newPath === '/') {
+      nextTick(() => {
+        updateActiveSectionOnScroll()
+      })
+    }
+  }
+)
 </script>
 
 <template>
   <header class="navbar">
     <div class="navbar-container">
-      <RouterLink to="/" class="brand" @click="isMobileMenuOpen = false">
+      <RouterLink to="/" class="brand" @click.prevent="scrollToSection('inicio')">
         <div class="brand-logo">
           <span class="logo-letter">S</span>
         </div>
@@ -39,32 +223,33 @@ function scrollToSection(sectionId: string) {
       </RouterLink>
 
       <nav class="nav-menu">
-        <RouterLink 
-          to="/" 
-          class="nav-link" 
-          :class="{ active: isHome() }"
+        <a
+          href="#inicio"
+          class="nav-link"
+          :class="{ active: isSectionActive('inicio') }"
+          @click.prevent="scrollToSection('inicio')"
         >
           Inicio
-        </RouterLink>
-        <a 
-          href="#nosotros" 
-          class="nav-link" 
+        </a>
+        <a
+          href="#nosotros"
+          class="nav-link"
           :class="{ active: isSectionActive('nosotros') }"
           @click.prevent="scrollToSection('nosotros')"
         >
           Nosotros
         </a>
-        <a 
-          href="#servicios" 
-          class="nav-link" 
+        <a
+          href="#servicios"
+          class="nav-link"
           :class="{ active: isSectionActive('servicios') }"
           @click.prevent="scrollToSection('servicios')"
         >
           Servicios
         </a>
-        <a 
-          href="#especialistas" 
-          class="nav-link" 
+        <a
+          href="#especialistas"
+          class="nav-link"
           :class="{ active: isSectionActive('especialistas') }"
           @click.prevent="scrollToSection('especialistas')"
         >
@@ -73,20 +258,77 @@ function scrollToSection(sectionId: string) {
         <RouterLink
           to="/reservar"
           class="nav-link nav-link-highlight"
-          :class="{ active: route.path === '/reservar' }"
+          :class="{ active: isRouteActive('/reservar') }"
+          @click="isMobileMenuOpen = false"
         >
           Reservar Cita
         </RouterLink>
-        <RouterLink 
-          to="/login" 
+
+        <!-- No autenticado -->
+        <RouterLink
+          v-if="!isAuthenticated"
+          to="/login"
           class="nav-link nav-link-highlight"
-          :class="{ active: route.path === '/login' }"
+          :class="{ active: isRouteActive('/login') }"
+          @click="isMobileMenuOpen = false"
         >
           Intranet
         </RouterLink>
+
+        <!-- Autenticado: Evidencia en la esquina derecha -->
+        <div v-else class="user-corner-badge">
+          <RouterLink
+            :to="defaultDashboardRoute"
+            class="user-profile-link"
+            :title="`Ir a ${dashboardButtonLabel}`"
+          >
+            <div class="user-avatar" :title="authStore.user?.username">
+              {{ userInitial }}
+            </div>
+            <div class="user-info">
+              <span class="user-greeting">Hola, <strong>{{ displayNombre }}</strong></span>
+              <span class="user-role-pill" :class="{ 'role-paciente': isPaciente, 'role-odontologo': isOdontologo, 'role-admin': isSystemAdmin }">
+                {{ userRoleBadgeLabel }}
+              </span>
+            </div>
+          </RouterLink>
+
+          <RouterLink
+            :to="defaultDashboardRoute"
+            class="nav-intranet-chip"
+            :title="`Ir a ${dashboardButtonLabel}`"
+          >
+            📊 {{ dashboardButtonLabel }}
+          </RouterLink>
+
+          <RouterLink
+            to="/perfil"
+            class="nav-intranet-chip nav-perfil-chip"
+            title="Ver y editar Mi Perfil"
+          >
+            👤 Mi Perfil
+          </RouterLink>
+
+          <button
+            type="button"
+            class="logout-button"
+            @click="cerrarSesion"
+            title="Cerrar sesión"
+            aria-label="Cerrar sesión"
+          >
+            <svg class="logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+        </div>
       </nav>
 
-      <button type="button" class="mobile-toggle" @click="isMobileMenuOpen = !isMobileMenuOpen" aria-label="Abrir menú">
+      <button
+        type="button"
+        class="mobile-toggle"
+        @click="isMobileMenuOpen = !isMobileMenuOpen"
+        aria-label="Abrir menú"
+      >
         <svg v-if="!isMobileMenuOpen" class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
@@ -97,24 +339,109 @@ function scrollToSection(sectionId: string) {
     </div>
 
     <div v-if="isMobileMenuOpen" class="mobile-menu">
-      <RouterLink to="/" class="mobile-nav-link" :class="{ active: isHome() }" @click="isMobileMenuOpen = false">
+      <a
+        href="#inicio"
+        class="mobile-nav-link"
+        :class="{ active: isSectionActive('inicio') }"
+        @click.prevent="scrollToSection('inicio')"
+      >
         Inicio
-      </RouterLink>
-      <a href="#nosotros" class="mobile-nav-link" :class="{ active: isSectionActive('nosotros') }" @click.prevent="scrollToSection('nosotros')">
+      </a>
+      <a
+        href="#nosotros"
+        class="mobile-nav-link"
+        :class="{ active: isSectionActive('nosotros') }"
+        @click.prevent="scrollToSection('nosotros')"
+      >
         Nosotros
       </a>
-      <a href="#servicios" class="mobile-nav-link" :class="{ active: isSectionActive('servicios') }" @click.prevent="scrollToSection('servicios')">
+      <a
+        href="#servicios"
+        class="mobile-nav-link"
+        :class="{ active: isSectionActive('servicios') }"
+        @click.prevent="scrollToSection('servicios')"
+      >
         Servicios
       </a>
-      <a href="#especialistas" class="mobile-nav-link" :class="{ active: isSectionActive('especialistas') }" @click.prevent="scrollToSection('especialistas')">
+      <a
+        href="#especialistas"
+        class="mobile-nav-link"
+        :class="{ active: isSectionActive('especialistas') }"
+        @click.prevent="scrollToSection('especialistas')"
+      >
         Especialistas
       </a>
-      <RouterLink to="/reservar" class="mobile-nav-link highlight" :class="{ active: route.path === '/reservar' }" @click="isMobileMenuOpen = false">
-        Reservar Cita
-      </RouterLink>
-      <RouterLink to="/login" class="mobile-nav-link highlight" :class="{ active: route.path === '/login' }" @click="isMobileMenuOpen = false">
-        Intranet
-      </RouterLink>
+
+      <!-- Si no está autenticado -->
+      <template v-if="!isAuthenticated">
+        <RouterLink
+          to="/reservar"
+          class="mobile-nav-link highlight"
+          :class="{ active: isRouteActive('/reservar') }"
+          @click="isMobileMenuOpen = false"
+        >
+          Reservar Cita
+        </RouterLink>
+        <RouterLink
+          to="/login"
+          class="mobile-nav-link highlight"
+          :class="{ active: isRouteActive('/login') }"
+          @click="isMobileMenuOpen = false"
+        >
+          Intranet
+        </RouterLink>
+      </template>
+
+      <!-- Si está autenticado -->
+      <template v-else>
+        <RouterLink
+          :to="defaultDashboardRoute"
+          class="mobile-user-profile mobile-user-profile-link"
+          :title="`Ir a ${dashboardButtonLabel}`"
+          @click="isMobileMenuOpen = false"
+        >
+          <div class="user-avatar">{{ userInitial }}</div>
+          <div class="user-info">
+            <span class="user-greeting">Hola, <strong>{{ displayNombre }}</strong></span>
+            <span class="user-role-pill" :class="{ 'role-paciente': isPaciente, 'role-odontologo': isOdontologo, 'role-admin': isSystemAdmin }">
+              {{ userRoleBadgeLabel }}
+            </span>
+          </div>
+        </RouterLink>
+
+        <RouterLink
+          to="/reservar"
+          class="mobile-nav-link highlight"
+          :class="{ active: isRouteActive('/reservar') }"
+          @click="isMobileMenuOpen = false"
+        >
+          📅 Reservar mi Cita
+        </RouterLink>
+
+        <RouterLink
+          :to="defaultDashboardRoute"
+          class="mobile-nav-link"
+          @click="isMobileMenuOpen = false"
+        >
+          📊 {{ dashboardButtonLabel }}
+        </RouterLink>
+
+        <RouterLink
+          to="/perfil"
+          class="mobile-nav-link"
+          @click="isMobileMenuOpen = false"
+        >
+          👤 Mi Perfil
+        </RouterLink>
+
+        <button
+          type="button"
+          class="mobile-logout-btn"
+          @click="cerrarSesion"
+        >
+          Cerrar Sesión
+        </button>
+      </template>
     </div>
   </header>
 </template>
@@ -198,7 +525,6 @@ function scrollToSection(sectionId: string) {
   font-weight: 600;
 }
 
-/* ✅ ESTILO ACTIVO MORADO FORZADO */
 .nav-link.active {
   color: #7c3aed !important;
   font-weight: 700 !important;
@@ -269,6 +595,173 @@ function scrollToSection(sectionId: string) {
 .mobile-nav-link.highlight.active {
   color: #7c3aed !important;
   font-weight: 800 !important;
+}
+
+/* User corner badge */
+.user-corner-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  padding: 0.35rem 0.75rem 0.35rem 0.5rem;
+  border-radius: 9999px;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+
+.user-corner-badge:hover {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.user-profile-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.user-profile-link:hover {
+  opacity: 0.85;
+}
+
+.mobile-user-profile-link {
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.mobile-user-profile-link:hover {
+  opacity: 0.9;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.user-greeting {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.user-greeting strong {
+  color: #4f46e5;
+  font-weight: 700;
+}
+
+.user-role-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.role-paciente {
+  background: rgba(14, 165, 233, 0.15);
+  color: #0284c7;
+}
+
+.role-odontologo {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+}
+
+.role-admin {
+  background: rgba(124, 58, 237, 0.15);
+  color: #7c3aed;
+}
+
+.nav-intranet-chip {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  background: rgba(124, 58, 237, 0.1);
+  color: #7c3aed;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.nav-intranet-chip:hover {
+  background: #7c3aed;
+  color: #ffffff;
+}
+
+.logout-button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.logout-button:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  transform: scale(1.1);
+}
+
+.logout-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Mobile user profile */
+.mobile-user-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(99, 102, 241, 0.08);
+  border-radius: 12px;
+  margin-bottom: 0.5rem;
+}
+
+.mobile-logout-btn {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-align: center;
+  margin-top: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.mobile-logout-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
 }
 
 @media (max-width: 840px) {

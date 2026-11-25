@@ -14,7 +14,7 @@ function scrollToServices() {
 </script>
 
 <template>
-  <section class="hero-section">
+  <section id="inicio" class="hero-section">
     <div class="hero-content">
       <h1 class="hero-title">Excelencia en Salud Dental</h1>
       <p class="hero-subtitle">

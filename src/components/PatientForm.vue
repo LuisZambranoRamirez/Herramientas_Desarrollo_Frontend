@@ -84,27 +84,27 @@ function validatePhone(val: string): string {
   return ''
 }
 
-// Filtro en tiempo real para Nombre (bloquear números)
-function onNameInput(e: Event) {
-  const target = e.target as HTMLInputElement
-  // Reemplaza dígitos y caracteres especiales no permitidos
-  const sanitized = target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '')
-  formData.fullName = sanitized
+// WATCHER 1: Bloquea y elimina números en el Nombre
+watch(() => formData.fullName, (newVal) => {
+  const sanitized = newVal.replace(/[0-9]/g, '')
+  if (sanitized !== newVal) {
+    formData.fullName = sanitized
+  }
   if (touched.fullName) {
-    errors.fullName = validateFullName(sanitized)
+    errors.fullName = validateFullName(formData.fullName)
   }
-}
+})
 
-// Filtro en tiempo real para Teléfono (solo 9 dígitos numéricos)
-function onPhoneInput(e: Event) {
-  const target = e.target as HTMLInputElement
-  // Extrae solo dígitos y limita a 9
-  const digitsOnly = target.value.replace(/\D/g, '').slice(0, 9)
-  formData.phone = digitsOnly
-  if (touched.phone) {
-    errors.phone = validatePhone(digitsOnly)
+// WATCHER 2: Bloquea y elimina LETRAS/SÍMBOLOS en el Teléfono (solo permite números y máximo 9 dígitos)
+watch(() => formData.phone, (newVal) => {
+  const digitsOnly = newVal.replace(/\D/g, '').slice(0, 9)
+  if (digitsOnly !== newVal) {
+    formData.phone = digitsOnly
   }
-}
+  if (touched.phone) {
+    errors.phone = validatePhone(formData.phone)
+  }
+})
 
 function onEmailInput(e: Event) {
   const target = e.target as HTMLInputElement
@@ -160,13 +160,12 @@ watch(
         <div class="input-wrapper">
           <input
             id="fullName"
-            :value="formData.fullName"
+            v-model="formData.fullName"
             type="text"
             class="form-input"
             :class="{ 'has-error': touched.fullName && errors.fullName }"
             placeholder="Ingresa tu nombre y apellido"
             maxlength="70"
-            @input="onNameInput"
             @blur="handleBlur('fullName')"
             required
           />
@@ -208,14 +207,13 @@ watch(
         <div class="input-wrapper">
           <input
             id="phone"
-            :value="formData.phone"
+            v-model="formData.phone"
             type="tel"
             inputmode="numeric"
             class="form-input"
             :class="{ 'has-error': touched.phone && errors.phone }"
             placeholder="999 999 999"
             maxlength="9"
-            @input="onPhoneInput"
             @blur="handleBlur('phone')"
             required
           />

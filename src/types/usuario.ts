@@ -2,18 +2,49 @@ import type { UserRole } from './enums'
 
 export interface Usuario {
   username: string
+  nombre_completo?: string
+  correo?: string
+  telefono?: string
+  especialidad?: string
+  colegiatura?: string
+  descripcion?: string
   activo: boolean
   user_role: UserRole
+  role?: string
   fecha_registro: string
+  ultimo_acceso?: string
+  odontologo?: any
+  paciente?: any
+}
+
+export interface CambiarRolDto {
+  user_role: UserRole
+  especialidad?: string
+  colegiatura?: string
 }
 
 export interface CrearUsuarioDto {
   username: string
   password: string
+  nombre_completo?: string
+  correo?: string
+  telefono?: string
   user_role: UserRole
+  activo?: boolean
+}
+
+export interface ActualizarPerfilDto {
+  nombre_completo?: string
+  correo?: string
+  telefono?: string
+  especialidad?: string
+  descripcion?: string
 }
 
 export interface ActualizarUsuarioDto {
+  nombre_completo?: string
+  correo?: string
+  telefono?: string
   activo?: boolean
   user_role?: UserRole
 }
@@ -30,4 +61,23 @@ export interface LoginDto {
 export interface LoginResponse {
   accessToken: string
   user: Usuario
+}
+
+export interface RegistroDto {
+  username: string
+  password: string
+  dni: string
+  nombres: string
+  apellidos: string
+  telefono: string
+  correo: string
+  fecha_nacimiento: string
+  direccion?: string
+}
+
+export interface RegistroResponse {
+  message?: string
+  accessToken?: string
+  access_token?: string
+  user?: Usuario
 }
