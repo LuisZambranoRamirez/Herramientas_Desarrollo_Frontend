@@ -475,9 +475,10 @@ onMounted(fetchPacientes)
       <span v-if="erroresForm.correo" class="input-error-msg">{{ erroresForm.correo }}</span>
     </div>
 
+  
     <div class="form-group">
       <label>Dirección</label>
-      <input v-model="form.direccion" type="text" placeholder="Av. Lima 123" />
+      <textarea v-model="form.direccion" rows="2" placeholder="Av. Lima 123"></textarea>
     </div>
 
     <div class="form-group">

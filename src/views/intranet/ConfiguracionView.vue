@@ -44,7 +44,7 @@ function guardarCambios() {
           </div>
           <div class="form-group">
             <label class="form-label">Dirección Principal</label>
-            <input v-model="config.direccion" type="text" class="form-input" />
+            <textarea v-model="config.direccion" rows="2" class="form-input form-textarea"></textarea>
           </div>
         </div>
 
@@ -145,7 +145,13 @@ function guardarCambios() {
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   font-size: 0.92rem;
-  outline: none;
+    outline: none;
+}
+
+.form-textarea {
+  resize: vertical;
+  font-family: inherit;
+  min-height: 3.5rem;
 }
 
 .form-input:focus {
