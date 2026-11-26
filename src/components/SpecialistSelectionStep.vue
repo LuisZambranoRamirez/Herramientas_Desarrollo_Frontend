@@ -32,8 +32,35 @@ const effectiveSpecialists = computed<OdontologoPublico[]>(() => {
 })
 
 const effectiveLoading = computed<boolean>(() => {
-  return props.specialists !== undefined ? props.loading : localLoading.value
+ return props.specialists !== undefined ? props.loading : localLoading.value
 })
+
+const filtroEspecialidad = ref<string>('TODAS')
+
+const especialidades = computed<string[]>(() => {
+  const unicas = new Set<string>()
+  for (const doc of effectiveSpecialists.value) {
+    unicas.add((doc.especialidad || '').trim())
+  }
+  return [...unicas].sort((a, b) =>
+    formatEspecialidad(a).localeCompare(formatEspecialidad(b), 'es'),
+  )
+})
+
+const filtroActivo = computed<string>(() =>
+  especialidades.value.includes(filtroEspecialidad.value) ? filtroEspecialidad.value : 'TODAS',
+)
+
+const especialistasFiltrados = computed<OdontologoPublico[]>(() =>
+  effectiveSpecialists.value
+    .filter((doc) => filtroActivo.value === 'TODAS' || (doc.especialidad || '').trim() === filtroActivo.value)
+    .slice()
+    .sort(
+      (a, b) =>
+        formatEspecialidad(a.especialidad).localeCompare(formatEspecialidad(b.especialidad), 'es') ||
+        (a.nombre || '').localeCompare(b.nombre || '', 'es'),
+    ),
+)
 
 function getDoctorId(doc: OdontologoPublico): string {
   return doc.dni || doc.id || doc.username
@@ -86,9 +113,10 @@ function selectSpecialist(doc: OdontologoPublico) {
   emit('update:modelValue', id)
 }
 
+
 function handleNext() {
-  if (!props.modelValue && effectiveSpecialists.value.length > 0) {
-    const first = effectiveSpecialists.value[0]
+  if (!props.modelValue && especialistasFiltrados.value.length > 0) {
+    const first = especialistasFiltrados.value[0]
     if (first) {
       emit('update:modelValue', getDoctorId(first))
     }
@@ -136,6 +164,32 @@ onMounted(fetchSpecialistsIfNeeded)
       <p class="subtitle">Contamos con expertos altamente calificados para tu tratamiento</p>
     </div>
 
+    <!-- Filtro por especialidad -->
+    <div
+      v-if="!effectiveLoading && effectiveSpecialists.length > 1"
+      class="specialty-filter"
+      role="group"
+      aria-label="Filtrar por especialidad"
+    >
+      <button
+        type="button"
+        class="specialty-chip"
+        :class="{ active: filtroActivo === 'TODAS' }"
+        @click="filtroEspecialidad = 'TODAS'"
+      >
+        Todas
+      </button>
+      <button
+        v-for="esp in especialidades"
+        :key="esp || 'general'"
+        type="button"
+        class="specialty-chip"
+        :class="{ active: filtroActivo === esp }"
+        @click="filtroEspecialidad = esp"
+      >
+        {{ formatEspecialidad(esp) }}
+      </button>
+    </div>
     <!-- Estado de Carga (Skeletons) -->
     <div v-if="effectiveLoading" class="specialists-grid" aria-busy="true">
       <div v-for="n in 2" :key="`skeleton-${n}`" class="specialist-card skeleton-card">
@@ -168,10 +222,10 @@ onMounted(fetchSpecialistsIfNeeded)
       </p>
     </div>
 
-    <!-- Grid de Especialistas Dinámicos -->
+<!-- Grid de Especialistas Dinámicos -->
     <div v-else class="specialists-grid">
       <div
-        v-for="(doctor, index) in effectiveSpecialists"
+        v-for="(doctor, index) in especialistasFiltrados"
         :key="getDoctorId(doctor)"
         class="specialist-card"
         :class="{ active: isSelected(doctor) }"
@@ -572,5 +626,35 @@ onMounted(fetchSpecialistsIfNeeded)
     width: 100%;
     justify-content: center;
   }
+}
+
+.specialty-filter {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.specialty-chip {
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-light, #cbd5e1);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-main, #1e293b);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.specialty-chip:hover {
+  border-color: #6366f1;
+}
+
+.specialty-chip.active {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: #ffffff;
 }
 </style>

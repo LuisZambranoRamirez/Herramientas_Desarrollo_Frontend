@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { odontologosService } from '@/services/odontologos.service'
 import type { OdontologoPublico } from '@/types'
@@ -34,6 +34,34 @@ function getAvatarEmoji(index: number): string {
   return index % 2 === 0 ? '👩‍⚕️' : '👨‍⚕️'
 }
 
+// Filtro por especialidad (se ordena por especialidad y luego por nombre)
+const filtroEspecialidad = ref<string>('TODAS')
+
+const especialidades = computed<string[]>(() => {
+  const unicas = new Set<string>()
+  for (const doc of specialists.value) {
+    unicas.add((doc.especialidad || '').trim())
+  }
+  return [...unicas].sort((a, b) =>
+    formatEspecialidad(a).localeCompare(formatEspecialidad(b), 'es'),
+  )
+})
+
+const filtroActivo = computed<string>(() =>
+  especialidades.value.includes(filtroEspecialidad.value) ? filtroEspecialidad.value : 'TODAS',
+)
+
+const especialistasFiltrados = computed<OdontologoPublico[]>(() =>
+  specialists.value
+    .filter((doc) => filtroActivo.value === 'TODAS' || (doc.especialidad || '').trim() === filtroActivo.value)
+    .slice()
+    .sort(
+      (a, b) =>
+        formatEspecialidad(a.especialidad).localeCompare(formatEspecialidad(b.especialidad), 'es') ||
+        (a.nombre || '').localeCompare(b.nombre || '', 'es'),
+    ),
+)
+
 async function cargarEspecialistas() {
   isLoading.value = true
   errorMessage.value = ''
@@ -67,7 +95,34 @@ function navigateToBooking(doctor?: OdontologoPublico) {
       <h2 class="section-title">Nuestros Especialistas</h2>
       <p class="section-subtitle">
         Conoce a nuestro equipo de profesionales altamente calificados
-      </p>
+            </p>
+    </div>
+
+    <!-- Filtro por especialidad -->
+    <div
+      v-if="!isLoading && specialists.length > 1"
+      class="specialty-filter"
+      role="group"
+      aria-label="Filtrar por especialidad"
+    >
+      <button
+        type="button"
+        class="specialty-chip"
+        :class="{ active: filtroActivo === 'TODAS' }"
+        @click="filtroEspecialidad = 'TODAS'"
+      >
+        Todas
+      </button>
+      <button
+        v-for="esp in especialidades"
+        :key="esp || 'general'"
+        type="button"
+        class="specialty-chip"
+        :class="{ active: filtroActivo === esp }"
+        @click="filtroEspecialidad = esp"
+      >
+        {{ formatEspecialidad(esp) }}
+      </button>
     </div>
 
     <!-- Estado de carga: Skeletons elegantes -->
@@ -102,10 +157,10 @@ function navigateToBooking(doctor?: OdontologoPublico) {
       </button>
     </div>
 
-    <!-- Grid de tarjetas dinámicas -->
+      <!-- Grid de tarjetas dinámicas -->
     <div v-else class="doctors-cards-grid">
       <div
-        v-for="(doctor, index) in specialists"
+        v-for="(doctor, index) in especialistasFiltrados"
         :key="doctor.id || doctor.dni || doctor.username"
         class="doctor-profile-card"
       >
@@ -406,7 +461,37 @@ function navigateToBooking(doctor?: OdontologoPublico) {
 
 @media (max-width: 860px) {
   .doctors-cards-grid {
-    grid-template-columns: 1fr;
+grid-template-columns: 1fr;
   }
+}
+
+.specialty-filter {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.specialty-chip {
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-light, #cbd5e1);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-main, #1e293b);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.specialty-chip:hover {
+  border-color: #6366f1;
+}
+
+.specialty-chip.active {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: #ffffff;
 }
 </style>
