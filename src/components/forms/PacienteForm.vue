@@ -58,15 +58,16 @@
       <span v-if="errores.apellidos" class="error">{{ errores.apellidos }}</span>
     </div>
 
+
     <div class="campo">
       <label for="direccion">Dirección</label>
-      <input
+      <textarea
         id="direccion"
         v-model="form.direccion"
-        type="text"
+        rows="3"
         maxlength="200"
         placeholder="Ej: Mz. A Lt. 3"
-      />
+      ></textarea>
     </div>
 
     <div class="campo">
@@ -240,6 +241,8 @@ select {
 
 textarea {
   min-height: 80px;
+  resize: vertical;
+  font-family: inherit;
 }
 
 button {

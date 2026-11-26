@@ -311,14 +311,14 @@ async function registrarse() {
           <!-- Dirección -->
           <div class="form-group">
             <label for="direccion">Dirección (Opcional)</label>
-            <div class="input-wrapper">
+            <div class="input-wrapper textarea-wrapper">
               <span class="input-icon">📍</span>
-              <input
+              <textarea
                 id="direccion"
                 v-model="direccion"
-                type="text"
+                rows="3"
                 placeholder="Av. Principal 123"
-              />
+              ></textarea>
             </div>
           </div>
 
@@ -605,18 +605,40 @@ async function registrarse() {
   transition: all 0.2s ease;
 }
 
-.input-wrapper input:focus {
+.input-wrapper input:focus,
+.input-wrapper textarea:focus {
   outline: none;
   border-color: #38bdf8;
   box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
   background: rgba(15, 23, 42, 0.8);
 }
 
+.input-wrapper textarea {
+  width: 100%;
+  padding: 0.75rem 0.875rem 0.75rem 2.5rem;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 0.75rem;
+  color: #f8fafc;
+  font-size: 0.925rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 4.5rem;
+  transition: all 0.2s ease;
+}
+
+.textarea-wrapper {
+  align-items: flex-start;
+}
+
+.textarea-wrapper .input-icon {
+  top: 0.85rem;
+}
+
 .input-wrapper input.input-error {
   border-color: #ef4444;
   background: rgba(239, 68, 68, 0.05);
 }
-
 .password-container input {
   padding-right: 2.5rem;
 }
