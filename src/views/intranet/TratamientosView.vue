@@ -1508,6 +1508,44 @@ const formatFecha = (f: string): string => {
 :global(html.dark) .form-time { background: #1e293b; border-color: #334155; color: #f8fafc; }
 :global(html.dark) .btn-action.pay { background: rgba(16, 185, 129, 0.2); }
 
+/* Contenedor de información clínica */
+:global(html.dark) .modal .detalle-grid {
+  background-color: transparent;
+  color: var(--text-main);
+}
+
+/* Datos individuales del tratamiento */
+:global(html.dark) .modal .detalle-item {
+  color: var(--text-main);
+}
+
+/* Valores de los campos */
+:global(html.dark) .modal .detalle-item
+> span:not(.detalle-label):not(.badge-estado):not(.categoria-badge-modal):not(.text-emerald) {
+  color: #f8fafc;
+}
+
+/* Precio acordado */
+:global(html.dark) .modal .detalle-item .text-emerald {
+  color: #34d399;
+}
+
+/* Textos secundarios de sesiones */
+:global(html.dark) .agenda-panel .text-secondary {
+  color: #94a3b8;
+}
+
+/* Horarios de sesiones */
+:global(html.dark) .agenda-panel .font-mono {
+  color: #cbd5e1;
+}
+
+/* Selector de horas compatible con modo oscuro */
+:global(html.dark) .agenda-panel .form-time {
+  color-scheme: dark;
+}
+
+
 @media (max-width: 600px) {
   .form-grid { grid-template-columns: 1fr; }
   .detalle-grid { grid-template-columns: 1fr; }
