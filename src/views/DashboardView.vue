@@ -2,8 +2,10 @@
   <DashboardLayout>
     <div class="welcome-section">
       <h2>Bienvenido, {{ usuarioNombre }}</h2>
-      <p class="date">Hoy es {{ today }}, tienes <strong>12 citas</strong> agendadas para hoy.</p>
+      <p class="date">Hoy es {{ today }}, tienes <strong>{{ resumen ? resumen.citas_hoy : '—' }} citas</strong> agendadas para hoy.</p>
     </div>
+
+    <p v-if="errorResumen" class="resumen-error">{{ errorResumen }}</p>
 
     <DashboardStats :stats="statsData" />
 
@@ -18,8 +20,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth.store'
+import { dashboardService } from '@/services/dashboard.service'
+import type { DashboardResumen } from '@/services/dashboard.service'
 import DashboardLayout from '@/components/dashboard/DashboardLayout.vue'
 import DashboardStats from '@/components/dashboard/DashboardStats.vue'
 import DashboardAppointments from '@/components/dashboard/DashboardAppointments.vue'
@@ -74,12 +78,23 @@ const today = computed(() => {
 })
 
 
-const statsData = ref<StatItem[]>([
-  { label: 'Citas Hoy', value: 12, icon: '📅', color: '#3498db' },
-  { label: 'Pacientes Activos', value: 348, icon: '👤', color: '#2ecc71' },
-  { label: 'Tratamientos en Curso', value: 27, icon: '🏥', color: '#f39c12' },
-  { label: 'Stock Bajo', value: '3 Insumos', icon: '⚠️', color: '#e74c3c' }
+const resumen = ref<DashboardResumen | null>(null)
+const errorResumen = ref('')
+
+const statsData = computed<StatItem[]>(() => [
+  { label: 'Citas Hoy', value: resumen.value?.citas_hoy ?? '—', icon: '📅', color: '#3498db' },
+  { label: 'Pacientes Registrados', value: resumen.value?.pacientes_total ?? '—', icon: '👤', color: '#2ecc71' },
+  { label: 'Tratamientos en Curso', value: resumen.value?.tratamientos_en_proceso ?? '—', icon: '🏥', color: '#f39c12' },
+  { label: 'Stock Bajo', value: resumen.value ? `${resumen.value.insumos_stock_bajo} Insumos` : '—', icon: '⚠️', color: '#e74c3c' }
 ])
+
+onMounted(async () => {
+  try {
+    resumen.value = await dashboardService.getResumen()
+  } catch (e) {
+    errorResumen.value = 'No se pudo cargar el resumen del dashboard.'
+  }
+})
 
 const citasData = ref<Cita[]>([
   { id: 1, paciente: 'Luis utp', hora: '09:00 AM', tratamiento: 'Limpieza Dental', estado: 'Confirmada' },
@@ -126,7 +141,11 @@ const stockData = ref<InsumoStock[]>([
 .welcome-section .date strong {
   color: var(--text-main);
 }
-
+.resumen-error {
+  color: #e74c3c;
+  margin: 0 0 16px 0;
+  font-size: 14px;
+}
 .dashboard-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
